@@ -347,30 +347,6 @@ wss.on('connection', (clientWs) => {
                             }
                         }
                     }
-                
-                // --- Handle Context Updates from Frontend ---
-                if (message.type === 'context_update') {
-                    if (geminiSession) {
-                        let sysNote = '';
-                        if (message.action === 'added_to_cart') {
-                            sysNote = `[SYSTEM NOTE: Successfully added ${message.productName} to the cart.]`;
-                        } else {
-                            sysNote = `[SYSTEM NOTE: User is now viewing Product: ${message.productName} at price ₹${message.productPrice}. Ask them if they would like to add it to their cart or see the next picture!]`;
-                        }
-                        
-                        try {
-                            await geminiSession.send({
-                                clientContent: {
-                                    turns: [{ role: 'user', parts: [{ text: sysNote }] }],
-                                    turnComplete: true
-                                }
-                            });
-                        } catch (err) {
-                            console.error('Error sending context update to Gemini:', err);
-                        }
-                    }
-                    return; // Don't process further as a tool call
-                }
 
                 if (message.toolCall) {
                         for (const fc of message.toolCall.functionCalls) {
@@ -493,7 +469,7 @@ wss.on('connection', (clientWs) => {
 
     connectToGemini();
 
-    clientWs.on('message', (data) => {
+    clientWs.on('message', async (data) => {
         try {
             const message = JSON.parse(data);
             if (message.type === 'audio' && geminiSession) {
@@ -502,6 +478,25 @@ wss.on('connection', (clientWs) => {
                 });
             } else if (message.type === 'text' && geminiSession) {
                 geminiSession.sendRealtimeInput({ text: message.data });
+            } else if (message.type === 'context_update' && geminiSession) {
+                // Context updates from the frontend (lightbox product view, cart actions)
+                let sysNote = '';
+                if (message.action === 'added_to_cart') {
+                    sysNote = `[SYSTEM NOTE: Successfully added ${message.productName} to the cart.]`;
+                } else {
+                    sysNote = `[SYSTEM NOTE: User is now viewing Product: ${message.productName} at price Rs.${message.productPrice}. Announce what they're looking at and ask if they'd like to add it to their cart or see the next product.]`;
+                }
+                console.log('📦 Context update:', sysNote);
+                try {
+                    await geminiSession.send({
+                        clientContent: {
+                            turns: [{ role: 'user', parts: [{ text: sysNote }] }],
+                            turnComplete: true
+                        }
+                    });
+                } catch (err) {
+                    console.error('Error sending context update to Gemini:', err);
+                }
             }
         } catch (error) {
             console.error('Error handling client message:', error);

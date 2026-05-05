@@ -172,37 +172,42 @@ function handleAuraBackendMessage(message) {
         case 'navigate':
             // Open collection page in overlay so AI doesn't disconnect
             if (message.url) {
-                // Use hash fragment for autoplay to support file:// protocol
-                openCollectionOverlay(message.url + '#autoplay=true');
+                openCollectionOverlay(message.url);
             }
             break;
         case 'navigate_home':
             closeCollectionOverlay();
             break;
         case 'next_product':
-        case 'previous_product':
-            const iframe = document.getElementById('collection-iframe');
-            if (iframe && iframe.contentWindow) {
-                iframe.contentWindow.postMessage({ type: message.type }, '*');
+        case 'previous_product': {
+            var navIframe = document.getElementById('collection-iframe');
+            if (navIframe && navIframe.contentWindow) {
+                navIframe.contentWindow.postMessage({ type: message.type }, '*');
             }
             break;
+        }
         case 'add_to_cart':
             if (typeof addToCart === 'function') {
-                addToCart({ item: message.productName, price: message.productPrice, img: '' });
+                addToCart({
+                    item: message.productName,
+                    price: message.productPrice,
+                    img: window._lastViewedProductImg || ''
+                });
                 // Tell backend it was successful
                 if (auraWs && auraWs.readyState === WebSocket.OPEN) {
                     auraWs.send(JSON.stringify({ type: 'context_update', productName: message.productName, productPrice: message.productPrice, action: 'added_to_cart' }));
                 }
             }
             break;
-        case 'show_cart':
-            const cartSidebar = document.getElementById('cartSidebar');
-            const cartOverlay = document.getElementById('cartOverlay');
-            if (cartSidebar && cartOverlay) {
-                cartSidebar.classList.add('active');
-                cartOverlay.classList.add('active');
+        case 'show_cart': {
+            var csb = document.getElementById('cartSidebar');
+            var cov = document.getElementById('cartOverlay');
+            if (csb && cov) {
+                csb.classList.add('active');
+                cov.classList.add('active');
             }
             break;
+        }
         case 'scroll_to_section':
             closeCollectionOverlay(); // Ensure we are on the main page
             setTimeout(() => {
@@ -493,9 +498,23 @@ function openCollectionOverlay(url) {
                 closeCollectionOverlay();
             }
             if (e.data && e.data.type === 'context_update') {
+                // Track the product image for AI add-to-cart
+                if (e.data.productImg) {
+                    window._lastViewedProductImg = e.data.productImg;
+                }
                 if (auraWs && auraWs.readyState === WebSocket.OPEN) {
                     auraWs.send(JSON.stringify(e.data));
                 }
+            }
+            if (e.data && e.data.type === 'addToCart') {
+                if (typeof addToCart === 'function') {
+                    addToCart(e.data);
+                }
+            }
+            if (e.data && e.data.type === 'openCart') {
+                var cs = document.getElementById('cartSidebar');
+                var co = document.getElementById('cartOverlay');
+                if (cs && co) { cs.classList.add('active'); co.classList.add('active'); }
             }
         });
     }
