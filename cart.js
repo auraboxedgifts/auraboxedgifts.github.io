@@ -319,6 +319,10 @@ function openCheckoutPage() {
                     document.getElementById('ckEmail').value = '';
                     document.getElementById('stepDelivery').style.opacity = '0.4';
                     document.getElementById('stepDelivery').style.pointerEvents = 'none';
+                    ['ckFirstName', 'ckLastName', 'ckAddress', 'ckApartment', 'ckCity', 'ckState', 'ckPincode', 'ckPhone'].forEach(function(id){
+                        var el = document.getElementById(id); if(el) el.value = '';
+                    });
+                    var saveInfo = document.getElementById('ckSaveInfo'); if(saveInfo) saveInfo.checked = false;
                 });
 
                 document.getElementById('stepDelivery').style.opacity = '1';
@@ -414,6 +418,10 @@ function openCheckoutPage() {
                     document.getElementById('ckEmail').value = '';
                     document.getElementById('stepDelivery').style.opacity = '0.4';
                     document.getElementById('stepDelivery').style.pointerEvents = 'none';
+                    ['ckFirstName', 'ckLastName', 'ckAddress', 'ckApartment', 'ckCity', 'ckState', 'ckPincode', 'ckPhone'].forEach(function(id){
+                        var el = document.getElementById(id); if(el) el.value = '';
+                    });
+                    var saveInfo = document.getElementById('ckSaveInfo'); if(saveInfo) saveInfo.checked = false;
                 });
 
                 document.getElementById('stepDelivery').style.opacity = '1';
@@ -683,6 +691,10 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.removeItem('auraAuthToken');
             userDropdown.style.display = 'none';
             updateNavUser();
+            ['ckFirstName', 'ckLastName', 'ckAddress', 'ckApartment', 'ckCity', 'ckState', 'ckPincode', 'ckPhone'].forEach(function(id){
+                var el = document.getElementById(id); if(el) el.value = '';
+            });
+            var saveInfo = document.getElementById('ckSaveInfo'); if(saveInfo) saveInfo.checked = false;
             alert("Logged out successfully");
         });
     }
