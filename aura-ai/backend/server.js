@@ -109,6 +109,14 @@ app.post('/api/verify-otp', (req, res) => {
     res.json({ success: true, message: 'OTP verified successfully' });
 });
 
+// ─── App Config Endpoint ───
+app.get('/api/config', (req, res) => {
+    res.json({
+        success: true,
+        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || ''
+    });
+});
+
 // Razorpay Setup
 let razorpayInstance = null;
 if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
@@ -120,25 +128,31 @@ if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
 
 // Razorpay Endpoints
 app.post('/api/create-order', async (req, res) => {
+    console.log('--- [Razorpay] /api/create-order requested ---');
+    console.log('Request body:', req.body);
     try {
         if (!razorpayInstance) {
+            console.error('[Razorpay] Keys not configured on server.');
             return res.status(500).json({ success: false, error: 'Razorpay keys not configured on server.' });
         }
         const { amount } = req.body;
+        console.log(`[Razorpay] Creating order for amount: ${amount} INR`);
         const options = {
             amount: amount * 100, // paise
             currency: 'INR',
             receipt: 'receipt_' + Date.now()
         };
         const order = await razorpayInstance.orders.create(options);
+        console.log(`[Razorpay] Order created successfully: ${order.id}`);
         res.json({ success: true, order, key_id: process.env.RAZORPAY_KEY_ID });
     } catch (err) {
-        console.error('Razorpay Error:', err);
+        console.error('[Razorpay] Order Creation Error:', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
 app.post('/api/verify-payment', async (req, res) => {
+    console.log('--- [Razorpay] /api/verify-payment requested ---');
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature, cartDetails, customer } = req.body;
         const text = razorpay_order_id + "|" + razorpay_payment_id;

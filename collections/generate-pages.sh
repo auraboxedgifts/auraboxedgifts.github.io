@@ -132,8 +132,6 @@ HEREDOC_DYN
   <link rel="stylesheet" href="collection.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="icon" type="image/jpeg" href="../images/logo.jpeg">
-  <!-- Google Maps for Autocomplete -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY_HERE&libraries=places" async defer></script>
 </head>
 <body>
   <nav class="col-nav">

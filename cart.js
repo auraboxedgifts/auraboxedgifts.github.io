@@ -173,24 +173,37 @@ function openCheckoutPage() {
     document.body.appendChild(el);
     document.body.style.overflow = 'hidden';
 
-    // Google Maps Autocomplete Init
-    if (typeof google !== 'undefined' && google.maps && google.maps.places) {
-        var input = document.getElementById('ckAddress');
-        var autocomplete = new google.maps.places.Autocomplete(input, { types: ['address'], componentRestrictions: { country: 'in' } });
-        autocomplete.addListener('place_changed', function() {
-            var place = autocomplete.getPlace();
-            if (!place.address_components) return;
-            var city='', state='', pin='';
-            place.address_components.forEach(function(c) {
-                if(c.types.includes('locality')) city = c.long_name;
-                if(c.types.includes('administrative_area_level_1')) state = c.long_name;
-                if(c.types.includes('postal_code')) pin = c.long_name;
-            });
-            if(city) document.getElementById('ckCity').value = city;
-            if(state) document.getElementById('ckState').value = state;
-            if(pin) document.getElementById('ckPincode').value = pin;
-        });
-    }
+    // Google Maps Autocomplete Init (Dynamic)
+    fetch(API_BASE + '/api/config')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.googleMapsApiKey) {
+                var script = document.createElement('script');
+                script.src = 'https://maps.googleapis.com/maps/api/js?key=' + data.googleMapsApiKey + '&libraries=places';
+                script.async = true;
+                script.onload = function() {
+                    if (window.google && window.google.maps && window.google.maps.places) {
+                        var input = document.getElementById('ckAddress');
+                        var autocomplete = new window.google.maps.places.Autocomplete(input, { types: ['address'], componentRestrictions: { country: 'in' } });
+                        autocomplete.addListener('place_changed', function() {
+                            var place = autocomplete.getPlace();
+                            if (!place.address_components) return;
+                            var city='', state='', pin='';
+                            place.address_components.forEach(function(c) {
+                                if(c.types.includes('locality')) city = c.long_name;
+                                if(c.types.includes('administrative_area_level_1')) state = c.long_name;
+                                if(c.types.includes('postal_code')) pin = c.long_name;
+                            });
+                            if(city) document.getElementById('ckCity').value = city;
+                            if(state) document.getElementById('ckState').value = state;
+                            if(pin) document.getElementById('ckPincode').value = pin;
+                        });
+                    }
+                };
+                document.head.appendChild(script);
+            }
+        })
+        .catch(err => console.error('Config fetch error:', err));
 
     // OTP Logic
     var verifiedEmail = '';
