@@ -179,25 +179,55 @@ function openCheckoutPage() {
         .then(data => {
             if (data.success && data.googleMapsApiKey) {
                 var script = document.createElement('script');
-                script.src = 'https://maps.googleapis.com/maps/api/js?key=' + data.googleMapsApiKey + '&libraries=places';
+                script.src = 'https://maps.googleapis.com/maps/api/js?key=' + data.googleMapsApiKey + '&libraries=places&v=weekly';
                 script.async = true;
                 script.onload = function() {
                     if (window.google && window.google.maps && window.google.maps.places) {
-                        var input = document.getElementById('ckAddress');
-                        var autocomplete = new window.google.maps.places.Autocomplete(input, { types: ['address'], componentRestrictions: { country: 'in' } });
-                        autocomplete.addListener('place_changed', function() {
-                            var place = autocomplete.getPlace();
-                            if (!place.address_components) return;
-                            var city='', state='', pin='';
-                            place.address_components.forEach(function(c) {
-                                if(c.types.includes('locality')) city = c.long_name;
-                                if(c.types.includes('administrative_area_level_1')) state = c.long_name;
-                                if(c.types.includes('postal_code')) pin = c.long_name;
-                            });
-                            if(city) document.getElementById('ckCity').value = city;
-                            if(state) document.getElementById('ckState').value = state;
-                            if(pin) document.getElementById('ckPincode').value = pin;
-                        });
+                        try {
+                            if (window.google.maps.places.PlaceAutocompleteElement) {
+                                var autocomplete = new window.google.maps.places.PlaceAutocompleteElement({
+                                    componentRestrictions: { country: ['in'] }
+                                });
+                                autocomplete.id = 'ckAddress';
+                                var oldInput = document.getElementById('ckAddress');
+                                oldInput.parentNode.replaceChild(autocomplete, oldInput);
+
+                                autocomplete.addEventListener('gmp-placeselect', async function(event) {
+                                    var place = event.place;
+                                    if (!place) return;
+                                    await place.fetchFields({ fields: ['addressComponents'] });
+                                    var city='', state='', pin='';
+                                    if(place.addressComponents) {
+                                        place.addressComponents.forEach(function(c) {
+                                            if(c.types.includes('locality')) city = c.longText;
+                                            if(c.types.includes('administrative_area_level_1')) state = c.longText;
+                                            if(c.types.includes('postal_code')) pin = c.longText;
+                                        });
+                                    }
+                                    if(city) document.getElementById('ckCity').value = city;
+                                    if(state) document.getElementById('ckState').value = state;
+                                    if(pin) document.getElementById('ckPincode').value = pin;
+                                });
+                            } else {
+                                var input = document.getElementById('ckAddress');
+                                var autocompleteLegacy = new window.google.maps.places.Autocomplete(input, { types: ['address'], componentRestrictions: { country: 'in' } });
+                                autocompleteLegacy.addListener('place_changed', function() {
+                                    var place = autocompleteLegacy.getPlace();
+                                    if (!place.address_components) return;
+                                    var city='', state='', pin='';
+                                    place.address_components.forEach(function(c) {
+                                        if(c.types.includes('locality')) city = c.long_name;
+                                        if(c.types.includes('administrative_area_level_1')) state = c.long_name;
+                                        if(c.types.includes('postal_code')) pin = c.long_name;
+                                    });
+                                    if(city) document.getElementById('ckCity').value = city;
+                                    if(state) document.getElementById('ckState').value = state;
+                                    if(pin) document.getElementById('ckPincode').value = pin;
+                                });
+                            }
+                        } catch (e) {
+                            console.error('Maps initialization error:', e);
+                        }
                     }
                 };
                 document.head.appendChild(script);
@@ -254,7 +284,9 @@ function openCheckoutPage() {
     // Stepper logic
     document.getElementById('ckDeliveryBtn').addEventListener('click', function(e) {
         e.preventDefault();
-        if(!document.getElementById('ckFirstName').value || !document.getElementById('ckAddress').value || !document.getElementById('ckCity').value || !document.getElementById('ckPhone').value) {
+        var addrEl = document.getElementById('ckAddress');
+        var addressVal = addrEl.value || addrEl.inputValue;
+        if(!document.getElementById('ckFirstName').value || !addressVal || !document.getElementById('ckCity').value || !document.getElementById('ckPhone').value) {
             return alert('Please fill in required delivery fields.');
         }
         document.getElementById('stepShipping').style.opacity = '1';
@@ -274,7 +306,8 @@ function openCheckoutPage() {
         e.preventDefault();
         var firstName = document.getElementById('ckFirstName').value;
         var lastName = document.getElementById('ckLastName').value;
-        var address = document.getElementById('ckAddress').value;
+        var addrEl = document.getElementById('ckAddress');
+        var address = addrEl.value || addrEl.inputValue;
         var city = document.getElementById('ckCity').value;
         var state = document.getElementById('ckState').value;
         var pincode = document.getElementById('ckPincode').value;
