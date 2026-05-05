@@ -170,9 +170,9 @@ function handleAuraBackendMessage(message) {
             handleAuraGeminiMessage(message.data);
             break;
         case 'navigate':
-            // Open collection page when AI suggests browsing
+            // Open collection page in overlay so AI doesn't disconnect
             if (message.url) {
-                window.open(message.url, '_blank');
+                openCollectionOverlay(message.url);
             }
             break;
         case 'error':
@@ -426,5 +426,57 @@ document.addEventListener('visibilitychange', async () => {
         if (auraAudioContext && auraAudioContext.state === 'suspended') {
             try { await auraAudioContext.resume(); } catch (e) {}
         }
+    }
+});
+
+// --- Navigation Overlay Logic (Prevents session drop) ---
+function openCollectionOverlay(url) {
+    let overlay = document.getElementById('collection-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'collection-overlay';
+        overlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:9990; background:var(--cream, #fdf6f0); display:none;';
+        
+        const iframe = document.createElement('iframe');
+        iframe.id = 'collection-iframe';
+        iframe.style.cssText = 'width:100%; height:100%; border:none;';
+        overlay.appendChild(iframe);
+        document.body.appendChild(overlay);
+        
+        window.addEventListener('message', function(e) {
+            if (e.data === 'closeCollection') {
+                closeCollectionOverlay();
+            }
+        });
+    }
+    // Only add ../ if it's not already there, depending on context
+    document.getElementById('collection-iframe').src = url;
+    overlay.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // prevent background scrolling
+}
+
+function closeCollectionOverlay() {
+    const overlay = document.getElementById('collection-overlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+        document.getElementById('collection-iframe').src = '';
+        document.body.style.overflow = '';
+    }
+}
+
+// Intercept manual collection clicks
+document.addEventListener('DOMContentLoaded', () => {
+    // Only intercept if we are on the main page (not inside the iframe itself)
+    if (window === window.parent) {
+        document.querySelectorAll('a[href^="collections/"]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                openCollectionOverlay(this.getAttribute('href'));
+            });
+        });
+    } else {
+        // If we are inside the iframe, hide the AI widget as the parent already has it running
+        const widget = document.getElementById('auraAIWidget');
+        if (widget) widget.style.display = 'none';
     }
 });
