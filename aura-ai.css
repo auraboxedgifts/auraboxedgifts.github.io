@@ -167,3 +167,32 @@
     .aura-widget-text { font-size: 13px; }
     .aura-end-btn { padding: 6px 12px; font-size: 11px; }
 }
+
+/* Docked State for Cart/Checkout */
+.aura-ai-widget.aura-docked {
+    right: 0 !important;
+    bottom: 50% !important;
+    transform: translateY(50%);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.aura-ai-widget.aura-docked .aura-widget-panel {
+    border-radius: 20px 0 0 20px;
+    padding: 10px;
+    background: linear-gradient(135deg, #b76e79 0%, #3a2a1f 100%);
+    border-right: none;
+    flex-direction: column;
+}
+.aura-ai-widget.aura-docked .aura-widget-text {
+    display: none; /* Hide text when docked */
+}
+.aura-ai-widget.aura-docked:hover {
+    right: 10px !important;
+}
+.aura-ai-widget.aura-docked:hover .aura-widget-panel {
+    border-radius: 25px;
+    flex-direction: row;
+    padding: 10px 20px 10px 10px;
+}
+.aura-ai-widget.aura-docked:hover .aura-widget-text {
+    display: block;
+}

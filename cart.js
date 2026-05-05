@@ -67,10 +67,14 @@ function openCartPage() {
     renderCartPage();
     getCartOverlay().classList.add('active');
     document.body.style.overflow = 'hidden';
+    var w = document.getElementById('auraAIWidget');
+    if (w) w.classList.add('aura-docked');
 }
 function closeCartPage() {
     var o = document.getElementById('cartPageOverlay');
     if (o) { o.classList.remove('active'); document.body.style.overflow = ''; }
+    var w = document.getElementById('auraAIWidget');
+    if (w) w.classList.remove('aura-docked');
 }
 
 // ─── FULL CHECKOUT PAGE (BoldPetals-inspired) ───
@@ -112,7 +116,10 @@ function openCheckoutPage() {
           '<div id="ckOtpVerifyForm" style="display: none;">' +
             '<p style="font-size: 0.8rem; margin-bottom: 10px;">OTP sent to <span id="ckEmailDisplay"></span> <a href="#" id="ckEditEmail" style="color:var(--rose-gold)">Edit</a></p>' +
             '<div class="ck-field"><input type="text" id="ckOtpInput" placeholder="Enter 6-digit OTP" required></div>' +
-            '<button class="ck-pay-now-btn" id="ckVerifyOtpBtn" style="padding: 12px; margin-top: 5px;">Verify OTP</button>' +
+            '<div style="display:flex; gap:10px;">' +
+              '<button class="ck-pay-now-btn" id="ckVerifyOtpBtn" style="padding: 12px; margin-top: 5px; flex:1;">Verify OTP</button>' +
+              '<button class="ck-pay-now-btn" id="ckResendOtpBtn" style="padding: 12px; margin-top: 5px; flex:1; background:#555;">Resend OTP</button>' +
+            '</div>' +
           '</div>' +
           '<div id="ckContactSuccess" style="display: none; color: #27ae60; font-weight: 500; align-items: center; gap: 8px;"><i class="fas fa-check-circle"></i> <span id="ckVerifiedEmailText"></span></div>' +
         '</section>' +
@@ -179,6 +186,9 @@ function openCheckoutPage() {
 
     document.body.appendChild(el);
     document.body.style.overflow = 'hidden';
+    
+    var w = document.getElementById('auraAIWidget');
+    if (w) w.classList.add('aura-docked');
 
     // Google Maps Autocomplete Init (Dynamic)
     fetch(API_BASE + '/api/config')
@@ -281,6 +291,25 @@ function openCheckoutPage() {
                 document.getElementById('ckContactSuccess').style.display = 'flex';
                 document.getElementById('ckContactSuccess').innerHTML = '<i class="fas fa-check-circle"></i> Logged in as: ' + data.email + ' <a href="#" id="ckLogout" style="margin-left:10px;color:#b76e79;text-decoration:underline;font-size:0.85rem;">(Logout)</a>';
                 
+                // Trigger fetching of saved user info
+                fetch(API_BASE + '/api/get-user-info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: authToken })
+                })
+                .then(r => r.json())
+                .then(userData => {
+                    if (userData.success && userData.data) {
+                        if(userData.data.firstName) document.getElementById('ckFirstName').value = userData.data.firstName;
+                        if(userData.data.lastName) document.getElementById('ckLastName').value = userData.data.lastName;
+                        if(userData.data.city) document.getElementById('ckCity').value = userData.data.city;
+                        if(userData.data.state) document.getElementById('ckState').value = userData.data.state;
+                        if(userData.data.pincode) document.getElementById('ckPincode').value = userData.data.pincode;
+                        if(userData.data.phone) document.getElementById('ckPhone').value = userData.data.phone;
+                        document.getElementById('ckSaveInfo').checked = true;
+                    }
+                }).catch(e => console.error("Error fetching user info:", e));
+
                 document.getElementById('ckLogout').addEventListener('click', function(e) {
                     e.preventDefault();
                     localStorage.removeItem('auraAuthToken');
@@ -336,6 +365,22 @@ function openCheckoutPage() {
             } else { alert(data.error || 'Failed to send OTP'); }
         } catch(e) { alert('Error: ' + e.message); }
         this.textContent = 'Send OTP'; this.disabled = false;
+    });
+
+    document.getElementById('ckResendOtpBtn').addEventListener('click', async function(e) {
+        e.preventDefault();
+        var em = document.getElementById('ckEmailDisplay').textContent;
+        if(!em) return;
+        this.textContent = 'Resending...'; this.disabled = true;
+        try {
+            var res = await fetch(API_BASE + '/api/resend-otp', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: em}) });
+            var data = await res.json();
+            if(data.success) {
+                alert('A new OTP has been sent to your email.');
+            } else { alert(data.error || 'Failed to resend OTP'); }
+        } catch(e) { alert('Error: ' + e.message); }
+        var btn = this;
+        setTimeout(function() { btn.textContent = 'Resend OTP'; btn.disabled = false; }, 3000);
     });
 
     document.getElementById('ckEditEmail').addEventListener('click', function(e) {
@@ -580,6 +625,67 @@ document.addEventListener('DOMContentLoaded', function() {
         else openCartPage();
     });
     updateBadge();
+
+    // ─── USER PROFILE ICON ───
+    var navIcons = document.querySelector('.nav-icons');
+    if (navIcons) {
+        var userIconContainer = document.createElement('div');
+        userIconContainer.style.position = 'relative';
+        userIconContainer.style.display = 'inline-block';
+        userIconContainer.style.marginRight = '15px';
+        
+        var userIcon = document.createElement('a');
+        userIcon.href = "#";
+        userIcon.id = "navUserIcon";
+        userIcon.innerHTML = '<i class="fas fa-user"></i>';
+        userIcon.style.color = "var(--text-dark)";
+        
+        var userDropdown = document.createElement('div');
+        userDropdown.id = "navUserDropdown";
+        userDropdown.style.cssText = "display:none; position:absolute; top:30px; right:-10px; background:#fff; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.1); padding:15px; z-index:10000; min-width:180px; text-align:center; border: 1px solid rgba(183,110,121,0.2);";
+        userDropdown.innerHTML = '<p id="navUserEmail" style="font-size:12px; color:#333; margin-bottom:10px; word-break:break-all;"></p><button id="navUserLogout" style="background:#b76e79; color:#fff; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; width:100%; font-size:12px; transition:0.3s;">Logout</button>';
+        
+        userIconContainer.appendChild(userIcon);
+        userIconContainer.appendChild(userDropdown);
+        
+        var cartIconEl = document.getElementById('navCartIcon');
+        if (cartIconEl) {
+            cartIconEl.parentNode.insertBefore(userIconContainer, cartIconEl);
+        }
+        
+        function updateNavUser() {
+            var token = localStorage.getItem('auraAuthToken');
+            if (token) {
+                // We use the token to show logged in state
+                var userEmail = '';
+                // Try to parse payload or fetch. For UI, we'll just show it toggles dropdown.
+                // We fetch verify-token to get email.
+                fetch('https://aura.devshubh.me/api/verify-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        document.getElementById('navUserEmail').textContent = data.email;
+                        userIcon.onclick = function(e) { e.preventDefault(); userDropdown.style.display = userDropdown.style.display === 'none' ? 'block' : 'none'; };
+                    } else {
+                        localStorage.removeItem('auraAuthToken');
+                        userIcon.onclick = function(e) { e.preventDefault(); openCheckoutPage(); };
+                    }
+                }).catch(() => { userIcon.onclick = function(e) { e.preventDefault(); openCheckoutPage(); }; });
+            } else {
+                userIcon.onclick = function(e) { e.preventDefault(); openCheckoutPage(); };
+            }
+        }
+        
+        updateNavUser();
+        window.addEventListener('storage', function(e) { if (e.key === 'auraAuthToken') updateNavUser(); });
+        
+        document.getElementById('navUserLogout').addEventListener('click', function() {
+            localStorage.removeItem('auraAuthToken');
+            userDropdown.style.display = 'none';
+            updateNavUser();
+            alert("Logged out successfully");
+        });
+    }
 });
 
 // ─── CROSS-FRAME ───

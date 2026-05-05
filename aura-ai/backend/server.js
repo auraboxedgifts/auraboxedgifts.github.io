@@ -96,6 +96,7 @@ app.post('/api/send-otp', async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
 
+        console.log(`[OTP] Generating OTP for ${email}`);
         otpStore.set(email, { otp, expiresAt });
 
         const mailOptions = {
@@ -140,7 +141,75 @@ app.post('/api/verify-otp', (req, res) => {
     if (record.otp !== otp) return res.status(400).json({ success: false, error: 'Invalid OTP' });
 
     otpStore.delete(email);
-    res.json({ success: true, message: 'OTP verified successfully' });
+    console.log(`[OTP] Successfully verified OTP for ${email}`);
+    const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({ success: true, message: 'OTP verified successfully', token });
+});
+
+// ─── JWT & User Endpoints ───
+app.post('/api/verify-token', (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) return res.status(400).json({ success: false, error: 'No token provided' });
+        
+        jwt.verify(token, JWT_SECRET, (err, decoded) => {
+            if (err) return res.status(401).json({ success: false, error: 'Invalid token' });
+            res.json({ success: true, email: decoded.email });
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.post('/api/get-user-info', (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) return res.status(400).json({ success: false, error: 'No token' });
+        
+        jwt.verify(token, JWT_SECRET, (err, decoded) => {
+            if (err) return res.status(401).json({ success: false, error: 'Invalid token' });
+            let users = {};
+            if (fs.existsSync(USERS_FILE)) {
+                users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+            }
+            res.json({ success: true, data: users[decoded.email] || null });
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Fetch failed' });
+    }
+});
+
+app.post('/api/resend-otp', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ success: false, error: 'Email is required' });
+
+        console.log(`[OTP] Resending OTP to ${email}`);
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = Date.now() + 10 * 60 * 1000;
+
+        otpStore.set(email, { otp, expiresAt });
+
+        const mailOptions = {
+            from: `"Aura Boxed Gifts" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: `${otp} is your new code`,
+            html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 40px auto; text-align: center;">
+                    <div style="font-size: 16px; font-weight: 500; margin-bottom: 40px;">Aura Boxed Gifts</div>
+                    <div style="font-size: 14px; margin-bottom: 20px;">Your new verification code:</div>
+                    <div style="font-size: 32px; font-weight: 600; letter-spacing: 8px; margin-bottom: 20px;">${otp}</div>
+                    <div style="font-size: 14px; color: #555;">This code expires in 10 minutes.</div>
+                </div>
+            `
+        };
+
+        res.json({ success: true, message: 'OTP resent successfully' });
+        emailTransporter.sendMail(mailOptions).catch(err => console.error('Background OTP Send Error:', err));
+    } catch (err) {
+        console.error('OTP Resend Error:', err);
+        res.status(500).json({ success: false, error: 'Failed to resend OTP.' });
+    }
 });
 
 // ─── App Config Endpoint ───
