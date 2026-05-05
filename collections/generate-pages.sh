@@ -59,10 +59,11 @@ for slug in bracelets pendants earrings jhumkas scrunchies claws hairbows rings 
       if [ -f "$img" ]; then
         fname=$(basename "$img")
         delay=$(echo "scale=2; $idx * 0.1" | bc)
+        price=$(( (RANDOM % 15 + 3) * 100 - 1 )) # Random price between 299 and 1799
         IMAGE_HTML+="      <div class=\"col-item col-item-reveal\" style=\"animation-delay: ${delay}s\">
         <img src=\"../images/web/${fname}\" alt=\"${name}\" loading=\"lazy\">
         <div class=\"col-item-overlay\">
-          <button class=\"btn-add-cart\" onclick=\"event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: '${name}', img: '../images/web/${fname}', price: 999}, '*');\"><i class=\"fas fa-shopping-cart\"></i> Add to Cart</button>
+          <button class=\"btn-add-cart\" onclick=\"event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: '${name}', img: '../images/web/${fname}', price: ${price}}, '*');\"><i class=\"fas fa-shopping-cart\"></i> Add to Cart</button>
           <div class=\"col-item-zoom\"><i class=\"fas fa-search-plus\"></i></div>
         </div>
       </div>
@@ -99,6 +100,10 @@ for slug in bracelets pendants earrings jhumkas scrunchies claws hairbows rings 
     <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;" class="col-nav-back"><i class="fas fa-arrow-left"></i> Back</a>
     <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;" class="col-nav-logo"><img src="../images/web/auraboxedgifts.png" alt="Aura Boxed Gifts"></a>
     <div class="col-nav-links">
+      <a href="#" id="navCartIcon" aria-label="Cart" style="position: relative; margin-right: 15px;">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="nav-cart-badge" id="navCartBadge">0</span>
+      </a>
       <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;">Home</a>
       <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html#collections'; } return false;">Collections</a>
       <a href="https://www.instagram.com/aura_boxedgifts" target="_blank">Instagram</a>
@@ -130,6 +135,27 @@ ${IMAGE_HTML}    </div>
     <p>&copy; 2026 <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;">Aura Boxed Gifts</a>. All rights reserved. Made by <a href="https://devshubh.me" target="_blank" style="color: var(--rose-gold); text-decoration: underline;">SS</a></p>
   </footer>
 
+  <!-- ═══ CART SIDEBAR ═══ -->
+  <div class="cart-overlay" id="cartOverlay"></div>
+  <div class="cart-sidebar" id="cartSidebar">
+    <div class="cart-header">
+      <h3>Your Cart</h3>
+      <button class="cart-close" id="cartClose">&times;</button>
+    </div>
+    <div class="cart-items" id="cartItems">
+      <!-- Items dynamically populated here -->
+    </div>
+    <div class="cart-footer">
+      <div class="cart-total">
+        <span>Total:</span>
+        <span id="cartTotalAmt">₹0</span>
+      </div>
+      <button class="btn-primary" id="btnCheckout" style="width:100%; margin-top:15px; border-radius:50px;">Proceed to Checkout</button>
+    </div>
+  </div>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="../cart.js"></script>
   <script src="lightbox.js"></script>
 </body>
 </html>

@@ -24,6 +24,10 @@
     <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;" class="col-nav-back"><i class="fas fa-arrow-left"></i> Back</a>
     <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;" class="col-nav-logo"><img src="../images/web/auraboxedgifts.png" alt="Aura Boxed Gifts"></a>
     <div class="col-nav-links">
+      <a href="#" id="navCartIcon" aria-label="Cart" style="position: relative; margin-right: 15px;">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="nav-cart-badge" id="navCartBadge">0</span>
+      </a>
       <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;">Home</a>
       <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html#collections'; } return false;">Collections</a>
       <a href="https://www.instagram.com/aura_boxedgifts" target="_blank">Instagram</a>
@@ -43,35 +47,35 @@
       <div class="col-item col-item-reveal" style="animation-delay: 0s">
         <img src="../images/web/jwellery-case-1.jpeg" alt="Rings" loading="lazy">
         <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Rings', img: '../images/web/jwellery-case-1.jpeg', price: 999}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Rings', img: '../images/web/jwellery-case-1.jpeg', price: 399}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
       </div>
       <div class="col-item col-item-reveal" style="animation-delay: .1s">
         <img src="../images/web/jwellery-case-2.jpeg" alt="Rings" loading="lazy">
         <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Rings', img: '../images/web/jwellery-case-2.jpeg', price: 999}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Rings', img: '../images/web/jwellery-case-2.jpeg', price: 1699}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
       </div>
       <div class="col-item col-item-reveal" style="animation-delay: .2s">
         <img src="../images/web/jwellery-case-3.jpeg" alt="Rings" loading="lazy">
         <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Rings', img: '../images/web/jwellery-case-3.jpeg', price: 999}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Rings', img: '../images/web/jwellery-case-3.jpeg', price: 899}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
       </div>
       <div class="col-item col-item-reveal" style="animation-delay: .3s">
         <img src="../images/web/jwellery-case-4.jpeg" alt="Rings" loading="lazy">
         <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Rings', img: '../images/web/jwellery-case-4.jpeg', price: 999}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Rings', img: '../images/web/jwellery-case-4.jpeg', price: 1599}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
       </div>
       <div class="col-item col-item-reveal" style="animation-delay: .4s">
         <img src="../images/web/jwellery-case-5.jpeg" alt="Rings" loading="lazy">
         <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Rings', img: '../images/web/jwellery-case-5.jpeg', price: 999}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Rings', img: '../images/web/jwellery-case-5.jpeg', price: 899}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
       </div>
@@ -90,6 +94,27 @@
     <p>&copy; 2026 <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;">Aura Boxed Gifts</a>. All rights reserved. Made by <a href="https://devshubh.me" target="_blank" style="color: var(--rose-gold); text-decoration: underline;">SS</a></p>
   </footer>
 
+  <!-- ═══ CART SIDEBAR ═══ -->
+  <div class="cart-overlay" id="cartOverlay"></div>
+  <div class="cart-sidebar" id="cartSidebar">
+    <div class="cart-header">
+      <h3>Your Cart</h3>
+      <button class="cart-close" id="cartClose">&times;</button>
+    </div>
+    <div class="cart-items" id="cartItems">
+      <!-- Items dynamically populated here -->
+    </div>
+    <div class="cart-footer">
+      <div class="cart-total">
+        <span>Total:</span>
+        <span id="cartTotalAmt">₹0</span>
+      </div>
+      <button class="btn-primary" id="btnCheckout" style="width:100%; margin-top:15px; border-radius:50px;">Proceed to Checkout</button>
+    </div>
+  </div>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="../cart.js"></script>
   <script src="lightbox.js"></script>
 </body>
 </html>

@@ -4,8 +4,8 @@ let cart = JSON.parse(localStorage.getItem('aura_cart')) || [];
 const cartSidebar = document.getElementById('cartSidebar');
 const cartOverlay = document.getElementById('cartOverlay');
 const cartClose = document.getElementById('cartClose');
-const floatingCart = document.getElementById('floatingCart');
-const cartBadge = document.getElementById('cartBadge');
+const navCartIcon = document.getElementById('navCartIcon');
+const navCartBadge = document.getElementById('navCartBadge');
 const cartItemsContainer = document.getElementById('cartItems');
 const cartTotalAmt = document.getElementById('cartTotalAmt');
 const btnCheckout = document.getElementById('btnCheckout');
@@ -15,7 +15,9 @@ function saveCart() {
 }
 
 function renderCart() {
-    cartBadge.textContent = cart.length;
+    if (navCartBadge) navCartBadge.textContent = cart.length;
+    if (!cartItemsContainer) return; // If script runs on a page without full cart DOM
+    
     cartItemsContainer.innerHTML = '';
     
     let total = 0;
@@ -50,8 +52,10 @@ function addToCart(itemObj) {
     renderCart();
     
     // Animate badge
-    cartBadge.style.transform = 'scale(1.5)';
-    setTimeout(() => { cartBadge.style.transform = 'scale(1)'; }, 300);
+    if (navCartBadge) {
+        navCartBadge.style.transform = 'scale(1.5)';
+        setTimeout(() => { navCartBadge.style.transform = 'scale(1)'; }, 300);
+    }
 }
 
 window.removeFromCart = function(index) {
@@ -61,35 +65,43 @@ window.removeFromCart = function(index) {
 };
 
 // UI Listeners
-floatingCart.addEventListener('click', () => {
-    cartSidebar.classList.add('active');
-    cartOverlay.classList.add('active');
-});
-
-function closeCart() {
-    cartSidebar.classList.remove('active');
-    cartOverlay.classList.remove('active');
+if (navCartIcon) {
+    navCartIcon.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (cartSidebar && cartOverlay) {
+            cartSidebar.classList.add('active');
+            cartOverlay.classList.add('active');
+        }
+    });
 }
 
-cartClose.addEventListener('click', closeCart);
-cartOverlay.addEventListener('click', closeCart);
+function closeCart() {
+    if (cartSidebar) cartSidebar.classList.remove('active');
+    if (cartOverlay) cartOverlay.classList.remove('active');
+}
+
+if (cartClose) cartClose.addEventListener('click', closeCart);
+if (cartOverlay) cartOverlay.addEventListener('click', closeCart);
 
 // Listen for Add To Cart from collection iframes
 window.addEventListener('message', (e) => {
     if (e.data && e.data.type === 'addToCart') {
         addToCart(e.data);
         // Optionally auto-open cart
-        cartSidebar.classList.add('active');
-        cartOverlay.classList.add('active');
+        if (cartSidebar && cartOverlay) {
+            cartSidebar.classList.add('active');
+            cartOverlay.classList.add('active');
+        }
     }
 });
 
 // Razorpay Checkout Flow
-btnCheckout.addEventListener('click', async () => {
-    if (cart.length === 0) {
-        alert('Your cart is empty!');
-        return;
-    }
+if (btnCheckout) {
+    btnCheckout.addEventListener('click', async () => {
+        if (cart.length === 0) {
+            alert('Your cart is empty!');
+            return;
+        }
     
     // Create checkout form modal or prompt
     const customerName = prompt("Please enter your Name:");
@@ -173,7 +185,8 @@ btnCheckout.addEventListener('click', async () => {
         btnCheckout.textContent = "Proceed to Checkout";
         btnCheckout.disabled = false;
     }
-});
+    });
+}
 
 // Init
 renderCart();
