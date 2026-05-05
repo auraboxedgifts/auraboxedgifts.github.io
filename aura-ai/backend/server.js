@@ -89,8 +89,11 @@ app.post('/api/send-otp', async (req, res) => {
             `
         };
 
-        await emailTransporter.sendMail(mailOptions);
+        // Send response immediately to prevent client-side "Failed to fetch" if server restarts or delays
         res.json({ success: true, message: 'OTP sent successfully' });
+
+        // Send email in the background
+        emailTransporter.sendMail(mailOptions).catch(err => console.error('Background OTP Send Error:', err));
     } catch (err) {
         console.error('OTP Send Error:', err);
         res.status(500).json({ success: false, error: 'Failed to send OTP. Ensure email config is correct.' });
