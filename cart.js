@@ -207,7 +207,8 @@ function openCheckoutPage() {
 
     // OTP Logic
     var verifiedEmail = '';
-    document.getElementById('ckSendOtpBtn').addEventListener('click', async function() {
+    document.getElementById('ckSendOtpBtn').addEventListener('click', async function(e) {
+        e.preventDefault();
         var em = document.getElementById('ckEmail').value;
         if(!em) return alert('Please enter email');
         this.textContent = 'Sending...'; this.disabled = true;
@@ -229,7 +230,8 @@ function openCheckoutPage() {
         document.getElementById('ckOtpForm').style.display = 'block';
     });
 
-    document.getElementById('ckVerifyOtpBtn').addEventListener('click', async function() {
+    document.getElementById('ckVerifyOtpBtn').addEventListener('click', async function(e) {
+        e.preventDefault();
         var em = document.getElementById('ckEmail').value;
         var otp = document.getElementById('ckOtpInput').value;
         if(!otp) return alert('Please enter OTP');
@@ -250,7 +252,8 @@ function openCheckoutPage() {
     });
 
     // Stepper logic
-    document.getElementById('ckDeliveryBtn').addEventListener('click', function() {
+    document.getElementById('ckDeliveryBtn').addEventListener('click', function(e) {
+        e.preventDefault();
         if(!document.getElementById('ckFirstName').value || !document.getElementById('ckAddress').value || !document.getElementById('ckCity').value || !document.getElementById('ckPhone').value) {
             return alert('Please fill in required delivery fields.');
         }
@@ -259,14 +262,16 @@ function openCheckoutPage() {
         this.style.display = 'none'; // hide continue btn
     });
 
-    document.getElementById('ckShippingBtn').addEventListener('click', function() {
+    document.getElementById('ckShippingBtn').addEventListener('click', function(e) {
+        e.preventDefault();
         document.getElementById('stepPayment').style.opacity = '1';
         document.getElementById('stepPayment').style.pointerEvents = 'auto';
         this.style.display = 'none'; // hide continue btn
     });
 
     // Pay now logic
-    document.getElementById('ckPayNowBtn').addEventListener('click', function() {
+    document.getElementById('ckPayNowBtn').addEventListener('click', function(e) {
+        e.preventDefault();
         var firstName = document.getElementById('ckFirstName').value;
         var lastName = document.getElementById('ckLastName').value;
         var address = document.getElementById('ckAddress').value;
