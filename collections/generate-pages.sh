@@ -1,0 +1,123 @@
+#!/bin/bash
+# Generate collection pages from image data
+
+COLLECTIONS_DIR="/home/shubharthak/Desktop/auraboxedgifts/collections"
+IMAGES_DIR="/home/shubharthak/Desktop/auraboxedgifts/images/web"
+
+declare -A COL_NAMES
+COL_NAMES[bracelets]="Bracelets"
+COL_NAMES[pendants]="Pendants"
+COL_NAMES[earrings]="Earrings"
+COL_NAMES[jhumkas]="Jhumkas"
+COL_NAMES[scrunchies]="Scrunchies"
+COL_NAMES[claws]="Claws"
+COL_NAMES[hairbows]="Hair Bows"
+COL_NAMES[rings]="Rings"
+COL_NAMES[keychains]="Keychains"
+COL_NAMES[makeup]="Makeup / Chocolates"
+COL_NAMES[luxury-hampers]="Luxury Hampers"
+COL_NAMES[affordable-hampers]="Affordable Hampers"
+
+declare -A COL_DESC
+COL_DESC[bracelets]="Handcrafted charm bracelets with crystal beads and silver accents. Each piece tells a unique story."
+COL_DESC[pendants]="Elegant pendants featuring butterfly, heart, and floral designs in gold and rose-gold tones."
+COL_DESC[earrings]="Statement earrings from delicate studs to bold drop designs. Perfect for every occasion."
+COL_DESC[jhumkas]="Traditional Indian jhumka earrings with a modern twist. Celebrate heritage in style."
+COL_DESC[scrunchies]="Luxurious silk and organza scrunchies with tulip flower accents. Gentle on your hair, gorgeous to look at."
+COL_DESC[claws]="Trendy hair claw clips in floral and butterfly designs. Effortless hairstyles, maximum charm."
+COL_DESC[hairbows]="Adorable alligator hair clips and bows. Add a playful touch to any hairstyle."
+COL_DESC[rings]="Beautiful rings and jewellery cases for the accessory lover. Store and wear in style."
+COL_DESC[keychains]="Cute mini bags and keychains that make perfect everyday accessories or thoughtful gifts."
+COL_DESC[makeup]="Lip gloss, lip oil tints, eyeshadow palettes, and more. Beauty essentials curated with care."
+COL_DESC[luxury-hampers]="Premium gift hampers with curated selections of jewellery, skincare, and treats. The ultimate gift."
+COL_DESC[affordable-hampers]="Thoughtful gift hampers at wallet-friendly prices. Because love doesn't need a big budget."
+
+declare -A COL_IMAGES
+COL_IMAGES[bracelets]="bracelets"
+COL_IMAGES[pendants]="pendents"
+COL_IMAGES[earrings]="earings"
+COL_IMAGES[jhumkas]="earings"
+COL_IMAGES[scrunchies]="scrunchies"
+COL_IMAGES[claws]="hairclaws"
+COL_IMAGES[hairbows]="aligator-hairpins"
+COL_IMAGES[rings]="jwellery-case"
+COL_IMAGES[keychains]="mini-bags"
+COL_IMAGES[makeup]="lip-gloss lip-oil-tint eyeshadow-palette highlighter facemask-sheets"
+COL_IMAGES[luxury-hampers]="eyeshadow-palette facemask-sheets highlighter jwellery-case"
+COL_IMAGES[affordable-hampers]="lip-gloss lip-oil-tint mini-bags"
+
+for slug in bracelets pendants earrings jhumkas scrunchies claws hairbows rings keychains makeup luxury-hampers affordable-hampers; do
+  name="${COL_NAMES[$slug]}"
+  desc="${COL_DESC[$slug]}"
+  prefixes="${COL_IMAGES[$slug]}"
+  
+  # Build image list
+  IMAGE_HTML=""
+  for prefix in $prefixes; do
+    for img in "$IMAGES_DIR"/${prefix}-*.jpeg; do
+      if [ -f "$img" ]; then
+        fname=$(basename "$img")
+        IMAGE_HTML+="      <div class=\"col-item\">
+        <img src=\"../images/web/${fname}\" alt=\"${name}\" loading=\"lazy\">
+        <div class=\"col-item-overlay\"><div class=\"col-item-zoom\"><i class=\"fas fa-search-plus\"></i></div></div>
+      </div>
+"
+      fi
+    done
+  done
+
+  cat > "$COLLECTIONS_DIR/${slug}.html" << HEREDOC
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${name} — Aura Boxed Gifts</title>
+  <meta name="description" content="${desc}">
+  <link rel="stylesheet" href="collection.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="icon" type="image/png" href="../images/web/auraboxedgifts.png">
+</head>
+<body>
+  <nav class="col-nav">
+    <a href="../index.html" class="col-nav-back"><i class="fas fa-arrow-left"></i> Back</a>
+    <a href="../index.html" class="col-nav-logo"><img src="../images/web/auraboxedgifts.png" alt="Aura Boxed Gifts"></a>
+    <div class="col-nav-links">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#collections">Collections</a>
+      <a href="https://www.instagram.com/aura_boxedgifts" target="_blank">Instagram</a>
+    </div>
+  </nav>
+
+  <section class="col-hero">
+    <p class="col-hero-label">Collection</p>
+    <h1 class="col-hero-title">${name}</h1>
+    <p class="col-hero-desc">${desc}</p>
+    <div class="col-hero-divider"></div>
+    <p class="col-breadcrumb"><a href="../index.html">Home</a> &nbsp;/&nbsp; <a href="../index.html#collections">Collections</a> &nbsp;/&nbsp; ${name}</p>
+  </section>
+
+  <section class="col-gallery">
+    <div class="col-grid">
+${IMAGE_HTML}    </div>
+  </section>
+
+  <section class="col-cta">
+    <h2 class="col-cta-title">Love what you see?</h2>
+    <p class="col-cta-text">DM us on Instagram to order or customize your gift. We'd love to help!</p>
+    <a href="https://www.instagram.com/aura_boxedgifts?utm_source=qr&igsh=MTYwbTYzNjJ6anUwdA==" target="_blank" class="col-btn-ig">
+      <i class="fab fa-instagram"></i> Order on Instagram
+    </a>
+  </section>
+
+  <footer class="col-footer">
+    <p>&copy; 2026 <a href="../index.html">Aura Boxed Gifts</a>. All rights reserved. Made with 💝</p>
+  </footer>
+
+  <script src="lightbox.js"></script>
+</body>
+</html>
+HEREDOC
+
+  echo "✅ Created ${slug}.html"
+done
