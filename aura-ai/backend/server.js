@@ -137,7 +137,9 @@ const SYSTEM_PROMPT = `You are Aura AI, a warm, friendly, and helpful voice assi
 4. For orders, direct them to DM on Instagram @aura_boxedgifts
 5. If someone wants to leave a message or make a custom order request, use the send_message function
 6. Use the browse_collection function when users want to see a specific collection
-7. Be enthusiastic about the products and the gifting experience
+7. Use the navigate_home function to bring users back to the main page if they ask
+8. Use the scroll_to_section function to show them the gallery, about us, or contact info
+9. Be enthusiastic about the products and the gifting experience
 
 **Gift Suggestions by Occasion:**
 - Birthday: Luxury hampers, bracelet + pendant combo
@@ -199,6 +201,25 @@ wss.on('connection', (clientWs) => {
                                 }
                             },
                             required: ['collection']
+                        }
+                    },
+                    {
+                        name: 'navigate_home',
+                        description: 'Navigate the user back to the main home page from a collection view. Use when a user wants to go back to the home page or exit a collection.',
+                    },
+                    {
+                        name: 'scroll_to_section',
+                        description: 'Scroll the web page to a specific section. Use when a user wants to see the about section, gallery, contact details, or main collections overview.',
+                        parameters: {
+                            type: 'object',
+                            properties: {
+                                section: {
+                                    type: 'string',
+                                    enum: ['home', 'collections', 'gallery', 'about', 'contact'],
+                                    description: 'The section to scroll to'
+                                }
+                            },
+                            required: ['section']
                         }
                     }
                 ]
@@ -265,6 +286,25 @@ wss.on('connection', (clientWs) => {
                                         id: fc.id,
                                         name: fc.name,
                                         response: { result: `Navigated user to ${collection} collection page` }
+                                    }]
+                                });
+                            } else if (fc.name === 'navigate_home') {
+                                clientWs.send(JSON.stringify({ type: 'navigate_home' }));
+                                session.sendToolResponse({
+                                    functionResponses: [{
+                                        id: fc.id,
+                                        name: fc.name,
+                                        response: { result: `Navigated user back to home page` }
+                                    }]
+                                });
+                            } else if (fc.name === 'scroll_to_section') {
+                                const { section } = fc.args;
+                                clientWs.send(JSON.stringify({ type: 'scroll_to_section', section: section }));
+                                session.sendToolResponse({
+                                    functionResponses: [{
+                                        id: fc.id,
+                                        name: fc.name,
+                                        response: { result: `Scrolled user to ${section} section` }
                                     }]
                                 });
                             }

@@ -175,6 +175,26 @@ function handleAuraBackendMessage(message) {
                 openCollectionOverlay(message.url);
             }
             break;
+        case 'navigate_home':
+            closeCollectionOverlay();
+            break;
+        case 'scroll_to_section':
+            closeCollectionOverlay(); // Ensure we are on the main page
+            setTimeout(() => {
+                const sectionMap = {
+                    'home': 'home',
+                    'collections': 'collections',
+                    'gallery': 'gallery',
+                    'about': 'about',
+                    'contact': 'contact'
+                };
+                const targetId = sectionMap[message.section];
+                if (targetId) {
+                    const el = document.getElementById(targetId);
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }
+            }, 100);
+            break;
         case 'error':
             console.error('Aura AI error:', message.error);
             updateAuraStatus('Error', 'error');
