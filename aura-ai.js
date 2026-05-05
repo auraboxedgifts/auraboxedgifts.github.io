@@ -501,16 +501,7 @@ function openCollectionOverlay(url) {
                     auraWs.send(JSON.stringify(e.data));
                 }
             }
-            if (e.data && e.data.type === 'addToCart') {
-                if (typeof addToCart === 'function') {
-                    addToCart(e.data);
-                }
-            }
-            if (e.data && e.data.type === 'openCart') {
-                var cs = document.getElementById('cartSidebar');
-                var co = document.getElementById('cartOverlay');
-                if (cs && co) { cs.classList.add('active'); co.classList.add('active'); }
-            }
+            // addToCart and openCart are handled by cart.js — do NOT duplicate here
         });
     }
     // Only add ../ if it's not already there, depending on context

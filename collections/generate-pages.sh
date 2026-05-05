@@ -186,42 +186,8 @@ HEREDOC_HERO
     <p>&copy; 2026 <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;">Aura Boxed Gifts</a>. All rights reserved. Made by <a href="https://devshubh.me" target="_blank" style="color: var(--rose-gold); text-decoration: underline;">SS</a></p>
   </footer>
 
-  <!-- ═══ CART NOTIFICATION POPUP ═══ -->
-  <div class="cart-notif" id="cartNotif">
-    <div class="cart-notif-inner">
-      <div class="cart-notif-header">
-        <span><i class="fas fa-check-circle"></i> Item added to your cart</span>
-        <button class="cart-notif-close" onclick="document.getElementById('cartNotif').classList.remove('active')">&times;</button>
-      </div>
-      <div class="cart-notif-product" id="cartNotifProduct"></div>
-      <div class="cart-notif-actions">
-        <button class="btn-view-cart" id="btnViewCart">View cart (<span id="cartNotifCount">1</span>)</button>
-        <button class="btn-checkout-notif" id="btnCheckoutNotif">Check out</button>
-        <a href="#" class="btn-continue" onclick="document.getElementById('cartNotif').classList.remove('active'); return false;">Continue shopping</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══ CART SIDEBAR ═══ -->
-  <div class="cart-overlay" id="cartOverlay"></div>
-  <div class="cart-sidebar" id="cartSidebar">
-    <div class="cart-header">
-      <h3>Your Cart</h3>
-      <button class="cart-close" id="cartClose">&times;</button>
-    </div>
-    <div class="cart-items" id="cartItems">
-      <!-- Items dynamically populated here -->
-    </div>
-    <div class="cart-footer">
-      <div class="cart-total">
-        <span>Estimated total</span>
-        <span id="cartTotalAmt">Rs. 0.00</span>
-      </div>
-      <p class="cart-tax-note">Taxes, discounts and shipping calculated at checkout.</p>
-      <button class="btn-primary" id="btnCheckout" style="width:100%; margin-top:15px; border-radius:50px;">Check out</button>
-    </div>
-  </div>
-
+  <!-- Cart overlay is created dynamically by cart.js -->
+  <link rel="stylesheet" href="../style.css">
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script src="../cart.js"></script>
   <script src="lightbox.js"></script>

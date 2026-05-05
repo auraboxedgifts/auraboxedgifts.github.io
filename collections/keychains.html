@@ -43,25 +43,25 @@
 
   <section class="col-gallery">
     <div class="col-grid">
-      <div class="col-item col-item-reveal" style="animation-delay: 0s" data-idx="0" data-name="Mini Bag Keychain #1" data-price="699" data-img="../images/web/mini-bags-1.jpeg">
+      <div class="col-item col-item-reveal" style="animation-delay: 0s" data-idx="0" data-name="Mini Bag Keychain #1" data-price="499" data-img="../images/web/mini-bags-1.jpeg">
         <div class="col-item-img-wrapper">
           <img src="../images/web/mini-bags-1.jpeg" alt="Mini Bag Keychain #1" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
           <h3 class="col-item-title">Mini Bag Keychain #1</h3>
-          <p class="col-item-price">Rs. 699.00</p>
+          <p class="col-item-price">Rs. 499.00</p>
           <button class="btn-add-cart" data-add-idx="0"><i class="fas fa-shopping-cart"></i> Add to cart</button>
         </div>
       </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .1s" data-idx="1" data-name="Mini Bag Keychain #2" data-price="499" data-img="../images/web/mini-bags-2.jpeg">
+      <div class="col-item col-item-reveal" style="animation-delay: .1s" data-idx="1" data-name="Mini Bag Keychain #2" data-price="999" data-img="../images/web/mini-bags-2.jpeg">
         <div class="col-item-img-wrapper">
           <img src="../images/web/mini-bags-2.jpeg" alt="Mini Bag Keychain #2" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
           <h3 class="col-item-title">Mini Bag Keychain #2</h3>
-          <p class="col-item-price">Rs. 499.00</p>
+          <p class="col-item-price">Rs. 999.00</p>
           <button class="btn-add-cart" data-add-idx="1"><i class="fas fa-shopping-cart"></i> Add to cart</button>
         </div>
       </div>
@@ -88,42 +88,8 @@
     <p>&copy; 2026 <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;">Aura Boxed Gifts</a>. All rights reserved. Made by <a href="https://devshubh.me" target="_blank" style="color: var(--rose-gold); text-decoration: underline;">SS</a></p>
   </footer>
 
-  <!-- ═══ CART NOTIFICATION POPUP ═══ -->
-  <div class="cart-notif" id="cartNotif">
-    <div class="cart-notif-inner">
-      <div class="cart-notif-header">
-        <span><i class="fas fa-check-circle"></i> Item added to your cart</span>
-        <button class="cart-notif-close" onclick="document.getElementById('cartNotif').classList.remove('active')">&times;</button>
-      </div>
-      <div class="cart-notif-product" id="cartNotifProduct"></div>
-      <div class="cart-notif-actions">
-        <button class="btn-view-cart" id="btnViewCart">View cart (<span id="cartNotifCount">1</span>)</button>
-        <button class="btn-checkout-notif" id="btnCheckoutNotif">Check out</button>
-        <a href="#" class="btn-continue" onclick="document.getElementById('cartNotif').classList.remove('active'); return false;">Continue shopping</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══ CART SIDEBAR ═══ -->
-  <div class="cart-overlay" id="cartOverlay"></div>
-  <div class="cart-sidebar" id="cartSidebar">
-    <div class="cart-header">
-      <h3>Your Cart</h3>
-      <button class="cart-close" id="cartClose">&times;</button>
-    </div>
-    <div class="cart-items" id="cartItems">
-      <!-- Items dynamically populated here -->
-    </div>
-    <div class="cart-footer">
-      <div class="cart-total">
-        <span>Estimated total</span>
-        <span id="cartTotalAmt">Rs. 0.00</span>
-      </div>
-      <p class="cart-tax-note">Taxes, discounts and shipping calculated at checkout.</p>
-      <button class="btn-primary" id="btnCheckout" style="width:100%; margin-top:15px; border-radius:50px;">Check out</button>
-    </div>
-  </div>
-
+  <!-- Cart overlay is created dynamically by cart.js -->
+  <link rel="stylesheet" href="../style.css">
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script src="../cart.js"></script>
   <script src="lightbox.js"></script>
