@@ -114,7 +114,7 @@ HEREDOC_START
 
   # Write the dynamic parts
   cat >> "$COLLECTIONS_DIR/${slug}.html" << HEREDOC_DYN
-  <title>${name} — Aura Boxed Gifts</title>
+  <title>Aura Boxed Gifts</title>
   <meta name="description" content="${desc}">
 HEREDOC_DYN
 

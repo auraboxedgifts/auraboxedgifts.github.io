@@ -72,15 +72,19 @@ app.post('/api/send-otp', async (req, res) => {
         otpStore.set(email, { otp, expiresAt });
 
         const mailOptions = {
-            from: process.env.EMAIL_USER,
+            from: `"Aura Boxed Gifts" <${process.env.EMAIL_USER}>`,
             to: email,
-            subject: 'Aura Boxed Gifts - Your Login OTP',
+            subject: `${otp} is your code`,
             html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; text-align: center;">
-                    <h2>Your OTP for Aura Boxed Gifts</h2>
-                    <p>Please use the following 6-digit code to log in:</p>
-                    <h1 style="color: #b76e79; letter-spacing: 5px;">${otp}</h1>
-                    <p>This code will expire in 10 minutes.</p>
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 40px auto; text-align: center; color: #333;">
+                    <div style="font-size: 16px; font-weight: 500; margin-bottom: 40px;">Aura Boxed Gifts</div>
+                    <div style="font-size: 14px; margin-bottom: 20px;">Your verification code:</div>
+                    <div style="font-size: 32px; font-weight: 600; letter-spacing: 8px; margin-bottom: 20px; color: #111;">${otp}</div>
+                    <div style="font-size: 14px; color: #555; margin-bottom: 60px;">This code can only be used once. It expires in 10 minutes.</div>
+                    <div style="font-size: 12px; color: #999;">
+                        &copy; Aura Boxed Gifts<br><br>
+                        <a href="https://auraboxedgifts.in" style="color: #666; text-decoration: none;">Privacy policy</a>
+                    </div>
                 </div>
             `
         };
