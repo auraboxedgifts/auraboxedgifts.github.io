@@ -23,14 +23,15 @@ const app = express();
 const PORT = process.env.PORT || 5013;
 
 const allowedOrigins = [
-    'https://5294-220-253-80-249.ngrok-free.app/',
     'http://localhost:8000',
     'http://localhost:5013',
-    // 'http://localhost:5500',
-    // 'http://127.0.0.1:5500',
-    // 'http://localhost:3000',
-    // 'https://auraboxedgifts.github.io',
-    // 'https://aura.devshubh.me'
+    'http://localhost:5500',
+    'http://127.0.0.1:5500',
+    'http://localhost:3000',
+    'https://auraboxedgifts.github.io',
+    'https://aura.devshubh.me',
+    'https://auraboxedgifts.in',
+    'https://www.auraboxedgifts.in'
 ];
 
 app.use(cors({
