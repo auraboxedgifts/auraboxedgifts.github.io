@@ -194,7 +194,7 @@ app.post('/api/verify-payment', async (req, res) => {
         if (expectedSignature === razorpay_signature) {
             // Send email notification!
             let cartText = cartDetails.map(item => `- ${item.item}: ₹${item.price}`).join('<br>');
-            const emailMsg = `Payment successful! Order ID: ${razorpay_order_id}<br><br><b>Items:</b><br>${cartText}<br><br><b>Total Amount Paid:</b> ₹${cartDetails.reduce((s, i) => s + i.price, 0)}<br><br><b>Customer Info:</b><br>Name: ${customer.name}<br>Email: ${customer.email}<br>Phone: ${customer.phone}`;
+            const emailMsg = `Payment successful! Order ID: ${razorpay_order_id}<br><br><b>Items:</b><br>${cartText}<br><br><b>Total Amount Paid:</b> ₹${cartDetails.reduce((s, i) => s + i.price, 0)}<br><br><b>Customer Info:</b><br>Name: ${customer.name}<br>Email: ${customer.email}<br>Phone: ${customer.phone}<br><b>Shipping Address:</b><br>${customer.address}`;
             
             await sendEmailNotification(emailMsg, customer.name, 'Razorpay Order');
             
