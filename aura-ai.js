@@ -172,7 +172,8 @@ function handleAuraBackendMessage(message) {
         case 'navigate':
             // Open collection page in overlay so AI doesn't disconnect
             if (message.url) {
-                openCollectionOverlay(message.url);
+                const separator = message.url.includes('?') ? '&' : '?';
+                openCollectionOverlay(message.url + separator + 'autoplay=true');
             }
             break;
         case 'navigate_home':
