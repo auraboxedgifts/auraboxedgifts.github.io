@@ -120,7 +120,7 @@ function openCheckoutPage() {
         '<!-- STEP 2: DELIVERY -->' +
         '<section class="ck-section" id="stepDelivery" style="opacity: 0.4; pointer-events: none;">' +
           '<h3>Delivery</h3>' +
-          '<div class="ck-field"><label>Country/Region</label><select id="ckCountry"><option>India</option></select></div>' +
+          '<div class="ck-field"><label>Country/Region</label><select id="ckCountry" style="padding-top: 24px; padding-bottom: 4px;"><option>India</option></select></div>' +
           '<div class="ck-row">' +
             '<div class="ck-field ck-half"><input type="text" id="ckFirstName" placeholder="First name"></div>' +
             '<div class="ck-field ck-half"><input type="text" id="ckLastName" placeholder="Last name"></div>' +
@@ -133,7 +133,13 @@ function openCheckoutPage() {
             '<div class="ck-field"><input type="text" id="ckPincode" placeholder="PIN code"></div>' +
           '</div>' +
           '<div class="ck-field"><input type="tel" id="ckPhone" placeholder="Phone"></div>' +
-          '<button class="ck-pay-now-btn" id="ckDeliveryBtn" style="padding: 12px; margin-top: 10px;">Continue to Shipping</button>' +
+          '<div class="ck-field">' +
+            '<div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">' +
+              '<input type="checkbox" id="ckSaveInfo" style="width: 16px; height: 16px; accent-color: #b76e79; cursor: pointer;">' +
+              '<label for="ckSaveInfo" style="position: static; font-size: 13px; color: #555; pointer-events: auto; cursor: pointer;">Save this information for next time</label>' +
+            '</div>' +
+          '</div>' +
+          '<button class="ck-btn ck-btn-dark" id="ckDeliveryBtn" style="margin-top: 20px;">Continue to Shipping</button>' +
         '</section>' +
 
         '<!-- STEP 3: SHIPPING -->' +
@@ -185,6 +191,19 @@ function openCheckoutPage() {
                     if (window.google && window.google.maps && window.google.maps.places) {
                         try {
                             if (window.google.maps.places.PlaceAutocompleteElement) {
+                                // Inject custom CSS to make Web Component match standard inputs
+                                var compStyle = document.createElement('style');
+                                compStyle.innerHTML = `
+                                    #ckAddress { width: 100%; display: block; color-scheme: light; }
+                                    #ckAddress::part(input) {
+                                        width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 4px;
+                                        font-size: 14px; font-family: inherit; background-color: #fff; color: #333;
+                                        box-sizing: border-box; box-shadow: none; outline: none; transition: border-color 0.2s;
+                                    }
+                                    #ckAddress::part(input):focus { border-color: #333; }
+                                `;
+                                document.head.appendChild(compStyle);
+
                                 var autocomplete = new window.google.maps.places.PlaceAutocompleteElement({
                                     componentRestrictions: { country: ['in'] }
                                 });
@@ -195,18 +214,28 @@ function openCheckoutPage() {
                                 autocomplete.addEventListener('gmp-placeselect', async function(event) {
                                     var place = event.place;
                                     if (!place) return;
-                                    await place.fetchFields({ fields: ['addressComponents'] });
-                                    var city='', state='', pin='';
-                                    if(place.addressComponents) {
-                                        place.addressComponents.forEach(function(c) {
-                                            if(c.types.includes('locality')) city = c.longText;
-                                            if(c.types.includes('administrative_area_level_1')) state = c.longText;
-                                            if(c.types.includes('postal_code')) pin = c.longText;
-                                        });
+                                    try {
+                                        await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
+                                        var city='', state='', pin='';
+                                        if(place.addressComponents) {
+                                            place.addressComponents.forEach(function(c) {
+                                                const types = c.types || [];
+                                                if(types.includes('locality') || types.includes('postal_town')) city = c.longText;
+                                                if(types.includes('administrative_area_level_1')) state = c.longText;
+                                                if(types.includes('postal_code')) pin = c.longText;
+                                            });
+                                        }
+                                        if(city) document.getElementById('ckCity').value = city;
+                                        if(state) document.getElementById('ckState').value = state;
+                                        if(pin) document.getElementById('ckPincode').value = pin;
+                                        
+                                        // Update the input value to the full formatted address for backend
+                                        if (place.formattedAddress) {
+                                            document.getElementById('ckAddress').inputValue = place.formattedAddress;
+                                        }
+                                    } catch (fetchErr) {
+                                        console.error('Failed to fetch place details:', fetchErr);
                                     }
-                                    if(city) document.getElementById('ckCity').value = city;
-                                    if(state) document.getElementById('ckState').value = state;
-                                    if(pin) document.getElementById('ckPincode').value = pin;
                                 });
                             } else {
                                 var input = document.getElementById('ckAddress');
@@ -281,14 +310,58 @@ function openCheckoutPage() {
         this.textContent = 'Verify OTP'; this.disabled = false;
     });
 
+    // Populate saved info if exists
+    try {
+        var savedInfo = JSON.parse(localStorage.getItem('auraSavedInfo'));
+        if (savedInfo) {
+            if(savedInfo.firstName) document.getElementById('ckFirstName').value = savedInfo.firstName;
+            if(savedInfo.lastName) document.getElementById('ckLastName').value = savedInfo.lastName;
+            if(savedInfo.city) document.getElementById('ckCity').value = savedInfo.city;
+            if(savedInfo.state) document.getElementById('ckState').value = savedInfo.state;
+            if(savedInfo.pincode) document.getElementById('ckPincode').value = savedInfo.pincode;
+            if(savedInfo.phone) document.getElementById('ckPhone').value = savedInfo.phone;
+            document.getElementById('ckSaveInfo').checked = true;
+            // Note: address web component will be handled separately if needed
+        }
+    } catch(e) {}
+
     // Stepper logic
     document.getElementById('ckDeliveryBtn').addEventListener('click', function(e) {
         e.preventDefault();
         var addrEl = document.getElementById('ckAddress');
         var addressVal = addrEl.value || addrEl.inputValue;
-        if(!document.getElementById('ckFirstName').value || !addressVal || !document.getElementById('ckCity').value || !document.getElementById('ckPhone').value) {
-            return alert('Please fill in required delivery fields.');
+        
+        var requiredFields = ['ckFirstName', 'ckCity', 'ckPhone'];
+        var isValid = true;
+        
+        // Check standard inputs
+        requiredFields.forEach(id => {
+            var el = document.getElementById(id);
+            if (!el.value) {
+                isValid = false;
+                el.style.border = '1px solid #ff4d4f';
+            } else {
+                el.style.border = '1px solid #ddd';
+            }
+        });
+        
+        // Check web component address separately
+        if (!addressVal) {
+            isValid = false;
+            // For shadow dom web component, style the container or inject style
+            addrEl.style.border = '1px solid #ff4d4f';
+            addrEl.style.borderRadius = '4px';
+        } else {
+            addrEl.style.border = 'none'; // reset to original since inner part has border
         }
+
+        if(!isValid) {
+            return; // Stay on same step, red borders will guide user
+        }
+        
+        // Reset borders if valid
+        requiredFields.forEach(id => document.getElementById(id).style.border = '1px solid #ddd');
+        addrEl.style.border = 'none';
         document.getElementById('stepShipping').style.opacity = '1';
         document.getElementById('stepShipping').style.pointerEvents = 'auto';
         this.style.display = 'none'; // hide continue btn
@@ -314,8 +387,23 @@ function openCheckoutPage() {
         var phone = document.getElementById('ckPhone').value;
 
         if (!verifiedEmail || !firstName || !address || !city || !phone) {
-            alert('Please complete all steps.');
+            // Wait, they shouldn't be able to reach here if validation above worked, but just in case
             return;
+        }
+
+        // Save info logic
+        if (document.getElementById('ckSaveInfo') && document.getElementById('ckSaveInfo').checked) {
+            var savePayload = { firstName, lastName, address, city, state, pincode, phone };
+            localStorage.setItem('auraSavedInfo', JSON.stringify(savePayload));
+            
+            // Also save to backend
+            fetch(API_BASE + '/api/save-user-info', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: verifiedEmail, ...savePayload })
+            }).catch(e => console.log('Backend save error', e));
+        } else {
+            localStorage.removeItem('auraSavedInfo');
         }
 
         var fullName = firstName + ' ' + lastName;

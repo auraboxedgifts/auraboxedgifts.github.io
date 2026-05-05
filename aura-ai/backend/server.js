@@ -10,6 +10,8 @@ const cors = require('cors');
 const nodemailer = require('nodemailer');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 delete process.env.GOOGLE_API_KEY;
@@ -59,6 +61,28 @@ const emailTransporter = nodemailer.createTransport({
 
 // ─── OTP Session Store ───
 const otpStore = new Map(); // Stores { email: { otp: '123456', expiresAt: timestamp } }
+
+// ─── User Data Store (File-based) ───
+const USERS_FILE = path.join(__dirname, 'users.json');
+
+app.post('/api/save-user-info', (req, res) => {
+    try {
+        const { email, ...info } = req.body;
+        if (!email) return res.status(400).json({ success: false, error: 'Email required' });
+        
+        let users = {};
+        if (fs.existsSync(USERS_FILE)) {
+            users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+        }
+        users[email] = { ...users[email], ...info, updatedAt: new Date().toISOString() };
+        fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+        
+        res.json({ success: true, message: 'User info saved' });
+    } catch (err) {
+        console.error('Save info error:', err);
+        res.status(500).json({ success: false, error: 'Failed to save info' });
+    }
+});
 
 // ─── OTP Endpoints ───
 app.post('/api/send-otp', async (req, res) => {
