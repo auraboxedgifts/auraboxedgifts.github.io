@@ -74,6 +74,16 @@ for slug in bracelets pendants earrings jhumkas scrunchies claws hairbows rings 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${name} — Aura Boxed Gifts</title>
   <meta name="description" content="${desc}">
+  
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-755SHG7S3L"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-755SHG7S3L');
+  </script>
+
   <link rel="stylesheet" href="collection.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="icon" type="image/png" href="../images/web/auraboxedgifts.png">
