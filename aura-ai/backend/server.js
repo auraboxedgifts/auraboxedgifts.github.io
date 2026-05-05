@@ -113,7 +113,7 @@ const SYSTEM_PROMPT = `You are Aura AI, a warm, friendly, and helpful voice assi
 **About Aura Boxed Gifts:**
 - Tagline: "Gifts that speak your heart — Wrapped with love, sent from the heart"
 - Instagram: @aura_boxedgifts
-- Delivery: PAN India delivery, free shipping on orders above ₹999
+- Delivery: PAN India delivery
 - All orders are placed via Instagram DM
 
 **Collections:**
@@ -264,6 +264,7 @@ wss.on('connection', (clientWs) => {
 
                     if (message.toolCall) {
                         for (const fc of message.toolCall.functionCalls) {
+                            console.log('🛠️ Aura AI Function Called:', fc.name, JSON.stringify(fc.args || {}));
                             if (fc.name === 'send_message') {
                                 const { message: msg, senderInfo, inquiryType } = fc.args;
                                 const result = await sendEmailNotification(msg, senderInfo, inquiryType || 'General');
