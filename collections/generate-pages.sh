@@ -87,9 +87,6 @@ for slug in bracelets pendants earrings jhumkas scrunchies claws hairbows rings 
         delay=$(echo "scale=2; $idx * 0.1" | bc)
         price=$(( (RANDOM % 15 + 3) * 100 - 1 ))
         pname=$(product_name_from_file "$fname")
-        if [ "$pname" == "Pendant Necklace #1" ]; then
-          price=1
-        fi
         IMAGE_HTML+="      <div class=\"col-item col-item-reveal\" style=\"animation-delay: ${delay}s\" data-idx=\"${idx}\" data-name=\"${pname}\" data-price=\"${price}\" data-img=\"../images/web/${fname}\">
         <div class=\"col-item-img-wrapper\">
           <img src=\"../images/web/${fname}\" alt=\"${pname}\" loading=\"lazy\">

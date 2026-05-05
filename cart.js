@@ -126,6 +126,7 @@ function openCheckoutPage() {
             '<div class="ck-field ck-half"><input type="text" id="ckLastName" placeholder="Last name"></div>' +
           '</div>' +
           '<div class="ck-field"><input type="text" id="ckAddress" placeholder="Address (Start typing for suggestions...)"></div>' +
+          '<div style="text-align: right; margin-top: -8px; margin-bottom: 12px;"><span id="ckManualAddressBtn" style="font-size: 11px; color: #b76e79; cursor: pointer; text-decoration: underline;">Enter address manually</span></div>' +
           '<div class="ck-field"><input type="text" id="ckApartment" placeholder="Apartment, suite, etc. (optional)"></div>' +
           '<div class="ck-row ck-row-3">' +
             '<div class="ck-field"><input type="text" id="ckCity" placeholder="City"></div>' +
@@ -139,7 +140,7 @@ function openCheckoutPage() {
               '<label for="ckSaveInfo" style="position: static; font-size: 13px; color: #555; pointer-events: auto; cursor: pointer;">Save this information for next time</label>' +
             '</div>' +
           '</div>' +
-          '<button class="ck-btn ck-btn-dark" id="ckDeliveryBtn" style="margin-top: 20px;">Continue to Shipping</button>' +
+          '<button class="ck-pay-now-btn" id="ckDeliveryBtn" style="margin-top: 15px;">Continue to Shipping</button>' +
         '</section>' +
 
         '<!-- STEP 3: SHIPPING -->' +
@@ -264,6 +265,24 @@ function openCheckoutPage() {
         })
         .catch(err => console.error('Config fetch error:', err));
 
+    // Manual Address Toggle Logic
+    document.getElementById('ckManualAddressBtn').addEventListener('click', function() {
+        var currentAddr = document.getElementById('ckAddress');
+        var val = currentAddr.inputValue || currentAddr.value || '';
+        
+        var newInput = document.createElement('input');
+        newInput.type = 'text';
+        newInput.id = 'ckAddress';
+        newInput.placeholder = 'Address (House No, Building, Street, Area)';
+        newInput.value = val;
+        
+        currentAddr.parentNode.replaceChild(newInput, currentAddr);
+        this.style.display = 'none'; // Hide the button
+        
+        // Remove red border if any
+        newInput.style.border = '1px solid #ddd';
+    });
+
     // OTP Logic
     var verifiedEmail = '';
     document.getElementById('ckSendOtpBtn').addEventListener('click', async function(e) {
@@ -337,6 +356,7 @@ function openCheckoutPage() {
         // Check standard inputs
         requiredFields.forEach(id => {
             var el = document.getElementById(id);
+            if (!el) return;
             if (!el.value) {
                 isValid = false;
                 el.style.border = '1px solid #ff4d4f';
@@ -345,14 +365,19 @@ function openCheckoutPage() {
             }
         });
         
-        // Check web component address separately
+        // Check address separately (could be Web Component or standard input)
         if (!addressVal) {
             isValid = false;
-            // For shadow dom web component, style the container or inject style
             addrEl.style.border = '1px solid #ff4d4f';
-            addrEl.style.borderRadius = '4px';
+            if (addrEl.tagName === 'GMP-PLACE-AUTOCOMPLETE') {
+                addrEl.style.borderRadius = '4px';
+            }
         } else {
-            addrEl.style.border = 'none'; // reset to original since inner part has border
+            if (addrEl.tagName === 'GMP-PLACE-AUTOCOMPLETE') {
+                addrEl.style.border = 'none'; // inner part handles it
+            } else {
+                addrEl.style.border = '1px solid #ddd';
+            }
         }
 
         if(!isValid) {
