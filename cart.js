@@ -68,7 +68,9 @@ window.removeFromCart = function(index) {
 if (navCartIcon) {
     navCartIcon.addEventListener('click', (e) => {
         e.preventDefault();
-        if (cartSidebar && cartOverlay) {
+        if (window.parent !== window) {
+            window.parent.postMessage({type: 'openCart'}, '*');
+        } else if (cartSidebar && cartOverlay) {
             cartSidebar.classList.add('active');
             cartOverlay.classList.add('active');
         }
@@ -87,11 +89,26 @@ if (cartOverlay) cartOverlay.addEventListener('click', closeCart);
 window.addEventListener('message', (e) => {
     if (e.data && e.data.type === 'addToCart') {
         addToCart(e.data);
-        // Optionally auto-open cart
+        // Auto-open cart in parent if requested from iframe
+        if (window.parent !== window) {
+            window.parent.postMessage({type: 'openCart'}, '*');
+        } else if (cartSidebar && cartOverlay) {
+            cartSidebar.classList.add('active');
+            cartOverlay.classList.add('active');
+        }
+    } else if (e.data && e.data.type === 'openCart') {
         if (cartSidebar && cartOverlay) {
             cartSidebar.classList.add('active');
             cartOverlay.classList.add('active');
         }
+    }
+});
+
+// Listen for storage events to sync cart across tabs/iframes
+window.addEventListener('storage', (e) => {
+    if (e.key === 'aura_cart') {
+        cart = JSON.parse(e.newValue || '[]');
+        renderCart();
     }
 });
 

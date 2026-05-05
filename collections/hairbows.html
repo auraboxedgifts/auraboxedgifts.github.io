@@ -28,9 +28,9 @@
         <i class="fas fa-shopping-cart"></i>
         <span class="nav-cart-badge" id="navCartBadge">0</span>
       </a>
-      <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;">Home</a>
-      <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html#collections'; } return false;">Collections</a>
-      <a href="https://www.instagram.com/aura_boxedgifts" target="_blank">Instagram</a>
+      <a href=\"#\" onclick=\"if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;\" class=\"nav-text-link\">Home</a>
+      <a href=\"#\" onclick=\"if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html#collections'; } return false;\" class=\"nav-text-link\">Collections</a>
+      <a href=\"https://www.instagram.com/aura_boxedgifts\" target=\"_blank\"><i class=\"fab fa-instagram\"></i></a>
     </div>
   </nav>
 
@@ -44,18 +44,26 @@
 
   <section class="col-gallery">
     <div class="col-grid">
-      <div class="col-item col-item-reveal" style="animation-delay: 0s">
-        <img src="../images/web/aligator-hairpins-1.jpeg" alt="Hair Bows" loading="lazy">
-        <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Hair Bows', img: '../images/web/aligator-hairpins-1.jpeg', price: 399}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+      <div class="col-item col-item-reveal" style="animation-delay: 0s" onclick="if(typeof open === 'function') open(0);">
+        <div class="col-item-img-wrapper">
+          <img src="../images/web/aligator-hairpins-1.jpeg" alt="Hair Bows" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
+        <div class="col-item-info">
+          <h3 class="col-item-title">Hair Bows</h3>
+          <p class="col-item-price">₹399</p>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Hair Bows', img: '../images/web/aligator-hairpins-1.jpeg', price: 399}, '*');"><i class="fas fa-shopping-cart"></i> Add</button>
+        </div>
       </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .1s">
-        <img src="../images/web/aligator-hairpins-2.jpeg" alt="Hair Bows" loading="lazy">
-        <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Hair Bows', img: '../images/web/aligator-hairpins-2.jpeg', price: 1199}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+      <div class="col-item col-item-reveal" style="animation-delay: .1s" onclick="if(typeof open === 'function') open(1);">
+        <div class="col-item-img-wrapper">
+          <img src="../images/web/aligator-hairpins-2.jpeg" alt="Hair Bows" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        </div>
+        <div class="col-item-info">
+          <h3 class="col-item-title">Hair Bows</h3>
+          <p class="col-item-price">₹399</p>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Hair Bows', img: '../images/web/aligator-hairpins-2.jpeg', price: 399}, '*');"><i class="fas fa-shopping-cart"></i> Add</button>
         </div>
       </div>
     </div>

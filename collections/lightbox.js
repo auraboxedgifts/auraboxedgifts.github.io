@@ -53,35 +53,30 @@
       item.addEventListener('click', function() { open(i); });
     });
 
-    // Collect image sources
-    images = Array.from(document.querySelectorAll('.col-item img')).map(function(img) {
-      return img.src;
+    // Collect image sources and product details
+    images = Array.from(document.querySelectorAll('.col-item')).map(function(item) {
+      return {
+        src: item.querySelector('img').src,
+        name: item.querySelector('.col-item-title') ? item.querySelector('.col-item-title').innerText : '',
+        price: item.querySelector('.col-item-price') ? parseInt(item.querySelector('.col-item-price').innerText.replace('₹','')) : 0
+      };
     });
 
-    // Handle AI AutoPlay Navigation
-    if (window.location.hash.includes('autoplay=true') && images.length > 0) {
-      // Delay slightly to let the iframe animation finish before showing lightbox
-      setTimeout(() => {
-        open(0);
-        startAutoPlay();
-      }, 600);
-    }
+    // Listen for AI commands from parent
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'next_product') {
+        if (!lightbox.classList.contains('active')) open(0);
+        else next();
+      }
+      if (e.data && e.data.type === 'previous_product') {
+        if (!lightbox.classList.contains('active')) open(0);
+        else prev();
+      }
+    });
   }
 
-  function startAutoPlay() {
-    stopAutoPlay();
-    autoPlayInterval = setInterval(() => {
-      currentIndex = (currentIndex + 1) % images.length;
-      show(true); // Animate to next
-    }, 3500); // Swipe every 3.5 seconds
-  }
-
-  function stopAutoPlay() {
-    if (autoPlayInterval) {
-      clearInterval(autoPlayInterval);
-      autoPlayInterval = null;
-    }
-  }
+  function startAutoPlay() {} // Disabled as per user request
+  function stopAutoPlay() {} // Disabled as per user request
 
   function open(index) {
     currentIndex = index;
@@ -116,7 +111,7 @@
       lbImg.style.transform = 'scale(0.95)';
       
       setTimeout(() => {
-        lbImg.src = images[currentIndex];
+        lbImg.src = images[currentIndex].src;
         lbImg.onload = () => {
           lbImg.style.opacity = '1';
           lbImg.style.transform = 'scale(1)';
@@ -128,8 +123,17 @@
       lbImg.style.transition = 'none';
       lbImg.style.opacity = '1';
       lbImg.style.transform = 'scale(1)';
-      lbImg.src = images[currentIndex];
+      lbImg.src = images[currentIndex].src;
       lbCounter.textContent = (currentIndex + 1) + ' / ' + images.length;
+    }
+
+    // Sync Context with AI (Oracle Server) via parent window
+    if (window.parent !== window) {
+      window.parent.postMessage({
+        type: 'context_update',
+        productName: images[currentIndex].name,
+        productPrice: images[currentIndex].price
+      }, '*');
     }
   }
 

@@ -28,9 +28,9 @@
         <i class="fas fa-shopping-cart"></i>
         <span class="nav-cart-badge" id="navCartBadge">0</span>
       </a>
-      <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;">Home</a>
-      <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html#collections'; } return false;">Collections</a>
-      <a href="https://www.instagram.com/aura_boxedgifts" target="_blank">Instagram</a>
+      <a href=\"#\" onclick=\"if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;\" class=\"nav-text-link\">Home</a>
+      <a href=\"#\" onclick=\"if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html#collections'; } return false;\" class=\"nav-text-link\">Collections</a>
+      <a href=\"https://www.instagram.com/aura_boxedgifts\" target=\"_blank\"><i class=\"fab fa-instagram\"></i></a>
     </div>
   </nav>
 
@@ -44,95 +44,147 @@
 
   <section class="col-gallery">
     <div class="col-grid">
-      <div class="col-item col-item-reveal" style="animation-delay: 0s">
-        <img src="../images/web/lip-gloss-1.jpeg" alt="Makeup / Chocolates" loading="lazy">
-        <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/lip-gloss-1.jpeg', price: 299}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+      <div class="col-item col-item-reveal" style="animation-delay: 0s" onclick="if(typeof open === 'function') open(0);">
+        <div class="col-item-img-wrapper">
+          <img src="../images/web/lip-gloss-1.jpeg" alt="Makeup / Chocolates" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
-      </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .1s">
-        <img src="../images/web/lip-gloss-2.jpeg" alt="Makeup / Chocolates" loading="lazy">
-        <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/lip-gloss-2.jpeg', price: 1599}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
-          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        <div class="col-item-info">
+          <h3 class="col-item-title">Makeup / Chocolates</h3>
+          <p class="col-item-price">₹799</p>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/lip-gloss-1.jpeg', price: 799}, '*');"><i class="fas fa-shopping-cart"></i> Add</button>
         </div>
       </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .2s">
-        <img src="../images/web/lip-gloss-3.jpeg" alt="Makeup / Chocolates" loading="lazy">
-        <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/lip-gloss-3.jpeg', price: 899}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+      <div class="col-item col-item-reveal" style="animation-delay: .1s" onclick="if(typeof open === 'function') open(1);">
+        <div class="col-item-img-wrapper">
+          <img src="../images/web/lip-gloss-2.jpeg" alt="Makeup / Chocolates" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
-      </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .3s">
-        <img src="../images/web/lip-oil-tint-1.jpeg" alt="Makeup / Chocolates" loading="lazy">
-        <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/lip-oil-tint-1.jpeg', price: 599}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
-          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        <div class="col-item-info">
+          <h3 class="col-item-title">Makeup / Chocolates</h3>
+          <p class="col-item-price">₹1699</p>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/lip-gloss-2.jpeg', price: 1699}, '*');"><i class="fas fa-shopping-cart"></i> Add</button>
         </div>
       </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .4s">
-        <img src="../images/web/lip-oil-tint-2.jpeg" alt="Makeup / Chocolates" loading="lazy">
-        <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/lip-oil-tint-2.jpeg', price: 299}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+      <div class="col-item col-item-reveal" style="animation-delay: .2s" onclick="if(typeof open === 'function') open(2);">
+        <div class="col-item-img-wrapper">
+          <img src="../images/web/lip-gloss-3.jpeg" alt="Makeup / Chocolates" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
-      </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .5s">
-        <img src="../images/web/lip-oil-tint-3.jpeg" alt="Makeup / Chocolates" loading="lazy">
-        <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/lip-oil-tint-3.jpeg', price: 299}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
-          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        <div class="col-item-info">
+          <h3 class="col-item-title">Makeup / Chocolates</h3>
+          <p class="col-item-price">₹1099</p>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/lip-gloss-3.jpeg', price: 1099}, '*');"><i class="fas fa-shopping-cart"></i> Add</button>
         </div>
       </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .6s">
-        <img src="../images/web/lip-oil-tint-4.jpeg" alt="Makeup / Chocolates" loading="lazy">
-        <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/lip-oil-tint-4.jpeg', price: 1499}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+      <div class="col-item col-item-reveal" style="animation-delay: .3s" onclick="if(typeof open === 'function') open(3);">
+        <div class="col-item-img-wrapper">
+          <img src="../images/web/lip-oil-tint-1.jpeg" alt="Makeup / Chocolates" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
-      </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .7s">
-        <img src="../images/web/lip-oil-tint-5.jpeg" alt="Makeup / Chocolates" loading="lazy">
-        <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/lip-oil-tint-5.jpeg', price: 999}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
-          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        <div class="col-item-info">
+          <h3 class="col-item-title">Makeup / Chocolates</h3>
+          <p class="col-item-price">₹1599</p>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/lip-oil-tint-1.jpeg', price: 1599}, '*');"><i class="fas fa-shopping-cart"></i> Add</button>
         </div>
       </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .8s">
-        <img src="../images/web/eyeshadow-palette-1.jpeg" alt="Makeup / Chocolates" loading="lazy">
-        <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/eyeshadow-palette-1.jpeg', price: 999}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+      <div class="col-item col-item-reveal" style="animation-delay: .4s" onclick="if(typeof open === 'function') open(4);">
+        <div class="col-item-img-wrapper">
+          <img src="../images/web/lip-oil-tint-2.jpeg" alt="Makeup / Chocolates" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
-      </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .9s">
-        <img src="../images/web/eyeshadow-palette-2.jpeg" alt="Makeup / Chocolates" loading="lazy">
-        <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/eyeshadow-palette-2.jpeg', price: 1599}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
-          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        <div class="col-item-info">
+          <h3 class="col-item-title">Makeup / Chocolates</h3>
+          <p class="col-item-price">₹1599</p>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/lip-oil-tint-2.jpeg', price: 1599}, '*');"><i class="fas fa-shopping-cart"></i> Add</button>
         </div>
       </div>
-      <div class="col-item col-item-reveal" style="animation-delay: 1.0s">
-        <img src="../images/web/highlighter-1.jpeg" alt="Makeup / Chocolates" loading="lazy">
-        <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/highlighter-1.jpeg', price: 699}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+      <div class="col-item col-item-reveal" style="animation-delay: .5s" onclick="if(typeof open === 'function') open(5);">
+        <div class="col-item-img-wrapper">
+          <img src="../images/web/lip-oil-tint-3.jpeg" alt="Makeup / Chocolates" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
-      </div>
-      <div class="col-item col-item-reveal" style="animation-delay: 1.1s">
-        <img src="../images/web/facemask-sheets-1.jpeg" alt="Makeup / Chocolates" loading="lazy">
-        <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/facemask-sheets-1.jpeg', price: 1099}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
-          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        <div class="col-item-info">
+          <h3 class="col-item-title">Makeup / Chocolates</h3>
+          <p class="col-item-price">₹1499</p>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/lip-oil-tint-3.jpeg', price: 1499}, '*');"><i class="fas fa-shopping-cart"></i> Add</button>
         </div>
       </div>
-      <div class="col-item col-item-reveal" style="animation-delay: 1.2s">
-        <img src="../images/web/facemask-sheets-2.jpeg" alt="Makeup / Chocolates" loading="lazy">
-        <div class="col-item-overlay">
-          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/facemask-sheets-2.jpeg', price: 1399}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+      <div class="col-item col-item-reveal" style="animation-delay: .6s" onclick="if(typeof open === 'function') open(6);">
+        <div class="col-item-img-wrapper">
+          <img src="../images/web/lip-oil-tint-4.jpeg" alt="Makeup / Chocolates" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        </div>
+        <div class="col-item-info">
+          <h3 class="col-item-title">Makeup / Chocolates</h3>
+          <p class="col-item-price">₹499</p>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/lip-oil-tint-4.jpeg', price: 499}, '*');"><i class="fas fa-shopping-cart"></i> Add</button>
+        </div>
+      </div>
+      <div class="col-item col-item-reveal" style="animation-delay: .7s" onclick="if(typeof open === 'function') open(7);">
+        <div class="col-item-img-wrapper">
+          <img src="../images/web/lip-oil-tint-5.jpeg" alt="Makeup / Chocolates" loading="lazy">
+          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        </div>
+        <div class="col-item-info">
+          <h3 class="col-item-title">Makeup / Chocolates</h3>
+          <p class="col-item-price">₹699</p>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/lip-oil-tint-5.jpeg', price: 699}, '*');"><i class="fas fa-shopping-cart"></i> Add</button>
+        </div>
+      </div>
+      <div class="col-item col-item-reveal" style="animation-delay: .8s" onclick="if(typeof open === 'function') open(8);">
+        <div class="col-item-img-wrapper">
+          <img src="../images/web/eyeshadow-palette-1.jpeg" alt="Makeup / Chocolates" loading="lazy">
+          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        </div>
+        <div class="col-item-info">
+          <h3 class="col-item-title">Makeup / Chocolates</h3>
+          <p class="col-item-price">₹299</p>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/eyeshadow-palette-1.jpeg', price: 299}, '*');"><i class="fas fa-shopping-cart"></i> Add</button>
+        </div>
+      </div>
+      <div class="col-item col-item-reveal" style="animation-delay: .9s" onclick="if(typeof open === 'function') open(9);">
+        <div class="col-item-img-wrapper">
+          <img src="../images/web/eyeshadow-palette-2.jpeg" alt="Makeup / Chocolates" loading="lazy">
+          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        </div>
+        <div class="col-item-info">
+          <h3 class="col-item-title">Makeup / Chocolates</h3>
+          <p class="col-item-price">₹1199</p>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/eyeshadow-palette-2.jpeg', price: 1199}, '*');"><i class="fas fa-shopping-cart"></i> Add</button>
+        </div>
+      </div>
+      <div class="col-item col-item-reveal" style="animation-delay: 1.0s" onclick="if(typeof open === 'function') open(10);">
+        <div class="col-item-img-wrapper">
+          <img src="../images/web/highlighter-1.jpeg" alt="Makeup / Chocolates" loading="lazy">
+          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        </div>
+        <div class="col-item-info">
+          <h3 class="col-item-title">Makeup / Chocolates</h3>
+          <p class="col-item-price">₹1099</p>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/highlighter-1.jpeg', price: 1099}, '*');"><i class="fas fa-shopping-cart"></i> Add</button>
+        </div>
+      </div>
+      <div class="col-item col-item-reveal" style="animation-delay: 1.1s" onclick="if(typeof open === 'function') open(11);">
+        <div class="col-item-img-wrapper">
+          <img src="../images/web/facemask-sheets-1.jpeg" alt="Makeup / Chocolates" loading="lazy">
+          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        </div>
+        <div class="col-item-info">
+          <h3 class="col-item-title">Makeup / Chocolates</h3>
+          <p class="col-item-price">₹999</p>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/facemask-sheets-1.jpeg', price: 999}, '*');"><i class="fas fa-shopping-cart"></i> Add</button>
+        </div>
+      </div>
+      <div class="col-item col-item-reveal" style="animation-delay: 1.2s" onclick="if(typeof open === 'function') open(12);">
+        <div class="col-item-img-wrapper">
+          <img src="../images/web/facemask-sheets-2.jpeg" alt="Makeup / Chocolates" loading="lazy">
+          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        </div>
+        <div class="col-item-info">
+          <h3 class="col-item-title">Makeup / Chocolates</h3>
+          <p class="col-item-price">₹799</p>
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Makeup / Chocolates', img: '../images/web/facemask-sheets-2.jpeg', price: 799}, '*');"><i class="fas fa-shopping-cart"></i> Add</button>
         </div>
       </div>
     </div>

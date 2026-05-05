@@ -203,9 +203,16 @@ const SYSTEM_PROMPT = `You are Aura AI, a warm, friendly, and helpful voice assi
 - Just Because: Scrunchies, keychains, single jewelry pieces
 - Festivals: Jhumkas, earring sets, luxury hampers
 
+**Conversational Commerce (Very Important):**
+- When the user is viewing a specific collection, they will see products.
+- When they look at a specific product in full screen, you will receive a SYSTEM NOTE with the product's Name and Price.
+- When you receive this note, enthusiastically announce the product and ask the user if they would like you to add it to their cart!
+- If they say yes, use the \`add_to_cart\` function.
+- You can also navigate through the products for them using \`next_product\` and \`previous_product\`.
+- If they ask to see their cart, use \`show_cart\`.
+
 **Important:**
-- All orders are placed via Instagram DM (@aura_boxedgifts)
-- Prices vary by product — suggest they check Instagram for latest prices
+- All orders are placed via Instagram DM (@aura_boxedgifts) or via the built-in Checkout Cart
 - Custom hampers can be arranged by DMing on Instagram`;
 
 const wss = new WebSocket.Server({ noServer: true });
@@ -276,6 +283,30 @@ wss.on('connection', (clientWs) => {
                             },
                             required: ['section']
                         }
+                    },
+                    {
+                        name: 'next_product',
+                        description: 'Navigate to the next product image in the current collection gallery. Use when the user asks to see the next product.'
+                    },
+                    {
+                        name: 'previous_product',
+                        description: 'Navigate to the previous product image in the current collection gallery. Use when the user asks to go back to the previous product.'
+                    },
+                    {
+                        name: 'add_to_cart',
+                        description: 'Add the currently viewed product to the user\'s shopping cart. Use this ONLY after receiving a SYSTEM NOTE about what product the user is viewing, and after the user confirms they want to add it.',
+                        parameters: {
+                            type: 'object',
+                            properties: {
+                                productName: { type: 'string', description: 'The exact name of the product from the SYSTEM NOTE' },
+                                productPrice: { type: 'number', description: 'The exact price of the product from the SYSTEM NOTE' }
+                            },
+                            required: ['productName', 'productPrice']
+                        }
+                    },
+                    {
+                        name: 'show_cart',
+                        description: 'Open the shopping cart sidebar to show the user what they have added. Use when the user asks to see their cart or checkout.'
                     }
                 ]
             }
@@ -316,8 +347,32 @@ wss.on('connection', (clientWs) => {
                             }
                         }
                     }
+                
+                // --- Handle Context Updates from Frontend ---
+                if (message.type === 'context_update') {
+                    if (geminiSession) {
+                        let sysNote = '';
+                        if (message.action === 'added_to_cart') {
+                            sysNote = `[SYSTEM NOTE: Successfully added ${message.productName} to the cart.]`;
+                        } else {
+                            sysNote = `[SYSTEM NOTE: User is now viewing Product: ${message.productName} at price ₹${message.productPrice}. Ask them if they would like to add it to their cart or see the next picture!]`;
+                        }
+                        
+                        try {
+                            await geminiSession.send({
+                                clientContent: {
+                                    turns: [{ role: 'user', parts: [{ text: sysNote }] }],
+                                    turnComplete: true
+                                }
+                            });
+                        } catch (err) {
+                            console.error('Error sending context update to Gemini:', err);
+                        }
+                    }
+                    return; // Don't process further as a tool call
+                }
 
-                    if (message.toolCall) {
+                if (message.toolCall) {
                         for (const fc of message.toolCall.functionCalls) {
                             console.log('🛠️ Aura AI Function Called:', fc.name, JSON.stringify(fc.args || {}));
                             if (fc.name === 'send_message') {
@@ -361,6 +416,43 @@ wss.on('connection', (clientWs) => {
                                         id: fc.id,
                                         name: fc.name,
                                         response: { result: `Scrolled user to ${section} section` }
+                                    }]
+                                });
+                            } else if (fc.name === 'next_product') {
+                                clientWs.send(JSON.stringify({ type: 'next_product' }));
+                                session.sendToolResponse({
+                                    functionResponses: [{
+                                        id: fc.id,
+                                        name: fc.name,
+                                        response: { result: "Navigated to next product" }
+                                    }]
+                                });
+                            } else if (fc.name === 'previous_product') {
+                                clientWs.send(JSON.stringify({ type: 'previous_product' }));
+                                session.sendToolResponse({
+                                    functionResponses: [{
+                                        id: fc.id,
+                                        name: fc.name,
+                                        response: { result: "Navigated to previous product" }
+                                    }]
+                                });
+                            } else if (fc.name === 'add_to_cart') {
+                                const { productName, productPrice } = fc.args;
+                                clientWs.send(JSON.stringify({ type: 'add_to_cart', productName, productPrice }));
+                                session.sendToolResponse({
+                                    functionResponses: [{
+                                        id: fc.id,
+                                        name: fc.name,
+                                        response: { result: `Added ${productName} to cart` }
+                                    }]
+                                });
+                            } else if (fc.name === 'show_cart') {
+                                clientWs.send(JSON.stringify({ type: 'show_cart' }));
+                                session.sendToolResponse({
+                                    functionResponses: [{
+                                        id: fc.id,
+                                        name: fc.name,
+                                        response: { result: "Opened shopping cart" }
                                     }]
                                 });
                             }

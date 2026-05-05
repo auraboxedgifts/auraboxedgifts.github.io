@@ -179,6 +179,30 @@ function handleAuraBackendMessage(message) {
         case 'navigate_home':
             closeCollectionOverlay();
             break;
+        case 'next_product':
+        case 'previous_product':
+            const iframe = document.getElementById('collection-iframe');
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.postMessage({ type: message.type }, '*');
+            }
+            break;
+        case 'add_to_cart':
+            if (typeof addToCart === 'function') {
+                addToCart({ item: message.productName, price: message.productPrice, img: '' });
+                // Tell backend it was successful
+                if (auraWs && auraWs.readyState === WebSocket.OPEN) {
+                    auraWs.send(JSON.stringify({ type: 'context_update', productName: message.productName, productPrice: message.productPrice, action: 'added_to_cart' }));
+                }
+            }
+            break;
+        case 'show_cart':
+            const cartSidebar = document.getElementById('cartSidebar');
+            const cartOverlay = document.getElementById('cartOverlay');
+            if (cartSidebar && cartOverlay) {
+                cartSidebar.classList.add('active');
+                cartOverlay.classList.add('active');
+            }
+            break;
         case 'scroll_to_section':
             closeCollectionOverlay(); // Ensure we are on the main page
             setTimeout(() => {
@@ -467,6 +491,11 @@ function openCollectionOverlay(url) {
         window.addEventListener('message', function(e) {
             if (e.data === 'closeCollection') {
                 closeCollectionOverlay();
+            }
+            if (e.data && e.data.type === 'context_update') {
+                if (auraWs && auraWs.readyState === WebSocket.OPEN) {
+                    auraWs.send(JSON.stringify(e.data));
+                }
             }
         });
     }

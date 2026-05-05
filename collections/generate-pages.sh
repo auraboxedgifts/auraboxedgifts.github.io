@@ -60,11 +60,15 @@ for slug in bracelets pendants earrings jhumkas scrunchies claws hairbows rings 
         fname=$(basename "$img")
         delay=$(echo "scale=2; $idx * 0.1" | bc)
         price=$(( (RANDOM % 15 + 3) * 100 - 1 )) # Random price between 299 and 1799
-        IMAGE_HTML+="      <div class=\"col-item col-item-reveal\" style=\"animation-delay: ${delay}s\">
-        <img src=\"../images/web/${fname}\" alt=\"${name}\" loading=\"lazy\">
-        <div class=\"col-item-overlay\">
-          <button class=\"btn-add-cart\" onclick=\"event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: '${name}', img: '../images/web/${fname}', price: ${price}}, '*');\"><i class=\"fas fa-shopping-cart\"></i> Add to Cart</button>
+        IMAGE_HTML+="      <div class=\"col-item col-item-reveal\" style=\"animation-delay: ${delay}s\" onclick=\"if(typeof open === 'function') open(${idx});\">
+        <div class=\"col-item-img-wrapper\">
+          <img src=\"../images/web/${fname}\" alt=\"${name}\" loading=\"lazy\">
           <div class=\"col-item-zoom\"><i class=\"fas fa-search-plus\"></i></div>
+        </div>
+        <div class=\"col-item-info\">
+          <h3 class=\"col-item-title\">${name}</h3>
+          <p class=\"col-item-price\">₹${price}</p>
+          <button class=\"btn-add-cart\" onclick=\"event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: '${name}', img: '../images/web/${fname}', price: ${price}}, '*');\"><i class=\"fas fa-shopping-cart\"></i> Add</button>
         </div>
       </div>
 "
@@ -104,9 +108,9 @@ for slug in bracelets pendants earrings jhumkas scrunchies claws hairbows rings 
         <i class="fas fa-shopping-cart"></i>
         <span class="nav-cart-badge" id="navCartBadge">0</span>
       </a>
-      <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;">Home</a>
-      <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html#collections'; } return false;">Collections</a>
-      <a href="https://www.instagram.com/aura_boxedgifts" target="_blank">Instagram</a>
+      <a href=\"#\" onclick=\"if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;\" class=\"nav-text-link\">Home</a>
+      <a href=\"#\" onclick=\"if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html#collections'; } return false;\" class=\"nav-text-link\">Collections</a>
+      <a href=\"https://www.instagram.com/aura_boxedgifts\" target=\"_blank\"><i class=\"fab fa-instagram\"></i></a>
     </div>
   </nav>
 
