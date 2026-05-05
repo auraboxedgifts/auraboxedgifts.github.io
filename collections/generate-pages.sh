@@ -53,15 +53,21 @@ for slug in bracelets pendants earrings jhumkas scrunchies claws hairbows rings 
   
   # Build image list
   IMAGE_HTML=""
+  idx=0
   for prefix in $prefixes; do
     for img in "$IMAGES_DIR"/${prefix}-*.jpeg; do
       if [ -f "$img" ]; then
         fname=$(basename "$img")
-        IMAGE_HTML+="      <div class=\"col-item\">
+        delay=$(echo "scale=2; $idx * 0.1" | bc)
+        IMAGE_HTML+="      <div class=\"col-item col-item-reveal\" style=\"animation-delay: ${delay}s\">
         <img src=\"../images/web/${fname}\" alt=\"${name}\" loading=\"lazy\">
-        <div class=\"col-item-overlay\"><div class=\"col-item-zoom\"><i class=\"fas fa-search-plus\"></i></div></div>
+        <div class=\"col-item-overlay\">
+          <button class=\"btn-add-cart\" onclick=\"event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: '${name}', img: '../images/web/${fname}', price: 999}, '*');\"><i class=\"fas fa-shopping-cart\"></i> Add to Cart</button>
+          <div class=\"col-item-zoom\"><i class=\"fas fa-search-plus\"></i></div>
+        </div>
       </div>
 "
+        idx=$((idx + 1))
       fi
     done
   done

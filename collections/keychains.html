@@ -40,13 +40,19 @@
 
   <section class="col-gallery">
     <div class="col-grid">
-      <div class="col-item">
+      <div class="col-item col-item-reveal" style="animation-delay: 0s">
         <img src="../images/web/mini-bags-1.jpeg" alt="Keychains" loading="lazy">
-        <div class="col-item-overlay"><div class="col-item-zoom"><i class="fas fa-search-plus"></i></div></div>
+        <div class="col-item-overlay">
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Keychains', img: '../images/web/mini-bags-1.jpeg', price: 999}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        </div>
       </div>
-      <div class="col-item">
+      <div class="col-item col-item-reveal" style="animation-delay: .1s">
         <img src="../images/web/mini-bags-2.jpeg" alt="Keychains" loading="lazy">
-        <div class="col-item-overlay"><div class="col-item-zoom"><i class="fas fa-search-plus"></i></div></div>
+        <div class="col-item-overlay">
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Keychains', img: '../images/web/mini-bags-2.jpeg', price: 999}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        </div>
       </div>
     </div>
   </section>

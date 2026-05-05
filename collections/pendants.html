@@ -40,17 +40,26 @@
 
   <section class="col-gallery">
     <div class="col-grid">
-      <div class="col-item">
+      <div class="col-item col-item-reveal" style="animation-delay: 0s">
         <img src="../images/web/pendents-1.jpeg" alt="Pendants" loading="lazy">
-        <div class="col-item-overlay"><div class="col-item-zoom"><i class="fas fa-search-plus"></i></div></div>
+        <div class="col-item-overlay">
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Pendants', img: '../images/web/pendents-1.jpeg', price: 999}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        </div>
       </div>
-      <div class="col-item">
+      <div class="col-item col-item-reveal" style="animation-delay: .1s">
         <img src="../images/web/pendents-2.jpeg" alt="Pendants" loading="lazy">
-        <div class="col-item-overlay"><div class="col-item-zoom"><i class="fas fa-search-plus"></i></div></div>
+        <div class="col-item-overlay">
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Pendants', img: '../images/web/pendents-2.jpeg', price: 999}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        </div>
       </div>
-      <div class="col-item">
+      <div class="col-item col-item-reveal" style="animation-delay: .2s">
         <img src="../images/web/pendents-3.jpeg" alt="Pendants" loading="lazy">
-        <div class="col-item-overlay"><div class="col-item-zoom"><i class="fas fa-search-plus"></i></div></div>
+        <div class="col-item-overlay">
+          <button class="btn-add-cart" onclick="event.stopPropagation(); window.parent.postMessage({type:'addToCart', item: 'Pendants', img: '../images/web/pendents-3.jpeg', price: 999}, '*');"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        </div>
       </div>
     </div>
   </section>

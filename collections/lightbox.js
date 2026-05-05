@@ -59,8 +59,7 @@
     });
 
     // Handle AI AutoPlay Navigation
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('autoplay') === 'true' && images.length > 0) {
+    if (window.location.hash.includes('autoplay=true') && images.length > 0) {
       // Delay slightly to let the iframe animation finish before showing lightbox
       setTimeout(() => {
         open(0);

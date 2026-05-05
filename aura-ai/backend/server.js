@@ -8,6 +8,8 @@ const express = require('express');
 const WebSocket = require('ws');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
 require('dotenv').config();
 
 delete process.env.GOOGLE_API_KEY;
@@ -46,6 +48,59 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Razorpay Setup
+let razorpayInstance = null;
+if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+    razorpayInstance = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID,
+        key_secret: process.env.RAZORPAY_KEY_SECRET
+    });
+}
+
+// Razorpay Endpoints
+app.post('/api/create-order', async (req, res) => {
+    try {
+        if (!razorpayInstance) {
+            return res.status(500).json({ success: false, error: 'Razorpay keys not configured on server.' });
+        }
+        const { amount } = req.body;
+        const options = {
+            amount: amount * 100, // paise
+            currency: 'INR',
+            receipt: 'receipt_' + Date.now()
+        };
+        const order = await razorpayInstance.orders.create(options);
+        res.json({ success: true, order, key_id: process.env.RAZORPAY_KEY_ID });
+    } catch (err) {
+        console.error('Razorpay Error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.post('/api/verify-payment', async (req, res) => {
+    try {
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature, cartDetails, customer } = req.body;
+        const text = razorpay_order_id + "|" + razorpay_payment_id;
+        const expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+                                    .update(text.toString())
+                                    .digest('hex');
+                                    
+        if (expectedSignature === razorpay_signature) {
+            // Send email notification!
+            let cartText = cartDetails.map(item => `- ${item.item}: ₹${item.price}`).join('<br>');
+            const emailMsg = `Payment successful! Order ID: ${razorpay_order_id}<br><br><b>Items:</b><br>${cartText}<br><br><b>Total Amount Paid:</b> ₹${cartDetails.reduce((s, i) => s + i.price, 0)}<br><br><b>Customer Info:</b><br>Name: ${customer.name}<br>Email: ${customer.email}<br>Phone: ${customer.phone}`;
+            
+            await sendEmailNotification(emailMsg, customer.name, 'Razorpay Order');
+            
+            res.json({ success: true });
+        } else {
+            res.status(400).json({ success: false, error: 'Invalid signature' });
+        }
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
 
 // Email configuration
 const emailTransporter = nodemailer.createTransport({
