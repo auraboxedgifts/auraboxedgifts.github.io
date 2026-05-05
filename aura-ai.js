@@ -200,12 +200,7 @@ function handleAuraBackendMessage(message) {
             }
             break;
         case 'show_cart': {
-            var csb = document.getElementById('cartSidebar');
-            var cov = document.getElementById('cartOverlay');
-            if (csb && cov) {
-                csb.classList.add('active');
-                cov.classList.add('active');
-            }
+            if (typeof openCartPage === 'function') openCartPage();
             break;
         }
         case 'scroll_to_section':
