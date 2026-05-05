@@ -12,7 +12,10 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
+
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
 delete process.env.GOOGLE_API_KEY;
 

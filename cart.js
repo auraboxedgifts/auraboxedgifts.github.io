@@ -265,6 +265,42 @@ function openCheckoutPage() {
         })
         .catch(err => console.error('Config fetch error:', err));
 
+    // Auto-login with JWT Token
+    var authToken = localStorage.getItem('auraAuthToken');
+    if (authToken) {
+        fetch(API_BASE + '/api/verify-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: authToken })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                verifiedEmail = data.email;
+                document.getElementById('ckOtpForm').style.display = 'none';
+                document.getElementById('ckContactSuccess').style.display = 'flex';
+                document.getElementById('ckContactSuccess').innerHTML = '<i class="fas fa-check-circle"></i> Logged in as: ' + data.email + ' <a href="#" id="ckLogout" style="margin-left:10px;color:#b76e79;text-decoration:underline;font-size:0.85rem;">(Logout)</a>';
+                
+                document.getElementById('ckLogout').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    localStorage.removeItem('auraAuthToken');
+                    verifiedEmail = '';
+                    document.getElementById('ckContactSuccess').style.display = 'none';
+                    document.getElementById('ckOtpForm').style.display = 'block';
+                    document.getElementById('ckEmail').value = '';
+                    document.getElementById('stepDelivery').style.opacity = '0.4';
+                    document.getElementById('stepDelivery').style.pointerEvents = 'none';
+                });
+
+                document.getElementById('stepDelivery').style.opacity = '1';
+                document.getElementById('stepDelivery').style.pointerEvents = 'auto';
+            } else {
+                localStorage.removeItem('auraAuthToken');
+            }
+        })
+        .catch(err => console.log('Token error', err));
+    }
+
     // Manual Address Toggle Logic
     document.getElementById('ckManualAddressBtn').addEventListener('click', function() {
         var currentAddr = document.getElementById('ckAddress');
@@ -319,9 +355,22 @@ function openCheckoutPage() {
             var data = await res.json();
             if(data.success) {
                 verifiedEmail = em;
+                if(data.token) localStorage.setItem('auraAuthToken', data.token);
                 document.getElementById('ckOtpVerifyForm').style.display = 'none';
-                document.getElementById('ckVerifiedEmailText').textContent = em;
                 document.getElementById('ckContactSuccess').style.display = 'flex';
+                document.getElementById('ckContactSuccess').innerHTML = '<i class="fas fa-check-circle"></i> Logged in as: ' + em + ' <a href="#" id="ckLogout" style="margin-left:10px;color:#b76e79;text-decoration:underline;font-size:0.85rem;">(Logout)</a>';
+                
+                document.getElementById('ckLogout').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    localStorage.removeItem('auraAuthToken');
+                    verifiedEmail = '';
+                    document.getElementById('ckContactSuccess').style.display = 'none';
+                    document.getElementById('ckOtpForm').style.display = 'block';
+                    document.getElementById('ckEmail').value = '';
+                    document.getElementById('stepDelivery').style.opacity = '0.4';
+                    document.getElementById('stepDelivery').style.pointerEvents = 'none';
+                });
+
                 document.getElementById('stepDelivery').style.opacity = '1';
                 document.getElementById('stepDelivery').style.pointerEvents = 'auto';
             } else { alert(data.error || 'Invalid OTP'); }
