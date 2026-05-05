@@ -17,12 +17,14 @@
 
   <link rel="stylesheet" href="collection.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="icon" type="image/png" href="../images/web/auraboxedgifts.png">
+  <link rel="icon" type="image/jpeg" href="../images/logo.jpeg">
+  <!-- Google Maps for Autocomplete -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY_HERE&libraries=places" async defer></script>
 </head>
 <body>
   <nav class="col-nav">
     <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;" class="col-nav-back"><i class="fas fa-arrow-left"></i> Back</a>
-    <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;" class="col-nav-logo"><img src="../images/web/auraboxedgifts.png" alt="Aura Boxed Gifts"></a>
+    <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;" class="col-nav-logo"><img src="../images/logo.jpeg" alt="Aura Boxed Gifts"></a>
     <div class="col-nav-links">
       <a href="#" id="navCartIcon" aria-label="Cart" style="position: relative; margin-right: 15px;">
         <i class="fas fa-shopping-cart"></i>
@@ -43,25 +45,25 @@
 
   <section class="col-gallery">
     <div class="col-grid">
-      <div class="col-item col-item-reveal" style="animation-delay: 0s" data-idx="0" data-name="Hair Bow Clip #1" data-price="699" data-img="../images/web/aligator-hairpins-1.jpeg">
+      <div class="col-item col-item-reveal" style="animation-delay: 0s" data-idx="0" data-name="Hair Bow Clip #1" data-price="499" data-img="../images/web/aligator-hairpins-1.jpeg">
         <div class="col-item-img-wrapper">
           <img src="../images/web/aligator-hairpins-1.jpeg" alt="Hair Bow Clip #1" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
           <h3 class="col-item-title">Hair Bow Clip #1</h3>
-          <p class="col-item-price">Rs. 699.00</p>
+          <p class="col-item-price">Rs. 499.00</p>
           <button class="btn-add-cart" data-add-idx="0"><i class="fas fa-shopping-cart"></i> Add to cart</button>
         </div>
       </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .1s" data-idx="1" data-name="Hair Bow Clip #2" data-price="299" data-img="../images/web/aligator-hairpins-2.jpeg">
+      <div class="col-item col-item-reveal" style="animation-delay: .1s" data-idx="1" data-name="Hair Bow Clip #2" data-price="1099" data-img="../images/web/aligator-hairpins-2.jpeg">
         <div class="col-item-img-wrapper">
           <img src="../images/web/aligator-hairpins-2.jpeg" alt="Hair Bow Clip #2" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
           <h3 class="col-item-title">Hair Bow Clip #2</h3>
-          <p class="col-item-price">Rs. 299.00</p>
+          <p class="col-item-price">Rs. 1099.00</p>
           <button class="btn-add-cart" data-add-idx="1"><i class="fas fa-shopping-cart"></i> Add to cart</button>
         </div>
       </div>

@@ -17,12 +17,14 @@
 
   <link rel="stylesheet" href="collection.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="icon" type="image/png" href="../images/web/auraboxedgifts.png">
+  <link rel="icon" type="image/jpeg" href="../images/logo.jpeg">
+  <!-- Google Maps for Autocomplete -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY_HERE&libraries=places" async defer></script>
 </head>
 <body>
   <nav class="col-nav">
     <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;" class="col-nav-back"><i class="fas fa-arrow-left"></i> Back</a>
-    <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;" class="col-nav-logo"><img src="../images/web/auraboxedgifts.png" alt="Aura Boxed Gifts"></a>
+    <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;" class="col-nav-logo"><img src="../images/logo.jpeg" alt="Aura Boxed Gifts"></a>
     <div class="col-nav-links">
       <a href="#" id="navCartIcon" aria-label="Cart" style="position: relative; margin-right: 15px;">
         <i class="fas fa-shopping-cart"></i>
@@ -43,25 +45,25 @@
 
   <section class="col-gallery">
     <div class="col-grid">
-      <div class="col-item col-item-reveal" style="animation-delay: 0s" data-idx="0" data-name="Drop Earrings #1" data-price="1099" data-img="../images/web/earings-1.jpeg">
+      <div class="col-item col-item-reveal" style="animation-delay: 0s" data-idx="0" data-name="Drop Earrings #1" data-price="1299" data-img="../images/web/earings-1.jpeg">
         <div class="col-item-img-wrapper">
           <img src="../images/web/earings-1.jpeg" alt="Drop Earrings #1" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
           <h3 class="col-item-title">Drop Earrings #1</h3>
-          <p class="col-item-price">Rs. 1099.00</p>
+          <p class="col-item-price">Rs. 1299.00</p>
           <button class="btn-add-cart" data-add-idx="0"><i class="fas fa-shopping-cart"></i> Add to cart</button>
         </div>
       </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .1s" data-idx="1" data-name="Drop Earrings #2" data-price="699" data-img="../images/web/earings-2.jpeg">
+      <div class="col-item col-item-reveal" style="animation-delay: .1s" data-idx="1" data-name="Drop Earrings #2" data-price="999" data-img="../images/web/earings-2.jpeg">
         <div class="col-item-img-wrapper">
           <img src="../images/web/earings-2.jpeg" alt="Drop Earrings #2" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
           <h3 class="col-item-title">Drop Earrings #2</h3>
-          <p class="col-item-price">Rs. 699.00</p>
+          <p class="col-item-price">Rs. 999.00</p>
           <button class="btn-add-cart" data-add-idx="1"><i class="fas fa-shopping-cart"></i> Add to cart</button>
         </div>
       </div>
@@ -76,47 +78,47 @@
           <button class="btn-add-cart" data-add-idx="2"><i class="fas fa-shopping-cart"></i> Add to cart</button>
         </div>
       </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .3s" data-idx="3" data-name="Drop Earrings #4" data-price="1199" data-img="../images/web/earings-4.jpeg">
+      <div class="col-item col-item-reveal" style="animation-delay: .3s" data-idx="3" data-name="Drop Earrings #4" data-price="1099" data-img="../images/web/earings-4.jpeg">
         <div class="col-item-img-wrapper">
           <img src="../images/web/earings-4.jpeg" alt="Drop Earrings #4" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
           <h3 class="col-item-title">Drop Earrings #4</h3>
-          <p class="col-item-price">Rs. 1199.00</p>
+          <p class="col-item-price">Rs. 1099.00</p>
           <button class="btn-add-cart" data-add-idx="3"><i class="fas fa-shopping-cart"></i> Add to cart</button>
         </div>
       </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .4s" data-idx="4" data-name="Drop Earrings #5" data-price="599" data-img="../images/web/earings-5.jpeg">
+      <div class="col-item col-item-reveal" style="animation-delay: .4s" data-idx="4" data-name="Drop Earrings #5" data-price="699" data-img="../images/web/earings-5.jpeg">
         <div class="col-item-img-wrapper">
           <img src="../images/web/earings-5.jpeg" alt="Drop Earrings #5" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
           <h3 class="col-item-title">Drop Earrings #5</h3>
-          <p class="col-item-price">Rs. 599.00</p>
+          <p class="col-item-price">Rs. 699.00</p>
           <button class="btn-add-cart" data-add-idx="4"><i class="fas fa-shopping-cart"></i> Add to cart</button>
         </div>
       </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .5s" data-idx="5" data-name="Drop Earrings #6" data-price="799" data-img="../images/web/earings-6.jpeg">
+      <div class="col-item col-item-reveal" style="animation-delay: .5s" data-idx="5" data-name="Drop Earrings #6" data-price="1099" data-img="../images/web/earings-6.jpeg">
         <div class="col-item-img-wrapper">
           <img src="../images/web/earings-6.jpeg" alt="Drop Earrings #6" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
           <h3 class="col-item-title">Drop Earrings #6</h3>
-          <p class="col-item-price">Rs. 799.00</p>
+          <p class="col-item-price">Rs. 1099.00</p>
           <button class="btn-add-cart" data-add-idx="5"><i class="fas fa-shopping-cart"></i> Add to cart</button>
         </div>
       </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .6s" data-idx="6" data-name="Drop Earrings #7" data-price="1599" data-img="../images/web/earings-7.jpeg">
+      <div class="col-item col-item-reveal" style="animation-delay: .6s" data-idx="6" data-name="Drop Earrings #7" data-price="499" data-img="../images/web/earings-7.jpeg">
         <div class="col-item-img-wrapper">
           <img src="../images/web/earings-7.jpeg" alt="Drop Earrings #7" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
           <h3 class="col-item-title">Drop Earrings #7</h3>
-          <p class="col-item-price">Rs. 1599.00</p>
+          <p class="col-item-price">Rs. 499.00</p>
           <button class="btn-add-cart" data-add-idx="6"><i class="fas fa-shopping-cart"></i> Add to cart</button>
         </div>
       </div>

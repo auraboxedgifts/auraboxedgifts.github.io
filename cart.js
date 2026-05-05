@@ -100,48 +100,61 @@ function openCheckoutPage() {
     el.innerHTML =
     '<div class="checkout-page">' +
       '<div class="ck-left">' +
-        '<div class="ck-brand"><img src="images/web/auraboxedgifts.png" alt="Aura" class="ck-logo"><span>Aura Boxed Gifts</span></div>' +
+        '<div class="ck-brand"><img src="images/logo.jpeg" alt="Aura" class="ck-logo"><span>Aura Boxed Gifts</span></div>' +
 
-        '<section class="ck-section">' +
+        '<!-- STEP 1: CONTACT -->' +
+        '<section class="ck-section" id="stepContact">' +
           '<h3>Contact</h3>' +
-          '<div class="ck-field"><input type="email" id="ckEmail" placeholder="Email or mobile phone number" required></div>' +
+          '<div id="ckOtpForm">' +
+            '<div class="ck-field"><input type="email" id="ckEmail" placeholder="Email" required></div>' +
+            '<button class="ck-pay-now-btn" id="ckSendOtpBtn" style="padding: 12px; margin-top: 5px;">Send OTP</button>' +
+          '</div>' +
+          '<div id="ckOtpVerifyForm" style="display: none;">' +
+            '<p style="font-size: 0.8rem; margin-bottom: 10px;">OTP sent to <span id="ckEmailDisplay"></span> <a href="#" id="ckEditEmail" style="color:var(--rose-gold)">Edit</a></p>' +
+            '<div class="ck-field"><input type="text" id="ckOtpInput" placeholder="Enter 6-digit OTP" required></div>' +
+            '<button class="ck-pay-now-btn" id="ckVerifyOtpBtn" style="padding: 12px; margin-top: 5px;">Verify OTP</button>' +
+          '</div>' +
+          '<div id="ckContactSuccess" style="display: none; color: #27ae60; font-weight: 500; align-items: center; gap: 8px;"><i class="fas fa-check-circle"></i> <span id="ckVerifiedEmailText"></span></div>' +
         '</section>' +
 
-        '<section class="ck-section">' +
+        '<!-- STEP 2: DELIVERY -->' +
+        '<section class="ck-section" id="stepDelivery" style="opacity: 0.4; pointer-events: none;">' +
           '<h3>Delivery</h3>' +
           '<div class="ck-field"><label>Country/Region</label><select id="ckCountry"><option>India</option></select></div>' +
           '<div class="ck-row">' +
-            '<div class="ck-field ck-half"><input type="text" id="ckFirstName" placeholder="First name" required></div>' +
-            '<div class="ck-field ck-half"><input type="text" id="ckLastName" placeholder="Last name" required></div>' +
+            '<div class="ck-field ck-half"><input type="text" id="ckFirstName" placeholder="First name"></div>' +
+            '<div class="ck-field ck-half"><input type="text" id="ckLastName" placeholder="Last name"></div>' +
           '</div>' +
-          '<div class="ck-field"><input type="text" id="ckAddress" placeholder="Address" required></div>' +
+          '<div class="ck-field"><input type="text" id="ckAddress" placeholder="Address (Start typing for suggestions...)"></div>' +
           '<div class="ck-field"><input type="text" id="ckApartment" placeholder="Apartment, suite, etc. (optional)"></div>' +
           '<div class="ck-row ck-row-3">' +
-            '<div class="ck-field"><input type="text" id="ckCity" placeholder="City" required></div>' +
-            '<div class="ck-field"><select id="ckState"><option value="">State</option><option>Andhra Pradesh</option><option>Assam</option><option>Bihar</option><option>Chhattisgarh</option><option>Delhi</option><option>Goa</option><option>Gujarat</option><option>Haryana</option><option>Himachal Pradesh</option><option>Jharkhand</option><option>Karnataka</option><option>Kerala</option><option>Madhya Pradesh</option><option>Maharashtra</option><option>Manipur</option><option>Meghalaya</option><option>Mizoram</option><option>Nagaland</option><option>Odisha</option><option>Punjab</option><option>Rajasthan</option><option>Sikkim</option><option>Tamil Nadu</option><option>Telangana</option><option>Tripura</option><option>Uttar Pradesh</option><option>Uttarakhand</option><option>West Bengal</option></select></div>' +
-            '<div class="ck-field"><input type="text" id="ckPincode" placeholder="PIN code" required></div>' +
+            '<div class="ck-field"><input type="text" id="ckCity" placeholder="City"></div>' +
+            '<div class="ck-field"><input type="text" id="ckState" placeholder="State"></div>' +
+            '<div class="ck-field"><input type="text" id="ckPincode" placeholder="PIN code"></div>' +
           '</div>' +
-          '<div class="ck-field"><input type="tel" id="ckPhone" placeholder="Phone" required></div>' +
-          '<label class="ck-checkbox"><input type="checkbox" id="ckSaveInfo" checked> Save this information for next time</label>' +
+          '<div class="ck-field"><input type="tel" id="ckPhone" placeholder="Phone"></div>' +
+          '<button class="ck-pay-now-btn" id="ckDeliveryBtn" style="padding: 12px; margin-top: 10px;">Continue to Shipping</button>' +
         '</section>' +
 
-        '<section class="ck-section">' +
+        '<!-- STEP 3: SHIPPING -->' +
+        '<section class="ck-section" id="stepShipping" style="opacity: 0.4; pointer-events: none;">' +
           '<h3>Shipping method</h3>' +
           '<div class="ck-shipping-options">' +
             '<label class="ck-shipping-option selected"><input type="radio" name="shipping" value="standard" checked><div><strong>Standard</strong><span>10 to 12 business days • Delivery all over India</span></div><span class="ck-ship-price">₹70.00</span></label>' +
           '</div>' +
+          '<button class="ck-pay-now-btn" id="ckShippingBtn" style="padding: 12px; margin-top: 15px;">Continue to Payment</button>' +
         '</section>' +
 
-        '<section class="ck-section">' +
+        '<!-- STEP 4: PAYMENT -->' +
+        '<section class="ck-section" id="stepPayment" style="opacity: 0.4; pointer-events: none;">' +
           '<h3>Payment</h3>' +
           '<p class="ck-secure-text"><i class="fas fa-lock"></i> All transactions are secure and encrypted.</p>' +
           '<div class="ck-payment-box">' +
             '<div class="ck-payment-header"><span>Razorpay Secure (UPI, Cards, Int\'l Cards, Wallets)</span><span class="ck-pay-icons">💳</span></div>' +
             '<p class="ck-payment-desc">You\'ll be redirected to Razorpay Secure to complete your purchase.</p>' +
           '</div>' +
+          '<button class="ck-pay-now-btn" id="ckPayNowBtn">Pay now • ₹'+grandTotal+'.00</button>' +
         '</section>' +
-
-        '<button class="ck-pay-now-btn" id="ckPayNowBtn">Pay now • ₹'+grandTotal+'.00</button>' +
       '</div>' +
 
       '<div class="ck-right">' +
@@ -160,9 +173,87 @@ function openCheckoutPage() {
     document.body.appendChild(el);
     document.body.style.overflow = 'hidden';
 
+    // Google Maps Autocomplete Init
+    if (typeof google !== 'undefined' && google.maps && google.maps.places) {
+        var input = document.getElementById('ckAddress');
+        var autocomplete = new google.maps.places.Autocomplete(input, { types: ['address'], componentRestrictions: { country: 'in' } });
+        autocomplete.addListener('place_changed', function() {
+            var place = autocomplete.getPlace();
+            if (!place.address_components) return;
+            var city='', state='', pin='';
+            place.address_components.forEach(function(c) {
+                if(c.types.includes('locality')) city = c.long_name;
+                if(c.types.includes('administrative_area_level_1')) state = c.long_name;
+                if(c.types.includes('postal_code')) pin = c.long_name;
+            });
+            if(city) document.getElementById('ckCity').value = city;
+            if(state) document.getElementById('ckState').value = state;
+            if(pin) document.getElementById('ckPincode').value = pin;
+        });
+    }
+
+    // OTP Logic
+    var verifiedEmail = '';
+    document.getElementById('ckSendOtpBtn').addEventListener('click', async function() {
+        var em = document.getElementById('ckEmail').value;
+        if(!em) return alert('Please enter email');
+        this.textContent = 'Sending...'; this.disabled = true;
+        try {
+            var res = await fetch(API_BASE + '/api/send-otp', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: em}) });
+            var data = await res.json();
+            if(data.success) {
+                document.getElementById('ckOtpForm').style.display = 'none';
+                document.getElementById('ckEmailDisplay').textContent = em;
+                document.getElementById('ckOtpVerifyForm').style.display = 'block';
+            } else { alert(data.error || 'Failed to send OTP'); }
+        } catch(e) { alert('Error: ' + e.message); }
+        this.textContent = 'Send OTP'; this.disabled = false;
+    });
+
+    document.getElementById('ckEditEmail').addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById('ckOtpVerifyForm').style.display = 'none';
+        document.getElementById('ckOtpForm').style.display = 'block';
+    });
+
+    document.getElementById('ckVerifyOtpBtn').addEventListener('click', async function() {
+        var em = document.getElementById('ckEmail').value;
+        var otp = document.getElementById('ckOtpInput').value;
+        if(!otp) return alert('Please enter OTP');
+        this.textContent = 'Verifying...'; this.disabled = true;
+        try {
+            var res = await fetch(API_BASE + '/api/verify-otp', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: em, otp: otp}) });
+            var data = await res.json();
+            if(data.success) {
+                verifiedEmail = em;
+                document.getElementById('ckOtpVerifyForm').style.display = 'none';
+                document.getElementById('ckVerifiedEmailText').textContent = em;
+                document.getElementById('ckContactSuccess').style.display = 'flex';
+                document.getElementById('stepDelivery').style.opacity = '1';
+                document.getElementById('stepDelivery').style.pointerEvents = 'auto';
+            } else { alert(data.error || 'Invalid OTP'); }
+        } catch(e) { alert('Error: ' + e.message); }
+        this.textContent = 'Verify OTP'; this.disabled = false;
+    });
+
+    // Stepper logic
+    document.getElementById('ckDeliveryBtn').addEventListener('click', function() {
+        if(!document.getElementById('ckFirstName').value || !document.getElementById('ckAddress').value || !document.getElementById('ckCity').value || !document.getElementById('ckPhone').value) {
+            return alert('Please fill in required delivery fields.');
+        }
+        document.getElementById('stepShipping').style.opacity = '1';
+        document.getElementById('stepShipping').style.pointerEvents = 'auto';
+        this.style.display = 'none'; // hide continue btn
+    });
+
+    document.getElementById('ckShippingBtn').addEventListener('click', function() {
+        document.getElementById('stepPayment').style.opacity = '1';
+        document.getElementById('stepPayment').style.pointerEvents = 'auto';
+        this.style.display = 'none'; // hide continue btn
+    });
+
+    // Pay now logic
     document.getElementById('ckPayNowBtn').addEventListener('click', function() {
-        // Validate
-        var email = document.getElementById('ckEmail').value;
         var firstName = document.getElementById('ckFirstName').value;
         var lastName = document.getElementById('ckLastName').value;
         var address = document.getElementById('ckAddress').value;
@@ -171,14 +262,14 @@ function openCheckoutPage() {
         var pincode = document.getElementById('ckPincode').value;
         var phone = document.getElementById('ckPhone').value;
 
-        if (!email || !firstName || !address || !city || !phone) {
-            alert('Please fill in all required fields.');
+        if (!verifiedEmail || !firstName || !address || !city || !phone) {
+            alert('Please complete all steps.');
             return;
         }
 
         var fullName = firstName + ' ' + lastName;
         var fullAddress = address + ', ' + city + ', ' + state + ' ' + pincode;
-        processPayment(fullName, email, phone, fullAddress, grandTotal);
+        processPayment(fullName, verifiedEmail, phone, fullAddress, grandTotal);
     });
 }
 
@@ -205,7 +296,7 @@ async function processPayment(name, email, phone, address, grandTotal) {
             currency: "INR",
             name: "Aura Boxed Gifts",
             description: "Purchase from Aura Boxed Gifts",
-            image: "https://auraboxedgifts.in/images/web/auraboxedgifts.png",
+            image: "https://auraboxedgifts.in/images/logo.jpeg",
             order_id: data.order.id,
             handler: async function(resp) {
                 var verifyRes = await fetch(API_BASE + '/api/verify-payment', {

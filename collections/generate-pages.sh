@@ -131,12 +131,14 @@ HEREDOC_DYN
 
   <link rel="stylesheet" href="collection.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="icon" type="image/png" href="../images/web/auraboxedgifts.png">
+  <link rel="icon" type="image/jpeg" href="../images/logo.jpeg">
+  <!-- Google Maps for Autocomplete -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY_HERE&libraries=places" async defer></script>
 </head>
 <body>
   <nav class="col-nav">
     <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;" class="col-nav-back"><i class="fas fa-arrow-left"></i> Back</a>
-    <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;" class="col-nav-logo"><img src="../images/web/auraboxedgifts.png" alt="Aura Boxed Gifts"></a>
+    <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;" class="col-nav-logo"><img src="../images/logo.jpeg" alt="Aura Boxed Gifts"></a>
     <div class="col-nav-links">
       <a href="#" id="navCartIcon" aria-label="Cart" style="position: relative; margin-right: 15px;">
         <i class="fas fa-shopping-cart"></i>

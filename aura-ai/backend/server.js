@@ -48,6 +48,66 @@ app.use(cors({
 }));
 
 app.use(express.json());
+// Email configuration
+const emailTransporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_APP_PASSWORD
+    }
+});
+
+// ─── OTP Session Store ───
+const otpStore = new Map(); // Stores { email: { otp: '123456', expiresAt: timestamp } }
+
+// ─── OTP Endpoints ───
+app.post('/api/send-otp', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ success: false, error: 'Email is required' });
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+
+        otpStore.set(email, { otp, expiresAt });
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Aura Boxed Gifts - Your Login OTP',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; text-align: center;">
+                    <h2>Your OTP for Aura Boxed Gifts</h2>
+                    <p>Please use the following 6-digit code to log in:</p>
+                    <h1 style="color: #b76e79; letter-spacing: 5px;">${otp}</h1>
+                    <p>This code will expire in 10 minutes.</p>
+                </div>
+            `
+        };
+
+        await emailTransporter.sendMail(mailOptions);
+        res.json({ success: true, message: 'OTP sent successfully' });
+    } catch (err) {
+        console.error('OTP Send Error:', err);
+        res.status(500).json({ success: false, error: 'Failed to send OTP. Ensure email config is correct.' });
+    }
+});
+
+app.post('/api/verify-otp', (req, res) => {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ success: false, error: 'Email and OTP required' });
+
+    const record = otpStore.get(email);
+    if (!record) return res.status(400).json({ success: false, error: 'No OTP requested for this email' });
+    if (Date.now() > record.expiresAt) {
+        otpStore.delete(email);
+        return res.status(400).json({ success: false, error: 'OTP has expired' });
+    }
+    if (record.otp !== otp) return res.status(400).json({ success: false, error: 'Invalid OTP' });
+
+    otpStore.delete(email);
+    res.json({ success: true, message: 'OTP verified successfully' });
+});
 
 // Razorpay Setup
 let razorpayInstance = null;
@@ -99,15 +159,6 @@ app.post('/api/verify-payment', async (req, res) => {
         }
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-// Email configuration
-const emailTransporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_APP_PASSWORD
     }
 });
 
