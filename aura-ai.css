@@ -3,7 +3,7 @@
 .aura-ai-widget {
     position: fixed;
     bottom: 20px;
-    right: 20px;
+    left: 20px;
     z-index: 10000;
     font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -158,7 +158,7 @@
 .aura-end-btn:hover svg { stroke: white; }
 
 @media screen and (max-width: 480px) {
-    .aura-ai-widget { right: 15px; bottom: 20px; }
+    .aura-ai-widget { left: 15px; bottom: 20px; }
     .aura-widget-panel { padding: 8px 16px 8px 8px; gap: 10px; }
     .aura-visualizer-container { width: 45px; height: 45px; }
     #auraVisualizer { width: 45px; height: 45px; }

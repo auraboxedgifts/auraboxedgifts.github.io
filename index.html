@@ -345,27 +345,7 @@
 
   </footer>
 
-  <!-- ═══ CART SIDEBAR ═══ -->
-  <div class="cart-overlay" id="cartOverlay"></div>
-  <div class="cart-sidebar" id="cartSidebar">
-    <div class="cart-header">
-      <h3>Your Cart</h3>
-      <button class="cart-close" id="cartClose">&times;</button>
-    </div>
-    <div class="cart-items" id="cartItems">
-      <!-- Items dynamically populated here -->
-    </div>
-    <div class="cart-footer">
-      <div class="cart-total">
-        <span>Total:</span>
-        <span id="cartTotalAmt">₹0</span>
-      </div>
-      <button class="btn-primary" id="btnCheckout" style="width:100%; margin-top:15px; border-radius:50px;">Proceed to Checkout</button>
-    </div>
-  </div>
-
-  <!-- ═══ FLOATING CART ICON (REMOVED) ═══ -->
-  <!-- We moved the cart icon to the top navbar -->
+  <!-- Cart page overlay is now created dynamically by cart.js -->
 
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script src="cart.js"></script>
