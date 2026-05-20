@@ -1006,6 +1006,10 @@ button { cursor: pointer; border: none; font-family: inherit; }
   font-size: 0.88rem; color: var(--text-dark);
   transition: var(--transition); outline: none; background: var(--white);
 }
+.ck-field input.invalid {
+  border-color: #d95555;
+  box-shadow: 0 0 0 2px rgba(217,85,85,0.12);
+}
 .ck-field select { -webkit-appearance: none; appearance: none; cursor: pointer; }
 .ck-field input:focus, .ck-field select:focus {
   border-color: var(--rose-gold);
@@ -1051,6 +1055,9 @@ button { cursor: pointer; border: none; font-family: inherit; }
   background: var(--text-dark); color: var(--white);
   font-size: 1rem; font-weight: 500; border-radius: 6px;
   transition: var(--transition); letter-spacing: 0.3px;
+}
+.ck-pay-now-btn.secondary {
+  background: #5f534b;
 }
 .ck-pay-now-btn:hover { background: var(--brown); }
 .ck-pay-now-btn:disabled { opacity: 0.6; cursor: not-allowed; }

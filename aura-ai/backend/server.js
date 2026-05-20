@@ -261,6 +261,7 @@ function handleVerifyOtp(req, res) {
             name: '',
             phone: '',
             addresses: [],
+            checkoutInfo: null,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -298,6 +299,33 @@ app.put('/api/auth/profile', requireAuth, (req, res) => {
     users[email] = user;
     writeJson(USERS_FILE, users);
     return jsonOk(res, user);
+});
+
+app.get('/api/auth/checkout-info', requireAuth, (req, res) => {
+    const users = readJson(USERS_FILE, {});
+    const user = users[req.auth.email] || null;
+    return jsonOk(res, user?.checkoutInfo || null);
+});
+
+app.put('/api/auth/checkout-info', requireAuth, (req, res) => {
+    const users = readJson(USERS_FILE, {});
+    const email = req.auth.email;
+    const user = users[email] || { email, addresses: [], createdAt: new Date().toISOString() };
+    const payload = {
+        name: String(req.body?.name || user.checkoutInfo?.name || ''),
+        phone: String(req.body?.phone || user.checkoutInfo?.phone || ''),
+        address: String(req.body?.address || user.checkoutInfo?.address || ''),
+        city: String(req.body?.city || user.checkoutInfo?.city || ''),
+        state: String(req.body?.state || user.checkoutInfo?.state || ''),
+        pincode: String(req.body?.pincode || user.checkoutInfo?.pincode || '')
+    };
+    user.checkoutInfo = payload;
+    if (!user.name && payload.name) user.name = payload.name;
+    if (!user.phone && payload.phone) user.phone = payload.phone;
+    user.updatedAt = new Date().toISOString();
+    users[email] = user;
+    writeJson(USERS_FILE, users);
+    return jsonOk(res, payload);
 });
 
 app.get('/api/auth/addresses', requireAuth, (req, res) => {
@@ -376,6 +404,7 @@ app.post('/api/save-user-info', (req, res) => {
     users[email] = { ...(users[email] || {}), ...req.body, email, updatedAt: new Date().toISOString() };
     if (!users[email].createdAt) users[email].createdAt = new Date().toISOString();
     if (!Array.isArray(users[email].addresses)) users[email].addresses = [];
+    if (!users[email].checkoutInfo) users[email].checkoutInfo = null;
     writeJson(USERS_FILE, users);
     return res.json({ success: true, message: 'User info saved' });
 });

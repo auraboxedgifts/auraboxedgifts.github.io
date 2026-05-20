@@ -1,4 +1,55 @@
 (function () {
+  let mapsLoaded = false;
+
+  function ensureMapsLoaded(apiKey) {
+    if (!apiKey) return Promise.resolve(false);
+    if (mapsLoaded || (window.google && window.google.maps && window.google.maps.places)) {
+      mapsLoaded = true;
+      return Promise.resolve(true);
+    }
+    return new Promise((resolve) => {
+      const existing = document.getElementById('auraGoogleMapsPlacesScript');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(true), { once: true });
+        existing.addEventListener('error', () => resolve(false), { once: true });
+        return;
+      }
+      const script = document.createElement('script');
+      script.id = 'auraGoogleMapsPlacesScript';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        mapsLoaded = true;
+        resolve(true);
+      };
+      script.onerror = () => resolve(false);
+      document.head.appendChild(script);
+    });
+  }
+
+  function initAddressAutocomplete(overlay) {
+    const input = overlay.querySelector('#ckAddress');
+    if (!input || !window.google || !window.google.maps || !window.google.maps.places) return;
+    const autocomplete = new window.google.maps.places.Autocomplete(input, {
+      types: ['address'],
+      componentRestrictions: { country: 'in' }
+    });
+    autocomplete.addListener('place_changed', function () {
+      const place = autocomplete.getPlace();
+      if (!place || !Array.isArray(place.address_components)) return;
+      const city = overlay.querySelector('#ckCity');
+      const state = overlay.querySelector('#ckState');
+      const pincode = overlay.querySelector('#ckPincode');
+      place.address_components.forEach((comp) => {
+        const types = comp.types || [];
+        if (types.includes('locality') && city) city.value = comp.long_name;
+        if (types.includes('administrative_area_level_1') && state) state.value = comp.long_name;
+        if (types.includes('postal_code') && pincode) pincode.value = comp.long_name;
+      });
+    });
+  }
+
   async function openCheckoutPage() {
     const items = AuraCart.getItems();
     const calc = await AuraApi.apiFetch('/api/cart/calculate', {
@@ -16,10 +67,17 @@
       <div class="checkout-page">
         <div class="ck-left">
           <h3>Checkout</h3>
-          <p class="ck-secure-text">Login required before payment.</p>
+          <p class="ck-secure-text" id="ckLoginHint">Login required before payment.</p>
           <div class="ck-field"><input type="text" id="ckName" placeholder="Full name"></div>
           <div class="ck-field"><input type="text" id="ckPhone" placeholder="Phone"></div>
-          <div class="ck-field"><input type="text" id="ckAddress" placeholder="Address"></div>
+          <div class="ck-field"><input type="text" id="ckAddress" placeholder="Search address (Google Places)"></div>
+          <button class="ck-back-btn" id="ckManualAddressBtn" style="margin:0 0 8px;">Enter address manually</button>
+          <div class="ck-row ck-row-3">
+            <div class="ck-field"><input type="text" id="ckCity" placeholder="City"></div>
+            <div class="ck-field"><input type="text" id="ckState" placeholder="State"></div>
+            <div class="ck-field"><input type="text" id="ckPincode" placeholder="PIN code"></div>
+          </div>
+          <label class="ck-checkbox"><input type="checkbox" id="ckSaveInfo"> Save this information for next checkout</label>
           <button class="ck-pay-now-btn" id="ckLoginBtn">Login / Verify OTP</button>
           <button class="ck-pay-now-btn" id="ckPayNowBtn" style="margin-top:10px;">Pay now • ₹${calc.data.grandTotal}.00</button>
           <button class="ck-back-btn" id="ckBackBtn" style="margin-top:8px;">Back to cart</button>
@@ -39,9 +97,21 @@
     if (window.location.hash !== '#checkout') history.pushState({ auraOverlay: 'checkout' }, '', '#checkout');
 
     const loginBtn = overlay.querySelector('#ckLoginBtn');
+    const loginHint = overlay.querySelector('#ckLoginHint');
     const meAtLoad = await AuraAuth.refreshUser();
     if (meAtLoad) {
       loginBtn.style.display = 'none';
+      loginHint.textContent = `Logged in as ${meAtLoad.email}`;
+      const profile = meAtLoad.checkoutInfo || {};
+      if (profile.name) overlay.querySelector('#ckName').value = profile.name;
+      if (profile.phone) overlay.querySelector('#ckPhone').value = profile.phone;
+      if (profile.address) overlay.querySelector('#ckAddress').value = profile.address;
+      if (profile.city) overlay.querySelector('#ckCity').value = profile.city;
+      if (profile.state) overlay.querySelector('#ckState').value = profile.state;
+      if (profile.pincode) overlay.querySelector('#ckPincode').value = profile.pincode;
+      if (profile.name || profile.phone || profile.address) {
+        overlay.querySelector('#ckSaveInfo').checked = true;
+      }
     } else {
       loginBtn.style.display = '';
     }
@@ -58,6 +128,22 @@
     loginBtn.addEventListener('click', function () {
       AuraAuth.openAuthModal();
     });
+    overlay.querySelector('#ckManualAddressBtn').addEventListener('click', function () {
+      const current = overlay.querySelector('#ckAddress');
+      if (!current) return;
+      current.placeholder = 'Address (House no, building, street, area)';
+      current.focus();
+      this.style.display = 'none';
+    });
+
+    AuraApi.apiFetch('/api/config')
+      .then(async (cfg) => {
+        const key = cfg?.googleMapsApiKey || cfg?.data?.googleMapsApiKey || '';
+        const ok = await ensureMapsLoaded(key);
+        if (ok) initAddressAutocomplete(overlay);
+      })
+      .catch(() => {});
+
     overlay.querySelector('#ckPayNowBtn').addEventListener('click', async function () {
       const me = await AuraAuth.refreshUser();
       if (!me) return AuraAuth.openAuthModal();
@@ -67,7 +153,26 @@
         phone: document.getElementById('ckPhone').value.trim(),
         address: document.getElementById('ckAddress').value.trim()
       };
-      if (!customer.name || !customer.phone || !customer.address) return;
+      const city = document.getElementById('ckCity').value.trim();
+      const state = document.getElementById('ckState').value.trim();
+      const pincode = document.getElementById('ckPincode').value.trim();
+      if (!customer.name || !customer.phone || !customer.address) {
+        alert('Please fill full name, phone and address');
+        return;
+      }
+      if (overlay.querySelector('#ckSaveInfo').checked) {
+        await AuraApi.apiFetch('/api/auth/checkout-info', {
+          method: 'PUT',
+          body: JSON.stringify({
+            name: customer.name,
+            phone: customer.phone,
+            address: customer.address,
+            city,
+            state,
+            pincode
+          })
+        });
+      }
       const orderResp = await AuraApi.apiFetch('/api/create-order', { method: 'POST', body: JSON.stringify({ items }) });
       const options = {
         key: orderResp.key_id,
