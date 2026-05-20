@@ -1,9 +1,3 @@
-/**
- * Aura AI - Backend Server
- * Voice AI Assistant for AuraBoxedGifts
- * Model: gemini-3.1-flash-live-preview with context window compression
- */
-
 const express = require('express');
 const WebSocket = require('ws');
 const cors = require('cors');
@@ -15,16 +9,29 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
-
-delete process.env.GOOGLE_API_KEY;
-
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {
-    console.error('❌ ERROR: GEMINI_API_KEY is not set in .env file!');
+    console.error('ERROR: GEMINI_API_KEY is required.');
     process.exit(1);
 }
-console.log('🔑 Using Gemini API Key from .env file');
+if (!process.env.JWT_SECRET) {
+    console.warn('WARN: JWT_SECRET is missing. Using fallback secret for this boot only.');
+}
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-dev-secret-change-me';
+
+const DATA_DIR = path.join(__dirname, 'data');
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
+const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
+const COLLECTIONS_FILE = path.join(DATA_DIR, 'collections.json');
+
+if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, '{}');
+if (!fs.existsSync(ORDERS_FILE)) fs.writeFileSync(ORDERS_FILE, '[]');
+if (!fs.existsSync(PRODUCTS_FILE)) fs.writeFileSync(PRODUCTS_FILE, '[]');
+if (!fs.existsSync(COLLECTIONS_FILE)) fs.writeFileSync(COLLECTIONS_FILE, '[]');
 
 const app = express();
 const PORT = process.env.PORT || 5013;
@@ -43,17 +50,82 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(null, true); // Allow all for now
-        }
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        callback(null, true);
     },
     credentials: true
 }));
-
 app.use(express.json());
-// Email configuration
+
+function readJson(filePath, fallback) {
+    try {
+        return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } catch (err) {
+        return fallback;
+    }
+}
+
+function writeJson(filePath, value) {
+    fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
+}
+
+function jsonOk(res, data) {
+    return res.json({ success: true, data });
+}
+
+function jsonErr(res, status, error) {
+    return res.status(status).json({ success: false, error });
+}
+
+function getToken(req) {
+    const bearer = req.headers.authorization;
+    if (bearer && bearer.startsWith('Bearer ')) {
+        return bearer.slice(7).trim();
+    }
+    return req.body?.token || null;
+}
+
+function requireAuth(req, res, next) {
+    const token = getToken(req);
+    if (!token) return jsonErr(res, 401, 'Authentication required');
+    try {
+        req.auth = jwt.verify(token, JWT_SECRET);
+        next();
+    } catch (err) {
+        return jsonErr(res, 401, 'Invalid token');
+    }
+}
+
+function getCatalog() {
+    return readJson(PRODUCTS_FILE, []);
+}
+
+function calculateCart(items) {
+    const products = getCatalog();
+    const lines = [];
+    let subtotal = 0;
+    for (const row of items || []) {
+        const qty = Math.max(1, Number(row.qty || 1));
+        const product = products.find((p) => p.id === row.productId);
+        if (!product) continue;
+        const lineTotal = qty * product.price;
+        subtotal += lineTotal;
+        lines.push({
+            productId: product.id,
+            name: product.name,
+            image: product.image,
+            qty,
+            unitPrice: product.price,
+            lineTotal
+        });
+    }
+    const shipping = lines.length ? 70 : 0;
+    const discount = 0;
+    const tax = 0;
+    const grandTotal = subtotal + shipping + tax - discount;
+    return { lines, subtotal, shipping, discount, tax, grandTotal, currency: 'INR' };
+}
+
 const emailTransporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -62,165 +134,248 @@ const emailTransporter = nodemailer.createTransport({
     }
 });
 
-// ─── OTP Session Store ───
-const otpStore = new Map(); // Stores { email: { otp: '123456', expiresAt: timestamp } }
-
-// ─── User Data Store (File-based) ───
-const USERS_FILE = path.join(__dirname, 'users.json');
-
-app.post('/api/save-user-info', (req, res) => {
-    try {
-        const { email, ...info } = req.body;
-        if (!email) return res.status(400).json({ success: false, error: 'Email required' });
-        
-        let users = {};
-        if (fs.existsSync(USERS_FILE)) {
-            users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-        }
-        users[email] = { ...users[email], ...info, updatedAt: new Date().toISOString() };
-        fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-        
-        res.json({ success: true, message: 'User info saved' });
-    } catch (err) {
-        console.error('Save info error:', err);
-        res.status(500).json({ success: false, error: 'Failed to save info' });
+async function sendEmailNotification(message, senderInfo = '', inquiryType = 'General') {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD || !process.env.RECIPIENT_EMAIL) {
+        return { success: false, error: 'Email credentials not configured on server.' };
     }
-});
-
-// ─── OTP Endpoints ───
-app.post('/api/send-otp', async (req, res) => {
     try {
-        const { email } = req.body;
-        if (!email) return res.status(400).json({ success: false, error: 'Email is required' });
-
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
-
-        console.log(`[OTP] Generating OTP for ${email}`);
-        otpStore.set(email, { otp, expiresAt });
-
-        const mailOptions = {
-            from: `"Aura Boxed Gifts" <${process.env.EMAIL_USER}>`,
-            to: email,
-            subject: `${otp} is your code`,
+        const info = await emailTransporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: process.env.RECIPIENT_EMAIL,
+            subject: `Aura Inquiry - ${inquiryType}`,
             html: `
-                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 40px auto; text-align: center; color: #333;">
-                    <div style="font-size: 16px; font-weight: 500; margin-bottom: 40px;">Aura Boxed Gifts</div>
-                    <div style="font-size: 14px; margin-bottom: 20px;">Your verification code:</div>
-                    <div style="font-size: 32px; font-weight: 600; letter-spacing: 8px; margin-bottom: 20px; color: #111;">${otp}</div>
-                    <div style="font-size: 14px; color: #555; margin-bottom: 60px;">This code can only be used once. It expires in 10 minutes.</div>
-                    <div style="font-size: 12px; color: #999;">
-                        &copy; Aura Boxed Gifts<br><br>
-                        <a href="https://auraboxedgifts.in" style="color: #666; text-decoration: none;">Privacy policy</a>
-                    </div>
+                <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
+                    <h2>Aura Boxed Gifts - ${inquiryType}</h2>
+                    <p><strong>Message</strong></p>
+                    <div>${message}</div>
+                    ${senderInfo ? `<p><strong>Sender:</strong> ${senderInfo}</p>` : ''}
+                    <p><strong>Received:</strong> ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
                 </div>
             `
-        };
-
-        // Send response immediately to prevent client-side "Failed to fetch" if server restarts or delays
-        res.json({ success: true, message: 'OTP sent successfully' });
-
-        // Send email in the background
-        emailTransporter.sendMail(mailOptions).catch(err => console.error('Background OTP Send Error:', err));
-    } catch (err) {
-        console.error('OTP Send Error:', err);
-        res.status(500).json({ success: false, error: 'Failed to send OTP. Ensure email config is correct.' });
+        });
+        return { success: true, messageId: info.messageId };
+    } catch (error) {
+        return { success: false, error: error.message };
     }
+}
+
+// OTP store
+const otpStore = new Map();
+
+function sendOtpEmail(email, otp, subjectPrefix = '') {
+    const subject = `${otp} is your ${subjectPrefix}code`;
+    return emailTransporter.sendMail({
+        from: `"Aura Boxed Gifts" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; text-align: center;">
+                <h2>Aura Boxed Gifts</h2>
+                <p>Your verification code:</p>
+                <p style="font-size: 32px; letter-spacing: 6px; font-weight: bold;">${otp}</p>
+                <p>This code expires in 10 minutes.</p>
+            </div>
+        `
+    });
+}
+
+function createOtp(email, isResend = false) {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + (10 * 60 * 1000);
+    otpStore.set(email, { otp, expiresAt });
+    sendOtpEmail(email, otp, isResend ? 'new ' : '').catch((err) => {
+        console.error('OTP email error:', err.message);
+    });
+}
+
+// Product APIs
+app.get('/api/products', (req, res) => {
+    const products = getCatalog();
+    if (req.query.featured === 'true') {
+        return jsonOk(res, products.slice(0, 8));
+    }
+    return jsonOk(res, products);
 });
 
-app.post('/api/verify-otp', (req, res) => {
-    const { email, otp } = req.body;
-    if (!email || !otp) return res.status(400).json({ success: false, error: 'Email and OTP required' });
+app.get('/api/products/:collection', (req, res) => {
+    const products = getCatalog().filter((p) => p.collection === req.params.collection);
+    return jsonOk(res, products);
+});
 
+app.get('/api/products/:collection/:idx', (req, res) => {
+    const idx = Math.max(0, Number(req.params.idx));
+    const products = getCatalog().filter((p) => p.collection === req.params.collection);
+    return jsonOk(res, products[idx] || null);
+});
+
+app.get('/api/collections', (req, res) => {
+    return jsonOk(res, readJson(COLLECTIONS_FILE, []));
+});
+
+app.post('/api/cart/calculate', (req, res) => {
+    const items = Array.isArray(req.body?.items) ? req.body.items : [];
+    return jsonOk(res, calculateCart(items));
+});
+
+// Auth APIs
+async function handleSendOtp(req, res) {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    if (!email) return jsonErr(res, 400, 'Email is required');
+    createOtp(email, false);
+    return res.json({ success: true, message: 'OTP sent successfully' });
+}
+app.post('/api/auth/send-otp', handleSendOtp);
+app.post('/api/send-otp', handleSendOtp);
+
+async function handleResendOtp(req, res) {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    if (!email) return jsonErr(res, 400, 'Email is required');
+    createOtp(email, true);
+    return res.json({ success: true, message: 'OTP resent successfully' });
+}
+app.post('/api/auth/resend-otp', handleResendOtp);
+app.post('/api/resend-otp', handleResendOtp);
+
+function handleVerifyOtp(req, res) {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const otp = String(req.body?.otp || '');
+    if (!email || !otp) return jsonErr(res, 400, 'Email and OTP required');
     const record = otpStore.get(email);
-    if (!record) return res.status(400).json({ success: false, error: 'No OTP requested for this email' });
+    if (!record) return jsonErr(res, 400, 'No OTP requested for this email');
     if (Date.now() > record.expiresAt) {
         otpStore.delete(email);
-        return res.status(400).json({ success: false, error: 'OTP has expired' });
+        return jsonErr(res, 400, 'OTP has expired');
     }
-    if (record.otp !== otp) return res.status(400).json({ success: false, error: 'Invalid OTP' });
-
+    if (record.otp !== otp) return jsonErr(res, 400, 'Invalid OTP');
     otpStore.delete(email);
-    console.log(`[OTP] Successfully verified OTP for ${email}`);
+
+    const users = readJson(USERS_FILE, {});
+    if (!users[email]) {
+        users[email] = {
+            email,
+            name: '',
+            phone: '',
+            addresses: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        writeJson(USERS_FILE, users);
+    }
     const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ success: true, message: 'OTP verified successfully', token });
+    return res.json({ success: true, token, email });
+}
+app.post('/api/auth/verify-otp', handleVerifyOtp);
+app.post('/api/verify-otp', handleVerifyOtp);
+
+app.post('/api/verify-token', (req, res) => {
+    const token = getToken(req);
+    if (!token) return jsonErr(res, 400, 'No token provided');
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        return res.json({ success: true, email: decoded.email });
+    } catch (err) {
+        return jsonErr(res, 401, 'Invalid token');
+    }
 });
 
-// ─── JWT & User Endpoints ───
-app.post('/api/verify-token', (req, res) => {
-    try {
-        const { token } = req.body;
-        if (!token) return res.status(400).json({ success: false, error: 'No token provided' });
-        
-        jwt.verify(token, JWT_SECRET, (err, decoded) => {
-            if (err) return res.status(401).json({ success: false, error: 'Invalid token' });
-            res.json({ success: true, email: decoded.email });
-        });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+app.get('/api/auth/me', requireAuth, (req, res) => {
+    const users = readJson(USERS_FILE, {});
+    return jsonOk(res, users[req.auth.email] || null);
+});
+
+app.put('/api/auth/profile', requireAuth, (req, res) => {
+    const users = readJson(USERS_FILE, {});
+    const email = req.auth.email;
+    const user = users[email] || { email, addresses: [], createdAt: new Date().toISOString() };
+    user.name = String(req.body?.name || user.name || '');
+    user.phone = String(req.body?.phone || user.phone || '');
+    user.updatedAt = new Date().toISOString();
+    users[email] = user;
+    writeJson(USERS_FILE, users);
+    return jsonOk(res, user);
+});
+
+app.get('/api/auth/addresses', requireAuth, (req, res) => {
+    const users = readJson(USERS_FILE, {});
+    return jsonOk(res, users[req.auth.email]?.addresses || []);
+});
+
+app.post('/api/auth/addresses', requireAuth, (req, res) => {
+    const users = readJson(USERS_FILE, {});
+    const email = req.auth.email;
+    const user = users[email] || { email, addresses: [], createdAt: new Date().toISOString() };
+    const addr = {
+        id: crypto.randomUUID(),
+        label: String(req.body?.label || 'Home'),
+        addressLine: String(req.body?.addressLine || ''),
+        city: String(req.body?.city || ''),
+        state: String(req.body?.state || ''),
+        pincode: String(req.body?.pincode || ''),
+        isDefault: Boolean(req.body?.isDefault)
+    };
+    if (!addr.addressLine || !addr.city || !addr.pincode) return jsonErr(res, 400, 'Incomplete address');
+    user.addresses = user.addresses || [];
+    if (addr.isDefault) {
+        user.addresses = user.addresses.map((a) => ({ ...a, isDefault: false }));
     }
+    user.addresses.push(addr);
+    user.updatedAt = new Date().toISOString();
+    users[email] = user;
+    writeJson(USERS_FILE, users);
+    return jsonOk(res, addr);
+});
+
+app.put('/api/auth/addresses/:id', requireAuth, (req, res) => {
+    const users = readJson(USERS_FILE, {});
+    const user = users[req.auth.email];
+    if (!user) return jsonErr(res, 404, 'User not found');
+    const idx = (user.addresses || []).findIndex((a) => a.id === req.params.id);
+    if (idx === -1) return jsonErr(res, 404, 'Address not found');
+    user.addresses[idx] = { ...user.addresses[idx], ...req.body };
+    if (req.body?.isDefault) {
+        user.addresses = user.addresses.map((a, i) => ({ ...a, isDefault: i === idx }));
+    }
+    user.updatedAt = new Date().toISOString();
+    users[req.auth.email] = user;
+    writeJson(USERS_FILE, users);
+    return jsonOk(res, user.addresses[idx]);
+});
+
+app.delete('/api/auth/addresses/:id', requireAuth, (req, res) => {
+    const users = readJson(USERS_FILE, {});
+    const user = users[req.auth.email];
+    if (!user) return jsonErr(res, 404, 'User not found');
+    user.addresses = (user.addresses || []).filter((a) => a.id !== req.params.id);
+    user.updatedAt = new Date().toISOString();
+    users[req.auth.email] = user;
+    writeJson(USERS_FILE, users);
+    return jsonOk(res, { deleted: true });
 });
 
 app.post('/api/get-user-info', (req, res) => {
+    const token = getToken(req);
+    if (!token) return jsonErr(res, 400, 'No token');
     try {
-        const { token } = req.body;
-        if (!token) return res.status(400).json({ success: false, error: 'No token' });
-        
-        jwt.verify(token, JWT_SECRET, (err, decoded) => {
-            if (err) return res.status(401).json({ success: false, error: 'Invalid token' });
-            let users = {};
-            if (fs.existsSync(USERS_FILE)) {
-                users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-            }
-            res.json({ success: true, data: users[decoded.email] || null });
-        });
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const users = readJson(USERS_FILE, {});
+        return res.json({ success: true, data: users[decoded.email] || null });
     } catch (err) {
-        res.status(500).json({ success: false, error: 'Fetch failed' });
+        return jsonErr(res, 401, 'Invalid token');
     }
 });
 
-app.post('/api/resend-otp', async (req, res) => {
-    try {
-        const { email } = req.body;
-        if (!email) return res.status(400).json({ success: false, error: 'Email is required' });
-
-        console.log(`[OTP] Resending OTP to ${email}`);
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = Date.now() + 10 * 60 * 1000;
-
-        otpStore.set(email, { otp, expiresAt });
-
-        const mailOptions = {
-            from: `"Aura Boxed Gifts" <${process.env.EMAIL_USER}>`,
-            to: email,
-            subject: `${otp} is your new code`,
-            html: `
-                <div style="font-family: sans-serif; max-width: 600px; margin: 40px auto; text-align: center;">
-                    <div style="font-size: 16px; font-weight: 500; margin-bottom: 40px;">Aura Boxed Gifts</div>
-                    <div style="font-size: 14px; margin-bottom: 20px;">Your new verification code:</div>
-                    <div style="font-size: 32px; font-weight: 600; letter-spacing: 8px; margin-bottom: 20px;">${otp}</div>
-                    <div style="font-size: 14px; color: #555;">This code expires in 10 minutes.</div>
-                </div>
-            `
-        };
-
-        res.json({ success: true, message: 'OTP resent successfully' });
-        emailTransporter.sendMail(mailOptions).catch(err => console.error('Background OTP Send Error:', err));
-    } catch (err) {
-        console.error('OTP Resend Error:', err);
-        res.status(500).json({ success: false, error: 'Failed to resend OTP.' });
-    }
+app.post('/api/save-user-info', (req, res) => {
+    const email = String(req.body?.email || '').toLowerCase().trim();
+    if (!email) return jsonErr(res, 400, 'Email required');
+    const users = readJson(USERS_FILE, {});
+    users[email] = { ...(users[email] || {}), ...req.body, email, updatedAt: new Date().toISOString() };
+    if (!users[email].createdAt) users[email].createdAt = new Date().toISOString();
+    if (!Array.isArray(users[email].addresses)) users[email].addresses = [];
+    writeJson(USERS_FILE, users);
+    return res.json({ success: true, message: 'User info saved' });
 });
 
-// ─── App Config Endpoint ───
-app.get('/api/config', (req, res) => {
-    res.json({
-        success: true,
-        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || ''
-    });
-});
-
-// Razorpay Setup
+// Orders + payments
 let razorpayInstance = null;
 if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
     razorpayInstance = new Razorpay({
@@ -229,282 +384,115 @@ if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
     });
 }
 
-// Razorpay Endpoints
+app.post('/api/orders', requireAuth, (req, res) => {
+    const cart = calculateCart(req.body?.items || []);
+    if (!cart.lines.length) return jsonErr(res, 400, 'Cart is empty');
+    const orders = readJson(ORDERS_FILE, []);
+    const order = {
+        id: `ord_${Date.now()}`,
+        userEmail: req.auth.email,
+        status: 'created',
+        cart,
+        shippingAddress: req.body?.shippingAddress || null,
+        paymentStatus: 'pending',
+        createdAt: new Date().toISOString()
+    };
+    orders.unshift(order);
+    writeJson(ORDERS_FILE, orders);
+    return jsonOk(res, order);
+});
+
+app.get('/api/orders', requireAuth, (req, res) => {
+    const orders = readJson(ORDERS_FILE, []);
+    return jsonOk(res, orders.filter((o) => o.userEmail === req.auth.email));
+});
+
 app.post('/api/create-order', async (req, res) => {
-    console.log('--- [Razorpay] /api/create-order requested ---');
-    console.log('Request body:', req.body);
+    if (!razorpayInstance) return jsonErr(res, 500, 'Razorpay keys not configured on server.');
+    const fromItems = Array.isArray(req.body?.items) ? calculateCart(req.body.items).grandTotal : 0;
+    const amount = Number(req.body?.amount || fromItems);
+    if (!amount || amount <= 0) return jsonErr(res, 400, 'Invalid amount');
     try {
-        if (!razorpayInstance) {
-            console.error('[Razorpay] Keys not configured on server.');
-            return res.status(500).json({ success: false, error: 'Razorpay keys not configured on server.' });
-        }
-        const { amount } = req.body;
-        console.log(`[Razorpay] Creating order for amount: ${amount} INR`);
-        const options = {
-            amount: amount * 100, // paise
+        const order = await razorpayInstance.orders.create({
+            amount: Math.round(amount * 100),
             currency: 'INR',
-            receipt: 'receipt_' + Date.now()
-        };
-        const order = await razorpayInstance.orders.create(options);
-        console.log(`[Razorpay] Order created successfully: ${order.id}`);
-        res.json({ success: true, order, key_id: process.env.RAZORPAY_KEY_ID });
+            receipt: `receipt_${Date.now()}`
+        });
+        return res.json({ success: true, order, key_id: process.env.RAZORPAY_KEY_ID });
     } catch (err) {
-        console.error('[Razorpay] Order Creation Error:', err);
-        res.status(500).json({ success: false, error: err.message });
+        return jsonErr(res, 500, err.message);
     }
 });
 
 app.post('/api/verify-payment', async (req, res) => {
-    console.log('--- [Razorpay] /api/verify-payment requested ---');
     try {
-        const { razorpay_order_id, razorpay_payment_id, razorpay_signature, cartDetails, customer } = req.body;
-        const text = razorpay_order_id + "|" + razorpay_payment_id;
-        const expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-                                    .update(text.toString())
-                                    .digest('hex');
-                                    
-        if (expectedSignature === razorpay_signature) {
-            // Send email notification!
-            let cartText = cartDetails.map(item => `- ${item.item}: ₹${item.price}`).join('<br>');
-            const emailMsg = `Payment successful! Order ID: ${razorpay_order_id}<br><br><b>Items:</b><br>${cartText}<br><br><b>Total Amount Paid:</b> ₹${cartDetails.reduce((s, i) => s + i.price, 0)}<br><br><b>Customer Info:</b><br>Name: ${customer.name}<br>Email: ${customer.email}<br>Phone: ${customer.phone}<br><b>Shipping Address:</b><br>${customer.address}`;
-            
-            await sendEmailNotification(emailMsg, customer.name, 'Razorpay Order');
-            
-            res.json({ success: true });
-        } else {
-            res.status(400).json({ success: false, error: 'Invalid signature' });
+        const {
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            cartItems,
+            customer
+        } = req.body;
+        if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+            return jsonErr(res, 400, 'Missing payment fields');
         }
+        const expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+            .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+            .digest('hex');
+        if (expectedSignature !== razorpay_signature) return jsonErr(res, 400, 'Invalid signature');
+
+        const cart = calculateCart(cartItems || []);
+        const orders = readJson(ORDERS_FILE, []);
+        const order = {
+            id: `ord_${Date.now()}`,
+            paymentOrderId: razorpay_order_id,
+            paymentId: razorpay_payment_id,
+            userEmail: customer?.email || '',
+            customer: customer || {},
+            cart,
+            paymentStatus: 'paid',
+            status: 'confirmed',
+            createdAt: new Date().toISOString()
+        };
+        orders.unshift(order);
+        writeJson(ORDERS_FILE, orders);
+
+        const lineHtml = cart.lines.map((l) => `- ${l.name} x${l.qty}: ₹${l.lineTotal}`).join('<br>');
+        await sendEmailNotification(
+            `Payment successful.<br><strong>Order:</strong> ${order.id}<br><br>${lineHtml}<br><br>Total: ₹${cart.grandTotal}`,
+            `${customer?.name || ''} (${customer?.email || ''})`,
+            'Razorpay Order'
+        );
+
+        return jsonOk(res, { order });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        return jsonErr(res, 500, err.message);
     }
 });
 
-async function sendEmailNotification(message, senderInfo = '', inquiryType = 'General') {
-    try {
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: process.env.RECIPIENT_EMAIL,
-            subject: `🎁 New Inquiry via Aura AI - ${inquiryType}`,
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <div style="background: linear-gradient(135deg, #b76e79, #c9a96e); padding: 20px; text-align: center;">
-                        <h1 style="color: white; margin: 0;">Aura Boxed Gifts</h1>
-                        <p style="color: white; margin: 5px 0 0;">AI Assistant Notification</p>
-                    </div>
-                    <div style="padding: 30px; background: #fdf6f0;">
-                        <h2 style="color: #3a2a1f; border-bottom: 2px solid #b76e79; padding-bottom: 10px;">
-                            New ${inquiryType} Inquiry
-                        </h2>
-                        <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                            <p style="color: #333; font-size: 16px; line-height: 1.6;">
-                                <strong>Message:</strong><br>${message}
-                            </p>
-                        </div>
-                        ${senderInfo ? `
-                        <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                            <p style="color: #333; font-size: 16px;">
-                                <strong>Sender:</strong><br>${senderInfo}
-                            </p>
-                        </div>` : ''}
-                        <p style="color: #666; font-size: 14px;">
-                            <strong>Received:</strong> ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
-                        </p>
-                    </div>
-                    <div style="background: #3a2a1f; padding: 20px; text-align: center;">
-                        <p style="color: #888; font-size: 12px; margin: 0;">Sent via Aura AI Voice Assistant</p>
-                    </div>
-                </div>
-            `
-        };
-        const info = await emailTransporter.sendMail(mailOptions);
-        console.log('Email sent:', info.messageId);
-        return { success: true, messageId: info.messageId };
-    } catch (error) {
-        console.error('Email error:', error);
-        return { success: false, error: error.message };
-    }
-}
+app.get('/api/config', (req, res) => {
+    return res.json({
+        success: true,
+        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || ''
+    });
+});
 
-const SYSTEM_PROMPT = `You are Aura AI, a warm, friendly, and helpful voice assistant for Aura Boxed Gifts — a curated gift shop specializing in handmade jewelry, accessories, and gift hampers.
-
-**Your Personality:**
-- Warm, cheerful, and genuinely enthusiastic about gifting
-- Knowledgeable about all product collections
-- Helpful with gift suggestions based on occasions and budgets
-- Speaks in a friendly, conversational tone
-
-**About Aura Boxed Gifts:**
-- Tagline: "Gifts that speak your heart — Wrapped with love, sent from the heart"
-- Instagram: @aura_boxedgifts
-- Delivery: PAN India delivery
-- All orders are placed via Instagram DM
-
-**Collections:**
-1. **Bracelets** — Handcrafted charm bracelets with crystal beads and silver accents
-2. **Pendants** — Elegant butterfly, heart, and floral pendants in gold and rose-gold
-3. **Earrings** — Statement earrings from delicate studs to bold drops
-4. **Jhumkas** — Traditional Indian jhumka earrings with modern twist
-5. **Scrunchies** — Luxurious silk and organza scrunchies with tulip accents
-6. **Hair Claws** — Trendy floral and butterfly hair claw clips
-7. **Hair Bows** — Cute alligator hair clips and bows
-8. **Rings** — Beautiful rings and jewellery storage cases
-9. **Keychains** — Mini bags and keychains as accessories or gifts
-10. **Makeup/Chocolates** — Lip gloss, lip oils, eyeshadow palettes, skincare
-11. **Luxury Hampers** — Premium curated gift boxes with jewelry, skincare, treats
-12. **Affordable Hampers** — Thoughtful gift hampers at wallet-friendly prices
-
-**How to Respond:**
-1. Greet warmly and ask what occasion they're shopping for
-2. Suggest collections based on their needs (birthday, anniversary, friendship, etc.)
-3. Help them browse by describing products from collections
-4. For orders, direct them to DM on Instagram @aura_boxedgifts
-5. If someone wants to leave a message or make a custom order request, use the send_message function
-6. Use the browse_collection function when users want to see a specific collection
-7. Use the navigate_home function to bring users back to the main page if they ask
-8. Use the scroll_to_section function to show them the gallery, about us, or contact info
-9. Be enthusiastic about the products and the gifting experience
-
-**Gift Suggestions by Occasion:**
-- Birthday: Luxury hampers, bracelet + pendant combo
-- Anniversary: Luxury hampers with personalization
-- Friendship Day: Affordable hampers, matching bracelets
-- Just Because: Scrunchies, keychains, single jewelry pieces
-- Festivals: Jhumkas, earring sets, luxury hampers
-
-**Conversational Commerce (Very Important):**
-- When the user is viewing a specific collection, they will see products.
-- When they look at a specific product in full screen, you will receive a SYSTEM NOTE with the product's Name and Price.
-- When you receive this note, enthusiastically announce the product and ask the user if they would like you to add it to their cart!
-- If they say yes, use the \`add_to_cart\` function.
-- You can also navigate through the products for them using \`next_product\` and \`previous_product\`.
-- If they ask to see their cart, use \`show_cart\`.
-
-**Important:**
-- All orders are placed via Instagram DM (@aura_boxedgifts) or via the built-in Checkout Cart
-- Custom hampers can be arranged by DMing on Instagram`;
+const { SYSTEM_PROMPT } = require('./ai/systemPrompt');
+const { toolDeclarations } = require('./ai/toolDeclarations');
 
 const wss = new WebSocket.Server({ noServer: true });
 
 wss.on('connection', (clientWs) => {
-    console.log('Client connected to Aura AI');
     let geminiSession = null;
+    let activeCollection = null;
 
     const connectToGemini = async () => {
-        console.log('🔄 Connecting to Gemini Live API...');
         const { GoogleGenAI, Modality } = await import('@google/genai');
-
         const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-        const model = 'gemini-3.1-flash-live-preview';
-        console.log('📡 Using model:', model);
-
-        const tools = [
-            { googleSearch: {} },
-            {
-                functionDeclarations: [
-                    {
-                        name: 'send_message',
-                        description: 'Send a message, order request, or custom hamper inquiry to the Aura Boxed Gifts team. Use when users want to place an order, request a custom hamper, or leave a message.',
-                        parameters: {
-                            type: 'object',
-                            properties: {
-                                message: { type: 'string', description: 'The message content or order details' },
-                                senderInfo: { type: 'string', description: 'Sender name, phone number, and/or email if provided' },
-                                inquiryType: {
-                                    type: 'string',
-                                    enum: ['Order Request', 'Custom Hamper', 'Product Inquiry', 'Bulk Order', 'General'],
-                                    description: 'The type of inquiry'
-                                }
-                            },
-                            required: ['message']
-                        }
-                    },
-                    {
-                        name: 'browse_collection',
-                        description: 'Navigate the user to a specific collection page on the website to view products. Use when a user wants to see or browse a collection.',
-                        parameters: {
-                            type: 'object',
-                            properties: {
-                                collection: {
-                                    type: 'string',
-                                    enum: ['bracelets', 'pendants', 'earrings', 'jhumkas', 'scrunchies', 'claws', 'hairbows', 'rings', 'keychains', 'makeup', 'luxury-hampers', 'affordable-hampers'],
-                                    description: 'The collection to navigate to'
-                                }
-                            },
-                            required: ['collection']
-                        }
-                    },
-                    {
-                        name: 'navigate_home',
-                        description: 'Navigate the user back to the main home page from a collection view. Use when a user wants to go back to the home page or exit a collection.',
-                    },
-                    {
-                        name: 'scroll_to_section',
-                        description: 'Scroll the web page to a specific section. Use when a user wants to see the about section, gallery, contact details, or main collections overview.',
-                        parameters: {
-                            type: 'object',
-                            properties: {
-                                section: {
-                                    type: 'string',
-                                    enum: ['home', 'collections', 'gallery', 'about', 'contact'],
-                                    description: 'The section to scroll to'
-                                }
-                            },
-                            required: ['section']
-                        }
-                    },
-                    {
-                        name: 'next_product',
-                        description: 'Navigate to the next product image in the current collection gallery. Use when the user asks to see the next product.'
-                    },
-                    {
-                        name: 'previous_product',
-                        description: 'Navigate to the previous product image in the current collection gallery. Use when the user asks to go back to the previous product.'
-                    },
-                    {
-                        name: 'add_to_cart',
-                        description: 'Add the currently viewed product to the user\'s shopping cart. Use this ONLY after receiving a SYSTEM NOTE about what product the user is viewing, and after the user confirms they want to add it.',
-                        parameters: {
-                            type: 'object',
-                            properties: {
-                                productName: { type: 'string', description: 'The exact name of the product from the SYSTEM NOTE' },
-                                productPrice: { type: 'number', description: 'The exact price of the product from the SYSTEM NOTE' }
-                            },
-                            required: ['productName', 'productPrice']
-                        }
-                    },
-                    {
-                        name: 'show_cart',
-                        description: 'Open the shopping cart sidebar to show the user what they have added. Use when the user asks to see their cart or checkout.'
-                    }
-                ]
-            }
-        ];
-
-        const config = {
-            responseModalities: [Modality.AUDIO],
-            systemInstruction: SYSTEM_PROMPT,
-            tools: tools,
-            speechConfig: {
-                voiceConfig: {
-                    prebuiltVoiceConfig: { voiceName: 'Kore' }
-                }
-            },
-            thinkingConfig: {
-                thinkingLevel: 'low'
-            },
-            // Context window compression for unlimited sessions
-            contextWindowCompression: {
-                slidingWindow: {}
-            }
-        };
-
         const session = await ai.live.connect({
-            model: model,
+            model: 'gemini-3.1-flash-live-preview',
             callbacks: {
-                onopen: () => {
-                    console.log('Connected to Gemini');
-                    clientWs.send(JSON.stringify({ type: 'status', status: 'connected' }));
-                },
+                onopen: () => clientWs.send(JSON.stringify({ type: 'status', status: 'connected' })),
                 onmessage: async (message) => {
                     let audioData = null;
                     if (message.serverContent?.modelTurn?.parts) {
@@ -515,179 +503,130 @@ wss.on('connection', (clientWs) => {
                             }
                         }
                     }
-
-                if (message.toolCall) {
+                    if (message.toolCall?.functionCalls) {
                         for (const fc of message.toolCall.functionCalls) {
-                            console.log('🛠️ Aura AI Function Called:', fc.name, JSON.stringify(fc.args || {}));
+                            const args = fc.args || {};
+                            let response = { result: 'ok' };
                             if (fc.name === 'send_message') {
-                                const { message: msg, senderInfo, inquiryType } = fc.args;
-                                const result = await sendEmailNotification(msg, senderInfo, inquiryType || 'General');
-                                session.sendToolResponse({
-                                    functionResponses: [{
-                                        id: fc.id,
-                                        name: fc.name,
-                                        response: result
-                                    }]
-                                });
+                                response = await sendEmailNotification(args.message, args.senderInfo, args.inquiryType || 'General');
                             } else if (fc.name === 'browse_collection') {
-                                const { collection } = fc.args;
-                                // Send navigation command to client
-                                clientWs.send(JSON.stringify({
-                                    type: 'navigate',
-                                    url: `collections/${collection}.html`
-                                }));
-                                session.sendToolResponse({
-                                    functionResponses: [{
-                                        id: fc.id,
-                                        name: fc.name,
-                                        response: { result: `Navigated user to ${collection} collection page` }
-                                    }]
-                                });
+                                activeCollection = args.collection;
+                                clientWs.send(JSON.stringify({ type: 'navigate', url: `collections/${args.collection}.html` }));
+                                const collectionProducts = getCatalog().filter((p) => p.collection === args.collection);
+                                if (collectionProducts.length) {
+                                    const note = collectionProducts
+                                        .map((p, i) => `${i + 1}. ${p.name} (₹${p.price})`)
+                                        .join('\n');
+                                    await session.send({
+                                        clientContent: {
+                                            turns: [{ role: 'user', parts: [{ text: `[SYSTEM NOTE: Current collection products:\n${note}]` }] }],
+                                            turnComplete: true
+                                        }
+                                    });
+                                }
+                                response = { result: `Navigated to ${args.collection}` };
                             } else if (fc.name === 'navigate_home') {
+                                activeCollection = null;
                                 clientWs.send(JSON.stringify({ type: 'navigate_home' }));
-                                session.sendToolResponse({
-                                    functionResponses: [{
-                                        id: fc.id,
-                                        name: fc.name,
-                                        response: { result: `Navigated user back to home page` }
-                                    }]
-                                });
+                                response = { result: 'Navigated home' };
                             } else if (fc.name === 'scroll_to_section') {
-                                const { section } = fc.args;
-                                clientWs.send(JSON.stringify({ type: 'scroll_to_section', section: section }));
-                                session.sendToolResponse({
-                                    functionResponses: [{
-                                        id: fc.id,
-                                        name: fc.name,
-                                        response: { result: `Scrolled user to ${section} section` }
-                                    }]
-                                });
+                                clientWs.send(JSON.stringify({ type: 'scroll_to_section', section: args.section }));
+                                response = { result: `Scrolled to ${args.section}` };
                             } else if (fc.name === 'next_product') {
                                 clientWs.send(JSON.stringify({ type: 'next_product' }));
-                                session.sendToolResponse({
-                                    functionResponses: [{
-                                        id: fc.id,
-                                        name: fc.name,
-                                        response: { result: "Navigated to next product" }
-                                    }]
-                                });
+                                response = { result: 'Moved to next product' };
                             } else if (fc.name === 'previous_product') {
                                 clientWs.send(JSON.stringify({ type: 'previous_product' }));
-                                session.sendToolResponse({
-                                    functionResponses: [{
-                                        id: fc.id,
-                                        name: fc.name,
-                                        response: { result: "Navigated to previous product" }
-                                    }]
-                                });
+                                response = { result: 'Moved to previous product' };
+                            } else if (fc.name === 'view_product') {
+                                let index = Number(args.index || 1);
+                                if (!Number.isFinite(index) || index < 1) index = 1;
+                                const map = { first: 1, second: 2, third: 3, fourth: 4, fifth: 5 };
+                                if (args.ordinal && map[args.ordinal]) index = map[args.ordinal];
+                                if (args.ordinal === 'last' && activeCollection) {
+                                    const len = getCatalog().filter((p) => p.collection === activeCollection).length;
+                                    if (len) index = len;
+                                }
+                                clientWs.send(JSON.stringify({ type: 'view_product', index }));
+                                response = { result: `Opened product ${index}` };
                             } else if (fc.name === 'add_to_cart') {
-                                const { productName, productPrice } = fc.args;
-                                clientWs.send(JSON.stringify({ type: 'add_to_cart', productName, productPrice }));
-                                session.sendToolResponse({
-                                    functionResponses: [{
-                                        id: fc.id,
-                                        name: fc.name,
-                                        response: { result: `Added ${productName} to cart` }
-                                    }]
-                                });
+                                clientWs.send(JSON.stringify({
+                                    type: 'add_to_cart',
+                                    productId: args.productId || '',
+                                    productName: args.productName || '',
+                                    productPrice: Number(args.productPrice || 0)
+                                }));
+                                response = { result: `Added ${args.productName || 'product'} to cart` };
                             } else if (fc.name === 'show_cart') {
                                 clientWs.send(JSON.stringify({ type: 'show_cart' }));
-                                session.sendToolResponse({
-                                    functionResponses: [{
-                                        id: fc.id,
-                                        name: fc.name,
-                                        response: { result: "Opened shopping cart" }
-                                    }]
-                                });
+                                response = { result: 'Opened cart' };
                             }
+                            session.sendToolResponse({
+                                functionResponses: [{ id: fc.id, name: fc.name, response }]
+                            });
                         }
                     }
-
-                    const messageToSend = {
-                        type: 'gemini_message',
-                        data: { ...message, data: audioData }
-                    };
-                    clientWs.send(JSON.stringify(messageToSend));
+                    clientWs.send(JSON.stringify({ type: 'gemini_message', data: { ...message, data: audioData } }));
                 },
-                onerror: (error) => {
-                    console.error('❌ Gemini error:', error);
-                    let errorMessage = error.message || 'Unknown error';
-                    if (errorMessage.includes('quota') || errorMessage.includes('429')) {
-                        errorMessage = 'API quota exceeded. Please wait.';
-                    } else if (errorMessage.includes('permission') || errorMessage.includes('403')) {
-                        errorMessage = 'API access denied.';
-                    }
-                    clientWs.send(JSON.stringify({ type: 'error', error: errorMessage }));
-                },
-                onclose: (event) => {
-                    console.log('Gemini connection closed:', event?.reason || 'No reason');
-                    clientWs.send(JSON.stringify({
-                        type: 'status',
-                        status: 'disconnected',
-                        reason: event?.reason || 'Connection closed',
-                        code: event?.code
-                    }));
-                }
+                onerror: (error) => clientWs.send(JSON.stringify({ type: 'error', error: error.message || 'Unknown error' })),
+                onclose: (event) => clientWs.send(JSON.stringify({ type: 'status', status: 'disconnected', reason: event?.reason || 'Connection closed' }))
             },
-            config: config
+            config: {
+                responseModalities: [Modality.AUDIO],
+                systemInstruction: SYSTEM_PROMPT,
+                tools: [{ googleSearch: {} }, { functionDeclarations: toolDeclarations }],
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
+                thinkingConfig: { thinkingLevel: 'low' },
+                contextWindowCompression: { slidingWindow: {} }
+            }
         });
-
         geminiSession = session;
     };
 
     connectToGemini();
 
-    clientWs.on('message', async (data) => {
+    clientWs.on('message', async (raw) => {
         try {
-            const message = JSON.parse(data);
-            if (message.type === 'audio' && geminiSession) {
-                geminiSession.sendRealtimeInput({
-                    audio: { data: message.data, mimeType: 'audio/pcm;rate=16000' }
-                });
-            } else if (message.type === 'text' && geminiSession) {
+            const message = JSON.parse(raw);
+            if (!geminiSession) return;
+            if (message.type === 'audio') {
+                geminiSession.sendRealtimeInput({ audio: { data: message.data, mimeType: 'audio/pcm;rate=16000' } });
+            } else if (message.type === 'text') {
                 geminiSession.sendRealtimeInput({ text: message.data });
-            } else if (message.type === 'context_update' && geminiSession) {
-                // Context updates from the frontend (lightbox product view, cart actions)
+            } else if (message.type === 'context_update') {
                 let sysNote = '';
                 if (message.action === 'added_to_cart') {
-                    sysNote = `[SYSTEM NOTE: Successfully added ${message.productName} to the cart.]`;
+                    sysNote = `[SYSTEM NOTE: Added to cart: ${message.productName}]`;
                 } else {
-                    sysNote = `[SYSTEM NOTE: User is now viewing Product: ${message.productName} at price Rs.${message.productPrice}. Announce what they're looking at and ask if they'd like to add it to their cart or see the next product.]`;
+                    sysNote = `[SYSTEM NOTE: User is viewing ${message.productName} priced at Rs.${message.productPrice}. Ask if they want add-to-cart or another product.]`;
                 }
-                console.log('📦 Context update:', sysNote);
-                try {
-                    await geminiSession.send({
-                        clientContent: {
-                            turns: [{ role: 'user', parts: [{ text: sysNote }] }],
-                            turnComplete: true
-                        }
-                    });
-                } catch (err) {
-                    console.error('Error sending context update to Gemini:', err);
-                }
+                await geminiSession.send({
+                    clientContent: {
+                        turns: [{ role: 'user', parts: [{ text: sysNote }] }],
+                        turnComplete: true
+                    }
+                });
             }
-        } catch (error) {
-            console.error('Error handling client message:', error);
+        } catch (err) {
+            console.error('Message handling error:', err);
         }
     });
 
     clientWs.on('close', () => {
-        console.log('Client disconnected');
         if (geminiSession) geminiSession.close();
     });
 });
 
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', service: 'Aura AI Backend' });
+});
+
 const server = app.listen(PORT, () => {
-    console.log(`🎁 Aura AI Backend running on port ${PORT}`);
-    console.log(`📧 Email service configured`);
+    console.log(`Aura backend running on ${PORT}`);
 });
 
 server.on('upgrade', (request, socket, head) => {
     wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit('connection', ws, request);
     });
-});
-
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok', service: 'Aura AI Backend' });
 });

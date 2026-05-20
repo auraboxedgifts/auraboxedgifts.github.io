@@ -38,8 +38,9 @@ button { cursor: pointer; border: none; font-family: inherit; }
   background: rgba(253, 246, 240, 0.95);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(183, 110, 121, 0.1);
-  padding: 14px 40px;
+  padding: 12px 26px;
   display: flex; align-items: center; justify-content: space-between;
+  gap: 16px;
 }
 .col-nav-logo img { height: 50px; }
 .col-nav-back {
@@ -49,11 +50,15 @@ button { cursor: pointer; border: none; font-family: inherit; }
   transition: var(--transition);
 }
 .col-nav-back:hover { color: var(--rose-gold); transform: translateX(-4px); }
-.col-nav-links { display: flex; gap: 20px; align-items: center; }
+.col-nav-links { display: flex; gap: 14px; align-items: center; margin-left: auto; }
 .col-nav-links a {
-  font-size: 0.8rem; font-weight: 500; letter-spacing: 1px;
+  font-size: 0.76rem; font-weight: 500; letter-spacing: 1px;
   text-transform: uppercase; color: var(--text-medium);
   transition: var(--transition); position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
 }
 .col-nav-links a::after {
   content: ''; position: absolute; bottom: -4px; left: 0;
@@ -121,8 +126,9 @@ button { cursor: pointer; border: none; font-family: inherit; }
   position: relative; border-radius: 4px; overflow: hidden;
   cursor: pointer; background: var(--white);
   transition: var(--transition); display: flex; flex-direction: column;
+  border: 1px solid rgba(183,110,121,0.14);
 }
-.col-item:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+.col-item:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); border-color: rgba(183,110,121,0.26); }
 .col-item-img-wrapper {
   position: relative; overflow: hidden; aspect-ratio: 1;
   background: #f8f4f0;
@@ -135,6 +141,7 @@ button { cursor: pointer; border: none; font-family: inherit; }
 .col-item-info {
   padding: 14px 12px 16px; text-align: left;
   display: flex; flex-direction: column; gap: 6px;
+  min-height: 122px;
 }
 .col-item-title {
   font-family: 'Poppins', sans-serif; font-size: 0.88rem;
@@ -150,7 +157,7 @@ button { cursor: pointer; border: none; font-family: inherit; }
   border: 1px solid var(--text-dark);
   font-size: 0.82rem; font-weight: 400; letter-spacing: 0.5px;
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  transition: var(--transition); width: 100%; margin-top: 4px;
+  transition: var(--transition); width: 100%; margin-top: auto;
 }
 .btn-add-cart:hover {
   background: var(--text-dark); color: var(--white);
@@ -402,15 +409,22 @@ button { cursor: pointer; border: none; font-family: inherit; }
   background: rgba(255,255,255,0.2); color: white;
 }
 .lightbox-info {
-  position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: rgba(17, 13, 11, 0.64);
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 12px;
+  padding: 12px 14px;
+  min-width: min(92vw, 520px);
 }
 .lightbox-product-name {
   color: rgba(255,255,255,0.95); font-size: 1.1rem;
   font-family: 'Poppins', sans-serif; font-weight: 400;
+  text-align: center;
 }
 .lightbox-product-price {
   color: var(--rose-light); font-size: 0.95rem; font-weight: 500;
+  text-align: center;
 }
 .lightbox-counter {
   position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -431,12 +445,19 @@ button { cursor: pointer; border: none; font-family: inherit; }
   .col-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; }
 }
 @media (max-width: 768px) {
-  .col-nav { padding: 12px 20px; }
+  .col-nav { padding: 10px 12px; }
+  .col-nav-logo img { height: 36px; }
+  .col-nav-back { font-size: 0.72rem; gap: 4px; }
+  .col-nav-links { gap: 8px; }
+  .col-nav-links a { font-size: 0.66rem; }
   .col-nav-links .nav-text-link { display: none; }
   .col-hero { padding: 100px 20px 40px; }
   .col-gallery { padding: 30px 16px 60px; }
   .col-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
   .lightbox-prev, .lightbox-next { width: 40px; height: 40px; font-size: 1.4rem; }
+  .lightbox-info { bottom: 40px; min-width: calc(100vw - 24px); padding: 10px; }
+  .lightbox-product-name { font-size: 0.94rem; }
+  .lightbox-product-price { font-size: 0.84rem; }
   .cart-sidebar { max-width: 100%; }
   .cart-notif { max-width: 100%; }
 }

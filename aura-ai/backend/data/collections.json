@@ -1,0 +1,14 @@
+[
+  { "slug": "bracelets", "name": "Bracelets", "description": "Handmade beaded and charm bracelets curated for gifting." },
+  { "slug": "pendants", "name": "Pendants", "description": "Elegant pendant necklaces for daily wear and occasions." },
+  { "slug": "earrings", "name": "Earrings", "description": "Stud and drop earrings in modern and festive styles." },
+  { "slug": "jhumkas", "name": "Jhumkas", "description": "Traditional-inspired jhumka styles for festive looks." },
+  { "slug": "scrunchies", "name": "Scrunchies", "description": "Soft silk and organza scrunchies that are hair-friendly." },
+  { "slug": "claws", "name": "Hair Claws", "description": "Strong-grip claw clips with floral and premium finishes." },
+  { "slug": "hairbows", "name": "Hair Bows", "description": "Cute bow clips for playful and elegant hair styling." },
+  { "slug": "rings", "name": "Rings & Cases", "description": "Ring accessories and compact jewellery organisers." },
+  { "slug": "keychains", "name": "Keychains", "description": "Mini-bag keychains and cute bag charms for gifting." },
+  { "slug": "makeup", "name": "Makeup", "description": "Lip oils, glosses, palettes, and skincare add-ons." },
+  { "slug": "luxury-hampers", "name": "Luxury Hampers", "description": "Premium curated gift combinations for special occasions." },
+  { "slug": "affordable-hampers", "name": "Affordable Hampers", "description": "Budget-friendly curated combos with high gifting value." }
+]

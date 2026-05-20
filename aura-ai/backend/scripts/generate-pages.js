@@ -1,10 +1,40 @@
-<!DOCTYPE html>
+const fs = require('fs');
+const path = require('path');
+
+const rootDir = path.resolve(__dirname, '../../..');
+const collectionsDir = path.join(rootDir, 'collections');
+const productsPath = path.join(__dirname, '../data/products.json');
+const collectionsPath = path.join(__dirname, '../data/collections.json');
+
+const products = JSON.parse(fs.readFileSync(productsPath, 'utf8'));
+const collections = JSON.parse(fs.readFileSync(collectionsPath, 'utf8'));
+
+function formatInr(amount) {
+    return `Rs. ${Number(amount).toFixed(2)}`;
+}
+
+function renderPage(collection) {
+    const list = products.filter((p) => p.collection === collection.slug);
+    const imageCards = list.map((p, idx) => `
+      <div class="col-item col-item-reveal" style="animation-delay: ${(idx * 0.1).toFixed(1)}s" data-idx="${idx}" data-id="${p.id}" data-name="${p.name}" data-price="${p.price}" data-img="..${p.image}" data-description="${p.description.replace(/"/g, '&quot;')}">
+        <div class="col-item-img-wrapper">
+          <img src="..${p.image}" alt="${p.name}" loading="lazy">
+          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
+        </div>
+        <div class="col-item-info">
+          <h3 class="col-item-title">${p.name}</h3>
+          <p class="col-item-price">${formatInr(p.price)}</p>
+          <button class="btn-add-cart" data-add-idx="${idx}"><i class="fas fa-shopping-cart"></i> Add to cart</button>
+        </div>
+      </div>`).join('\n');
+
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aura Boxed Gifts - Keychains</title>
-  <meta name="description" content="Mini-bag keychains and cute bag charms for gifting.">
+  <title>Aura Boxed Gifts - ${collection.name}</title>
+  <meta name="description" content="${collection.description}">
   <link rel="stylesheet" href="collection.css">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -27,38 +57,15 @@
 
   <section class="col-hero">
     <p class="col-hero-label">Collection</p>
-    <h1 class="col-hero-title">Keychains</h1>
-    <p class="col-hero-desc">Mini-bag keychains and cute bag charms for gifting.</p>
+    <h1 class="col-hero-title">${collection.name}</h1>
+    <p class="col-hero-desc">${collection.description}</p>
     <div class="col-hero-divider"></div>
-    <p class="col-breadcrumb"><a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html';} return false;">Home</a> / <a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html#collections';} return false;">Collections</a> / Keychains</p>
+    <p class="col-breadcrumb"><a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html';} return false;">Home</a> / <a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html#collections';} return false;">Collections</a> / ${collection.name}</p>
   </section>
 
   <section class="col-gallery">
     <div class="col-grid">
-
-      <div class="col-item col-item-reveal" style="animation-delay: 0.0s" data-idx="0" data-id="key_1" data-name="Mini Bag Keychain - Pastel" data-price="299" data-img="../images/web/mini-bags-1.jpeg" data-description="Mini bag keychain for tote, keys, or gifting.">
-        <div class="col-item-img-wrapper">
-          <img src="../images/web/mini-bags-1.jpeg" alt="Mini Bag Keychain - Pastel" loading="lazy">
-          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
-        </div>
-        <div class="col-item-info">
-          <h3 class="col-item-title">Mini Bag Keychain - Pastel</h3>
-          <p class="col-item-price">Rs. 299.00</p>
-          <button class="btn-add-cart" data-add-idx="0"><i class="fas fa-shopping-cart"></i> Add to cart</button>
-        </div>
-      </div>
-
-      <div class="col-item col-item-reveal" style="animation-delay: 0.1s" data-idx="1" data-id="key_2" data-name="Mini Bag Keychain - Classic" data-price="299" data-img="../images/web/mini-bags-2.jpeg" data-description="Compact mini bag charm with premium hardware.">
-        <div class="col-item-img-wrapper">
-          <img src="../images/web/mini-bags-2.jpeg" alt="Mini Bag Keychain - Classic" loading="lazy">
-          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
-        </div>
-        <div class="col-item-info">
-          <h3 class="col-item-title">Mini Bag Keychain - Classic</h3>
-          <p class="col-item-price">Rs. 299.00</p>
-          <button class="btn-add-cart" data-add-idx="1"><i class="fas fa-shopping-cart"></i> Add to cart</button>
-        </div>
-      </div>
+${imageCards}
     </div>
   </section>
 
@@ -79,4 +86,11 @@
   <script src="../js/checkout.js"></script>
   <script src="../js/lightbox.js"></script>
 </body>
-</html>
+</html>`;
+}
+
+for (const collection of collections) {
+    const outPath = path.join(collectionsDir, `${collection.slug}.html`);
+    fs.writeFileSync(outPath, renderPage(collection));
+    console.log(`Generated ${collection.slug}.html`);
+}

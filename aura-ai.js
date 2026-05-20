@@ -186,13 +186,18 @@ function handleAuraBackendMessage(message) {
             }
             break;
         }
+        case 'view_product': {
+            var viewIframe = document.getElementById('collection-iframe');
+            if (viewIframe && viewIframe.contentWindow) {
+                viewIframe.contentWindow.postMessage({ type: 'view_product', index: message.index || 1 }, '*');
+            }
+            break;
+        }
         case 'add_to_cart':
-            if (typeof addToCart === 'function') {
-                addToCart({
-                    item: message.productName,
-                    price: message.productPrice,
-                    img: window._lastViewedProductImg || ''
-                });
+            if (message.productId && window.AuraCart && typeof window.AuraCart.addToCartById === 'function') {
+                window.AuraCart.addToCartById(message.productId);
+            } else if (typeof addToCart === 'function') {
+                addToCart({ item: message.productName, price: message.productPrice, img: window._lastViewedProductImg || '' });
                 // Tell backend it was successful
                 if (auraWs && auraWs.readyState === WebSocket.OPEN) {
                     auraWs.send(JSON.stringify({ type: 'context_update', productName: message.productName, productPrice: message.productPrice, action: 'added_to_cart' }));
@@ -505,18 +510,24 @@ function openCollectionOverlay(url) {
         });
     }
     // Only add ../ if it's not already there, depending on context
-    document.getElementById('collection-iframe').src = url;
+    var iframe = document.getElementById('collection-iframe');
+    iframe.src = url;
     overlay.style.display = 'block';
     document.body.style.overflow = 'hidden'; // prevent background scrolling
+    var slug = (url.split('/').pop() || '').replace('.html', '');
+    if (window.location.hash.indexOf('#collection/') !== 0 || window.location.hash !== '#collection/' + slug) {
+        history.pushState({ auraOverlay: 'collection', url: url }, '', '#collection/' + slug);
+    }
 }
 
-function closeCollectionOverlay() {
+function closeCollectionOverlay(skipHistory) {
     const overlay = document.getElementById('collection-overlay');
     if (overlay) {
         overlay.style.display = 'none';
         document.getElementById('collection-iframe').src = '';
         document.body.style.overflow = '';
     }
+    if (!skipHistory && window.location.hash.indexOf('#collection/') === 0) history.back();
 }
 
 // Intercept manual collection clicks
@@ -533,5 +544,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // If we are inside the iframe, hide the AI widget as the parent already has it running
         const widget = document.getElementById('auraAIWidget');
         if (widget) widget.style.display = 'none';
+    }
+});
+
+window.addEventListener('popstate', function() {
+    const overlay = document.getElementById('collection-overlay');
+    if (window.location.hash.indexOf('#collection/') !== 0 && overlay && overlay.style.display === 'block') {
+        closeCollectionOverlay(true);
+    } else if (window.location.hash.indexOf('#collection/') === 0) {
+        const slug = window.location.hash.replace('#collection/', '');
+        if (slug) openCollectionOverlay('collections/' + slug + '.html');
     }
 });

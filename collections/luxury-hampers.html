@@ -3,183 +3,92 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aura Boxed Gifts</title>
-  <meta name="description" content="Premium gift hampers with curated selections of jewellery, skincare, and treats. The ultimate gift.">
-  
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-755SHG7S3L"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-755SHG7S3L');
-  </script>
-
+  <title>Aura Boxed Gifts - Luxury Hampers</title>
+  <meta name="description" content="Premium curated gift combinations for special occasions.">
   <link rel="stylesheet" href="collection.css">
+  <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="icon" type="image/jpeg" href="../images/logo.jpeg">
 </head>
 <body>
   <nav class="col-nav">
-    <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;" class="col-nav-back"><i class="fas fa-arrow-left"></i> Back</a>
-    <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;" class="col-nav-logo"><img src="../images/logo.jpeg" alt="Aura Boxed Gifts"></a>
+    <a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html';} return false;" class="col-nav-back"><i class="fas fa-arrow-left"></i> Back</a>
+    <a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html';} return false;" class="col-nav-logo"><img src="../images/logo.jpeg" alt="Aura Boxed Gifts"></a>
     <div class="col-nav-links">
       <a href="#" id="navCartIcon" aria-label="Cart" style="position: relative; margin-right: 15px;">
         <i class="fas fa-shopping-cart"></i>
         <span class="nav-cart-badge" id="navCartBadge">0</span>
       </a>
-      <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;" class="nav-text-link">Home</a>
-      <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html#collections'; } return false;" class="nav-text-link">Collections</a>
+      <a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html';} return false;" class="nav-text-link">Home</a>
+      <a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html#collections';} return false;" class="nav-text-link">Collections</a>
       <a href="https://www.instagram.com/aura_boxedgifts" target="_blank"><i class="fab fa-instagram"></i></a>
     </div>
   </nav>
+
   <section class="col-hero">
     <p class="col-hero-label">Collection</p>
     <h1 class="col-hero-title">Luxury Hampers</h1>
-    <p class="col-hero-desc">Premium gift hampers with curated selections of jewellery, skincare, and treats. The ultimate gift.</p>
+    <p class="col-hero-desc">Premium curated gift combinations for special occasions.</p>
     <div class="col-hero-divider"></div>
-    <p class="col-breadcrumb"><a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;">Home</a> &nbsp;/&nbsp; <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html#collections'; } return false;">Collections</a> &nbsp;/&nbsp; Luxury Hampers</p>
+    <p class="col-breadcrumb"><a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html';} return false;">Home</a> / <a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html#collections';} return false;">Collections</a> / Luxury Hampers</p>
   </section>
 
   <section class="col-gallery">
     <div class="col-grid">
-      <div class="col-item col-item-reveal" style="animation-delay: 0s" data-idx="0" data-name="Eyeshadow Palette #1" data-price="1599" data-img="../images/web/eyeshadow-palette-1.jpeg">
+
+      <div class="col-item col-item-reveal" style="animation-delay: 0.0s" data-idx="0" data-id="lux_1" data-name="Radiance Luxe Hamper" data-price="2499" data-img="../images/web/eyeshadow-palette-1.jpeg" data-description="Premium hamper with beauty picks and elegant packaging.">
         <div class="col-item-img-wrapper">
-          <img src="../images/web/eyeshadow-palette-1.jpeg" alt="Eyeshadow Palette #1" loading="lazy">
+          <img src="../images/web/eyeshadow-palette-1.jpeg" alt="Radiance Luxe Hamper" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
-          <h3 class="col-item-title">Eyeshadow Palette #1</h3>
-          <p class="col-item-price">Rs. 1599.00</p>
+          <h3 class="col-item-title">Radiance Luxe Hamper</h3>
+          <p class="col-item-price">Rs. 2499.00</p>
           <button class="btn-add-cart" data-add-idx="0"><i class="fas fa-shopping-cart"></i> Add to cart</button>
         </div>
       </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .1s" data-idx="1" data-name="Eyeshadow Palette #2" data-price="599" data-img="../images/web/eyeshadow-palette-2.jpeg">
+
+      <div class="col-item col-item-reveal" style="animation-delay: 0.1s" data-idx="1" data-id="lux_2" data-name="Golden Glow Luxe Hamper" data-price="2799" data-img="../images/web/highlighter-1.jpeg" data-description="Luxury hamper curated for birthdays and celebrations.">
         <div class="col-item-img-wrapper">
-          <img src="../images/web/eyeshadow-palette-2.jpeg" alt="Eyeshadow Palette #2" loading="lazy">
+          <img src="../images/web/highlighter-1.jpeg" alt="Golden Glow Luxe Hamper" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
-          <h3 class="col-item-title">Eyeshadow Palette #2</h3>
-          <p class="col-item-price">Rs. 599.00</p>
+          <h3 class="col-item-title">Golden Glow Luxe Hamper</h3>
+          <p class="col-item-price">Rs. 2799.00</p>
           <button class="btn-add-cart" data-add-idx="1"><i class="fas fa-shopping-cart"></i> Add to cart</button>
         </div>
       </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .2s" data-idx="2" data-name="Face Mask Sheet #1" data-price="799" data-img="../images/web/facemask-sheets-1.jpeg">
+
+      <div class="col-item col-item-reveal" style="animation-delay: 0.2s" data-idx="2" data-id="lux_3" data-name="Signature Luxe Hamper" data-price="2999" data-img="../images/web/jwellery-case-1.jpeg" data-description="Signature hamper with premium accessories and skincare.">
         <div class="col-item-img-wrapper">
-          <img src="../images/web/facemask-sheets-1.jpeg" alt="Face Mask Sheet #1" loading="lazy">
+          <img src="../images/web/jwellery-case-1.jpeg" alt="Signature Luxe Hamper" loading="lazy">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
-          <h3 class="col-item-title">Face Mask Sheet #1</h3>
-          <p class="col-item-price">Rs. 799.00</p>
+          <h3 class="col-item-title">Signature Luxe Hamper</h3>
+          <p class="col-item-price">Rs. 2999.00</p>
           <button class="btn-add-cart" data-add-idx="2"><i class="fas fa-shopping-cart"></i> Add to cart</button>
-        </div>
-      </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .3s" data-idx="3" data-name="Face Mask Sheet #2" data-price="1299" data-img="../images/web/facemask-sheets-2.jpeg">
-        <div class="col-item-img-wrapper">
-          <img src="../images/web/facemask-sheets-2.jpeg" alt="Face Mask Sheet #2" loading="lazy">
-          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
-        </div>
-        <div class="col-item-info">
-          <h3 class="col-item-title">Face Mask Sheet #2</h3>
-          <p class="col-item-price">Rs. 1299.00</p>
-          <button class="btn-add-cart" data-add-idx="3"><i class="fas fa-shopping-cart"></i> Add to cart</button>
-        </div>
-      </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .4s" data-idx="4" data-name="Highlighter #1" data-price="799" data-img="../images/web/highlighter-1.jpeg">
-        <div class="col-item-img-wrapper">
-          <img src="../images/web/highlighter-1.jpeg" alt="Highlighter #1" loading="lazy">
-          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
-        </div>
-        <div class="col-item-info">
-          <h3 class="col-item-title">Highlighter #1</h3>
-          <p class="col-item-price">Rs. 799.00</p>
-          <button class="btn-add-cart" data-add-idx="4"><i class="fas fa-shopping-cart"></i> Add to cart</button>
-        </div>
-      </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .5s" data-idx="5" data-name="Jewellery Case #1" data-price="1299" data-img="../images/web/jwellery-case-1.jpeg">
-        <div class="col-item-img-wrapper">
-          <img src="../images/web/jwellery-case-1.jpeg" alt="Jewellery Case #1" loading="lazy">
-          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
-        </div>
-        <div class="col-item-info">
-          <h3 class="col-item-title">Jewellery Case #1</h3>
-          <p class="col-item-price">Rs. 1299.00</p>
-          <button class="btn-add-cart" data-add-idx="5"><i class="fas fa-shopping-cart"></i> Add to cart</button>
-        </div>
-      </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .6s" data-idx="6" data-name="Jewellery Case #2" data-price="1699" data-img="../images/web/jwellery-case-2.jpeg">
-        <div class="col-item-img-wrapper">
-          <img src="../images/web/jwellery-case-2.jpeg" alt="Jewellery Case #2" loading="lazy">
-          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
-        </div>
-        <div class="col-item-info">
-          <h3 class="col-item-title">Jewellery Case #2</h3>
-          <p class="col-item-price">Rs. 1699.00</p>
-          <button class="btn-add-cart" data-add-idx="6"><i class="fas fa-shopping-cart"></i> Add to cart</button>
-        </div>
-      </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .7s" data-idx="7" data-name="Jewellery Case #3" data-price="499" data-img="../images/web/jwellery-case-3.jpeg">
-        <div class="col-item-img-wrapper">
-          <img src="../images/web/jwellery-case-3.jpeg" alt="Jewellery Case #3" loading="lazy">
-          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
-        </div>
-        <div class="col-item-info">
-          <h3 class="col-item-title">Jewellery Case #3</h3>
-          <p class="col-item-price">Rs. 499.00</p>
-          <button class="btn-add-cart" data-add-idx="7"><i class="fas fa-shopping-cart"></i> Add to cart</button>
-        </div>
-      </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .8s" data-idx="8" data-name="Jewellery Case #4" data-price="799" data-img="../images/web/jwellery-case-4.jpeg">
-        <div class="col-item-img-wrapper">
-          <img src="../images/web/jwellery-case-4.jpeg" alt="Jewellery Case #4" loading="lazy">
-          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
-        </div>
-        <div class="col-item-info">
-          <h3 class="col-item-title">Jewellery Case #4</h3>
-          <p class="col-item-price">Rs. 799.00</p>
-          <button class="btn-add-cart" data-add-idx="8"><i class="fas fa-shopping-cart"></i> Add to cart</button>
-        </div>
-      </div>
-      <div class="col-item col-item-reveal" style="animation-delay: .9s" data-idx="9" data-name="Jewellery Case #5" data-price="899" data-img="../images/web/jwellery-case-5.jpeg">
-        <div class="col-item-img-wrapper">
-          <img src="../images/web/jwellery-case-5.jpeg" alt="Jewellery Case #5" loading="lazy">
-          <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
-        </div>
-        <div class="col-item-info">
-          <h3 class="col-item-title">Jewellery Case #5</h3>
-          <p class="col-item-price">Rs. 899.00</p>
-          <button class="btn-add-cart" data-add-idx="9"><i class="fas fa-shopping-cart"></i> Add to cart</button>
         </div>
       </div>
     </div>
   </section>
+
   <section class="col-cta">
     <h2 class="col-cta-title">Love what you see?</h2>
-    <p class="col-cta-text">DM us on Instagram to order or customize your gift. We'd love to help!</p>
-    <a href="https://www.instagram.com/aura_boxedgifts?utm_source=qr&igsh=MTYwbTYzNjJ6anUwdA==" target="_blank" class="col-btn-ig">
-      <i class="fab fa-instagram"></i> Order on Instagram
-    </a>
-  </section>
-
-  <!-- Email Subscribe -->
-  <section class="col-subscribe">
-    <h3>Subscribe to our emails</h3>
-    <form class="subscribe-form" onsubmit="event.preventDefault(); this.querySelector('input').value=''; alert('Thank you for subscribing!');">
-      <input type="email" placeholder="Email" required>
-      <button type="submit"><i class="fas fa-arrow-right"></i></button>
-    </form>
+    <p class="col-cta-text">DM us on Instagram to customize your final hamper and gifting card.</p>
+    <a href="https://www.instagram.com/aura_boxedgifts" target="_blank" class="col-btn-ig"><i class="fab fa-instagram"></i> Order on Instagram</a>
   </section>
 
   <footer class="col-footer">
-    <p>&copy; 2026 <a href="#" onclick="if(window.parent !== window) { window.parent.postMessage('closeCollection', '*'); } else { window.location.href='../index.html'; } return false;">Aura Boxed Gifts</a>. All rights reserved. Made by <a href="https://devshubh.me" target="_blank" style="color: var(--rose-gold); text-decoration: underline;">SS</a></p>
+    <p>&copy; 2026 Aura Boxed Gifts. All rights reserved.</p>
   </footer>
 
-  <!-- Cart overlay is created dynamically by cart.js -->
-  <link rel="stylesheet" href="../style.css">
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script src="../cart.js"></script>
-  <script src="lightbox.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/cart.js"></script>
+  <script src="../js/checkout.js"></script>
+  <script src="../js/lightbox.js"></script>
 </body>
 </html>

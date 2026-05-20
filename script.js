@@ -109,34 +109,30 @@ window.addEventListener('scroll', () => {
 document.addEventListener('DOMContentLoaded', () => {
     const featuredContainer = document.getElementById('randomProductsContainer');
     if (!featuredContainer) return;
-
-    const allProducts = [
-        { name: "Elegant Bracelet", price: 650, img: "images/web/bracelets-1.jpeg" },
-        { name: "Diamond Pendant", price: 850, img: "images/web/pendents-1.jpeg" },
-        { name: "Classic Earrings", price: 450, img: "images/web/earings-2.jpeg" },
-        { name: "Silk Scrunchie", price: 250, img: "images/web/scrunchies-1.jpeg" },
-        { name: "Pearl Hair Claw", price: 350, img: "images/web/hairclaws-2.jpeg" },
-        { name: "Shimmer Lip Gloss", price: 550, img: "images/web/lip-gloss-1.jpeg" },
-        { name: "Luxury Hamper", price: 2499, img: "images/web/facemask-sheets-1.jpeg" },
-        { name: "Gold Plated Rings", price: 599, img: "images/web/bracelets-5.jpeg" }
-    ];
-
-    // Shuffle and pick 4
-    const shuffled = allProducts.sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, 4);
-
-    let html = '';
-    selected.forEach((p, idx) => {
-        html += `
-        <div class="featured-item" style="animation-delay: ${idx * 0.1}s">
-            <img src="${p.img}" alt="${p.name}" loading="lazy">
+    if (!window.AuraApi || !window.AuraApi.apiFetch) return;
+    window.AuraApi.apiFetch('/api/products?featured=true')
+      .then((resp) => {
+        const products = (resp.data || [])
+          .slice()
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 4);
+        featuredContainer.innerHTML = products.map((p, idx) => `
+          <div class="featured-item" style="animation-delay: ${idx * 0.1}s">
+            <img src="${p.image}" alt="${p.name}" loading="lazy">
             <div class="featured-info">
-                <h3 class="featured-title">${p.name}</h3>
-                <p class="featured-price">Rs. ${p.price}.00</p>
-                <button class="featured-add-btn" onclick="if(window.addToCart) window.addToCart({item: '${p.name}', price: ${p.price}, img: '${p.img}'})"><i class="fas fa-shopping-cart"></i> Add to cart</button>
+              <h3 class="featured-title">${p.name}</h3>
+              <p class="featured-price">Rs. ${p.price}.00</p>
+              <button class="featured-add-btn" data-product-id="${p.id}"><i class="fas fa-shopping-cart"></i> Add to cart</button>
             </div>
-        </div>`;
-    });
-
-    featuredContainer.innerHTML = html;
+          </div>
+        `).join('');
+        featuredContainer.querySelectorAll('.featured-add-btn').forEach((btn) => {
+          btn.addEventListener('click', function () {
+            if (window.AuraCart) window.AuraCart.addToCartById(btn.dataset.productId);
+          });
+        });
+      })
+      .catch(() => {
+        featuredContainer.innerHTML = '';
+      });
 });
