@@ -1,7 +1,7 @@
 (function () {
   const host = window.location.hostname;
-  const isLocal = !host || host === 'localhost' || host === '127.0.0.1' || window.location.protocol === 'file:';
-  const API_BASE = window.AURA_API_BASE || (isLocal ? 'http://localhost:5013' : 'https://aura.devshubh.me');
+  const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+  const API_BASE = window.AURA_API_BASE || (isLocalHost ? 'http://localhost:5013' : 'https://aura.devshubh.me');
 
   async function apiFetch(path, options) {
     const token = localStorage.getItem('auraAuthToken');

@@ -4,10 +4,10 @@
  */
 
 const _auraHost = window.location.hostname;
-const _auraIsLocal = !_auraHost || _auraHost === 'localhost' || _auraHost === '127.0.0.1' || window.location.protocol === 'file:';
-const AURA_AI_WS_URL = _auraIsLocal
+const _auraIsLocalHost = _auraHost === 'localhost' || _auraHost === '127.0.0.1';
+const AURA_AI_WS_URL = window.AURA_AI_WS_URL || (_auraIsLocalHost
     ? 'ws://localhost:5013'
-    : 'wss://aura.devshubh.me';
+    : 'wss://aura.devshubh.me');
 
 let auraWs = null;
 let auraAudioContext = null;
