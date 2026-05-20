@@ -1,7 +1,16 @@
 (function () {
   const host = window.location.hostname;
+  const protocol = window.location.protocol;
   const isLocalHost = host === 'localhost' || host === '127.0.0.1';
   const API_BASE = window.AURA_API_BASE || (isLocalHost ? 'http://localhost:5013' : 'https://aura.devshubh.me');
+
+  function resolveAssetPath(assetPath) {
+    if (!assetPath) return '';
+    if (/^https?:\/\//i.test(assetPath)) return assetPath;
+    if (assetPath.startsWith('//')) return `${window.location.protocol}${assetPath}`;
+    if (protocol === 'file:') return assetPath.replace(/^\/+/, '');
+    return assetPath;
+  }
 
   async function apiFetch(path, options) {
     const token = localStorage.getItem('auraAuthToken');
@@ -16,5 +25,5 @@
     return data;
   }
 
-  window.AuraApi = { API_BASE, apiFetch };
+  window.AuraApi = { API_BASE, apiFetch, resolveAssetPath };
 })();

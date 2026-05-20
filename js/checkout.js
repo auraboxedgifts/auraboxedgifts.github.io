@@ -38,6 +38,14 @@
     document.body.style.overflow = 'hidden';
     if (window.location.hash !== '#checkout') history.pushState({ auraOverlay: 'checkout' }, '', '#checkout');
 
+    const loginBtn = overlay.querySelector('#ckLoginBtn');
+    const meAtLoad = await AuraAuth.refreshUser();
+    if (meAtLoad) {
+      loginBtn.style.display = 'none';
+    } else {
+      loginBtn.style.display = '';
+    }
+
     overlay.querySelector('#ckBackBtn').addEventListener('click', function () {
       closeCheckout();
       AuraCart.openCartPage();
@@ -47,7 +55,7 @@
       body.classList.toggle('is-open');
       this.classList.toggle('is-open');
     });
-    overlay.querySelector('#ckLoginBtn').addEventListener('click', function () {
+    loginBtn.addEventListener('click', function () {
       AuraAuth.openAuthModal();
     });
     overlay.querySelector('#ckPayNowBtn').addEventListener('click', async function () {

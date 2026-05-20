@@ -1,5 +1,6 @@
 (function () {
   let cart = JSON.parse(localStorage.getItem('aura_cart_v2') || '[]');
+  let catalogCache = null;
 
   function saveCart() {
     localStorage.setItem('aura_cart_v2', JSON.stringify(cart));
@@ -13,6 +14,31 @@
     document.querySelectorAll('#navCartBadge, .nav-cart-badge').forEach(function (b) {
       b.textContent = itemCount();
     });
+  }
+
+  async function ensureCatalog() {
+    if (catalogCache) return catalogCache;
+    try {
+      const res = await AuraApi.apiFetch('/api/products');
+      catalogCache = Array.isArray(res.data) ? res.data : [];
+    } catch (err) {
+      catalogCache = [];
+    }
+    return catalogCache;
+  }
+
+  function resolveProductIdFromLegacyPayload(item, products) {
+    if (item.productId) return item.productId;
+    if (!products || !products.length) return null;
+    if (item.item && item.price) {
+      const exact = products.find((p) => p.name === item.item && Number(p.price) === Number(item.price));
+      if (exact) return exact.id;
+    }
+    if (item.item) {
+      const byName = products.find((p) => p.name === item.item);
+      if (byName) return byName.id;
+    }
+    return null;
   }
 
   function getOverlay() {
@@ -54,7 +80,7 @@
     footer.style.display = '';
     const lines = calc.data.lines.map(function (line, idx) {
       return `<tr class="cart-table-row">
-        <td class="cart-td-img"><img src="${line.image || ''}" alt="${line.name}"></td>
+        <td class="cart-td-img"><img src="${AuraApi.resolveAssetPath(line.image || '')}" alt="${line.name}"></td>
         <td class="cart-td-info"><div class="cart-td-name">${line.name}</div><div class="cart-td-price">Rs. ${line.unitPrice}.00</div></td>
         <td class="cart-td-qty"><div class="qty-control"><button onclick="AuraCart.updateQty(${idx},-1)">−</button><span>${line.qty}</span><button onclick="AuraCart.updateQty(${idx},1)">+</button></div></td>
         <td class="cart-td-total">Rs. ${line.lineTotal}.00</td>
@@ -81,9 +107,12 @@
   }
 
   async function addToCart(item) {
-    const existingIdx = cart.findIndex(c => c.productId === item.productId);
+    const products = await ensureCatalog();
+    const productId = resolveProductIdFromLegacyPayload(item || {}, products);
+    if (!productId) return;
+    const existingIdx = cart.findIndex(c => c.productId === productId);
     if (existingIdx >= 0) cart[existingIdx].qty = (cart[existingIdx].qty || 1) + 1;
-    else cart.push({ productId: item.productId, qty: 1 });
+    else cart.push({ productId, qty: 1 });
     saveCart();
     updateBadge();
     await openCartPage();

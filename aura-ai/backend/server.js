@@ -56,6 +56,11 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json());
+app.use((req, res, next) => {
+    const ts = new Date().toISOString();
+    console.log(`[API] ${ts} ${req.method} ${req.path}`);
+    next();
+});
 
 function readJson(filePath, fallback) {
     try {
@@ -506,6 +511,7 @@ wss.on('connection', (clientWs) => {
                     if (message.toolCall?.functionCalls) {
                         for (const fc of message.toolCall.functionCalls) {
                             const args = fc.args || {};
+                            console.log(`[AI_TOOL] ${fc.name} ${JSON.stringify(args)}`);
                             let response = { result: 'ok' };
                             if (fc.name === 'send_message') {
                                 response = await sendEmailNotification(args.message, args.senderInfo, args.inquiryType || 'General');
@@ -549,9 +555,19 @@ wss.on('connection', (clientWs) => {
                                 clientWs.send(JSON.stringify({ type: 'view_product', index }));
                                 response = { result: `Opened product ${index}` };
                             } else if (fc.name === 'add_to_cart') {
+                                let resolvedProductId = args.productId || '';
+                                if (!resolvedProductId && args.productName) {
+                                    const catalog = getCatalog();
+                                    const byExact = catalog.find((p) =>
+                                        p.name === args.productName &&
+                                        (!args.productPrice || Number(p.price) === Number(args.productPrice))
+                                    );
+                                    const byName = catalog.find((p) => p.name === args.productName);
+                                    resolvedProductId = (byExact || byName || {}).id || '';
+                                }
                                 clientWs.send(JSON.stringify({
                                     type: 'add_to_cart',
-                                    productId: args.productId || '',
+                                    productId: resolvedProductId,
                                     productName: args.productName || '',
                                     productPrice: Number(args.productPrice || 0)
                                 }));

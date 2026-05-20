@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderProducts(products) {
       featuredContainer.innerHTML = products.map((p, idx) => `
         <div class="featured-item" style="animation-delay: ${idx * 0.1}s">
-          <img src="${p.image}" alt="${p.name}" loading="lazy">
+            <img src="${window.AuraApi.resolveAssetPath(p.image)}" alt="${p.name}" loading="lazy">
           <div class="featured-info">
             <h3 class="featured-title">${p.name}</h3>
             <p class="featured-price">Rs. ${p.price}.00</p>
