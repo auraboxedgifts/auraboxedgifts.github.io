@@ -514,14 +514,13 @@ wss.on('connection', (clientWs) => {
                                 clientWs.send(JSON.stringify({ type: 'navigate', url: `collections/${args.collection}.html` }));
                                 const collectionProducts = getCatalog().filter((p) => p.collection === args.collection);
                                 if (collectionProducts.length) {
+                                    const randomIndex = Math.floor(Math.random() * collectionProducts.length) + 1;
+                                    clientWs.send(JSON.stringify({ type: 'view_product', index: randomIndex }));
                                     const note = collectionProducts
                                         .map((p, i) => `${i + 1}. ${p.name} (₹${p.price})`)
                                         .join('\n');
-                                    await session.send({
-                                        clientContent: {
-                                            turns: [{ role: 'user', parts: [{ text: `[SYSTEM NOTE: Current collection products:\n${note}]` }] }],
-                                            turnComplete: true
-                                        }
+                                    session.sendRealtimeInput({
+                                        text: `[SYSTEM NOTE: Current collection products:\n${note}\nUser is currently shown product #${randomIndex}.]`
                                     });
                                 }
                                 response = { result: `Navigated to ${args.collection}` };
@@ -600,12 +599,7 @@ wss.on('connection', (clientWs) => {
                 } else {
                     sysNote = `[SYSTEM NOTE: User is viewing ${message.productName} priced at Rs.${message.productPrice}. Ask if they want add-to-cart or another product.]`;
                 }
-                await geminiSession.send({
-                    clientContent: {
-                        turns: [{ role: 'user', parts: [{ text: sysNote }] }],
-                        turnComplete: true
-                    }
-                });
+                geminiSession.sendRealtimeInput({ text: sysNote });
             }
         } catch (err) {
             console.error('Message handling error:', err);

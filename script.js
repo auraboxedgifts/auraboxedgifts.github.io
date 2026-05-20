@@ -110,29 +110,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const featuredContainer = document.getElementById('randomProductsContainer');
     if (!featuredContainer) return;
     if (!window.AuraApi || !window.AuraApi.apiFetch) return;
+
+    function renderProducts(products) {
+      featuredContainer.innerHTML = products.map((p, idx) => `
+        <div class="featured-item" style="animation-delay: ${idx * 0.1}s">
+          <img src="${p.image}" alt="${p.name}" loading="lazy">
+          <div class="featured-info">
+            <h3 class="featured-title">${p.name}</h3>
+            <p class="featured-price">Rs. ${p.price}.00</p>
+            <button class="featured-add-btn" data-product-id="${p.id}"><i class="fas fa-shopping-cart"></i> Add to cart</button>
+          </div>
+        </div>
+      `).join('');
+      featuredContainer.querySelectorAll('.featured-add-btn').forEach((btn) => {
+        btn.addEventListener('click', function () {
+          if (window.AuraCart) window.AuraCart.addToCartById(btn.dataset.productId);
+        });
+      });
+    }
+
     window.AuraApi.apiFetch('/api/products?featured=true')
       .then((resp) => {
         const products = (resp.data || [])
           .slice()
           .sort(() => Math.random() - 0.5)
           .slice(0, 4);
-        featuredContainer.innerHTML = products.map((p, idx) => `
-          <div class="featured-item" style="animation-delay: ${idx * 0.1}s">
-            <img src="${p.image}" alt="${p.name}" loading="lazy">
-            <div class="featured-info">
-              <h3 class="featured-title">${p.name}</h3>
-              <p class="featured-price">Rs. ${p.price}.00</p>
-              <button class="featured-add-btn" data-product-id="${p.id}"><i class="fas fa-shopping-cart"></i> Add to cart</button>
-            </div>
-          </div>
-        `).join('');
-        featuredContainer.querySelectorAll('.featured-add-btn').forEach((btn) => {
-          btn.addEventListener('click', function () {
-            if (window.AuraCart) window.AuraCart.addToCartById(btn.dataset.productId);
-          });
-        });
+        renderProducts(products);
       })
       .catch(() => {
-        featuredContainer.innerHTML = '';
+        const fallback = [
+          { id: 'pend_1', name: 'Butterfly Pendant Necklace', price: 599, image: 'images/web/pendents-1.jpeg' },
+          { id: 'bracelet_2', name: 'Rainbow Charm Beaded Bracelet Set', price: 699, image: 'images/web/bracelets-2.jpeg' },
+          { id: 'earring_3', name: 'Party Glam Earrings', price: 499, image: 'images/web/earings-3.jpeg' },
+          { id: 'key_1', name: 'Mini Bag Keychain - Pastel', price: 299, image: 'images/web/mini-bags-1.jpeg' }
+        ].sort(() => Math.random() - 0.5);
+        renderProducts(fallback);
       });
 });

@@ -8,7 +8,8 @@
     const headers = Object.assign({ 'Content-Type': 'application/json' }, options && options.headers ? options.headers : {});
     if (token) headers.Authorization = `Bearer ${token}`;
     const response = await fetch(`${API_BASE}${path}`, Object.assign({}, options || {}, { headers }));
-    const data = await response.json();
+    const contentType = response.headers.get('content-type') || '';
+    const data = contentType.includes('application/json') ? await response.json() : { success: false, error: await response.text() };
     if (!response.ok || data.success === false) {
       throw new Error(data.error || 'Request failed');
     }

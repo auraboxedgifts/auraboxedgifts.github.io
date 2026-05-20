@@ -50,22 +50,46 @@
     modal.querySelector('#authSendOtpBtn').addEventListener('click', async function () {
       const email = modal.querySelector('#authEmailInput').value.trim();
       if (!email) return;
-      await AuraApi.apiFetch('/api/auth/send-otp', { method: 'POST', body: JSON.stringify({ email }) });
-      modal.querySelector('#authOtpBlock').style.display = 'block';
+      try {
+        this.disabled = true;
+        this.textContent = 'Sending...';
+        await AuraApi.apiFetch('/api/auth/send-otp', { method: 'POST', body: JSON.stringify({ email }) });
+        modal.querySelector('#authOtpBlock').style.display = 'block';
+      } catch (err) {
+        alert(`Failed to send OTP: ${err.message}`);
+      } finally {
+        this.disabled = false;
+        this.textContent = 'Send OTP';
+      }
     });
     modal.querySelector('#authVerifyOtpBtn').addEventListener('click', async function () {
       const email = modal.querySelector('#authEmailInput').value.trim();
       const otp = modal.querySelector('#authOtpInput').value.trim();
-      const response = await AuraApi.apiFetch('/api/auth/verify-otp', { method: 'POST', body: JSON.stringify({ email, otp }) });
-      localStorage.setItem('auraAuthToken', response.token);
-      await refreshUser();
-      renderAccountState();
-      closeAuthModal();
+      if (!email || !otp) return;
+      try {
+        this.disabled = true;
+        this.textContent = 'Verifying...';
+        const response = await AuraApi.apiFetch('/api/auth/verify-otp', { method: 'POST', body: JSON.stringify({ email, otp }) });
+        if (!response.token) throw new Error('Token missing in verify response');
+        localStorage.setItem('auraAuthToken', response.token);
+        await refreshUser();
+        renderAccountState();
+        closeAuthModal();
+      } catch (err) {
+        alert(`OTP verification failed: ${err.message}`);
+      } finally {
+        this.disabled = false;
+        this.textContent = 'Verify OTP';
+      }
     });
     modal.querySelector('#authResendBtn').addEventListener('click', async function () {
       const email = modal.querySelector('#authEmailInput').value.trim();
       if (!email) return;
-      await AuraApi.apiFetch('/api/auth/resend-otp', { method: 'POST', body: JSON.stringify({ email }) });
+      try {
+        await AuraApi.apiFetch('/api/auth/resend-otp', { method: 'POST', body: JSON.stringify({ email }) });
+      } catch (err) {
+        alert(`Failed to resend OTP: ${err.message}`);
+      }
     });
     modal.addEventListener('click', function (e) {
       if (e.target === modal) closeAuthModal();
