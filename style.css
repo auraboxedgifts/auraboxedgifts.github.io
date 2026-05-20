@@ -1252,6 +1252,67 @@ button { cursor: pointer; border: none; font-family: inherit; }
   padding: 8px 10px;
 }
 
+/* Google Places dropdown above checkout overlay */
+.pac-container {
+  z-index: 10050 !important;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+.checkout-page-overlay .ck-address-field {
+  position: relative;
+  z-index: 1;
+}
+
+.aura-admin-card { max-width: 920px; }
+.aura-admin-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 8px 0 12px;
+}
+.aura-admin-toolbar .ck-pay-now-btn {
+  width: auto;
+  padding: 10px 16px;
+  margin: 0;
+}
+.aura-admin-table-wrap {
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid #eee;
+  border-radius: 10px;
+}
+.aura-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.aura-admin-table th,
+.aura-admin-table td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid #f0ebe6;
+}
+.aura-admin-table input {
+  width: 100%;
+  border: 1px solid #e8dfd6;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+.aura-admin-save {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  background: var(--rose-gold);
+  color: #fff;
+  cursor: pointer;
+}
+.aura-admin-icon {
+  font-size: 1.05rem !important;
+  color: var(--rose-gold);
+}
+
 @media (max-width: 768px) {
   .aura-auth-card { max-width: 100%; border-radius: 14px; padding: 18px 16px; }
   .aura-auth-header h3 { font-size: 1.2rem; }

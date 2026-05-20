@@ -18,7 +18,48 @@ if (!process.env.JWT_SECRET) {
     console.warn('WARN: JWT_SECRET is missing. Using fallback secret for this boot only.');
 }
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-dev-secret-change-me';
-const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || JWT_SECRET;
+
+function getAdminEmail() {
+    return String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+}
+
+function isAdminEmail(email) {
+    const adminEmail = getAdminEmail();
+    return Boolean(adminEmail) && String(email || '').trim().toLowerCase() === adminEmail;
+}
+
+function hashPassword(password) {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+    return `${salt}:${hash}`;
+}
+
+function verifyPassword(password, storedHash) {
+    if (!storedHash || !password) return false;
+    const [salt, hash] = storedHash.split(':');
+    if (!salt || !hash) return false;
+    const test = crypto.scryptSync(password, salt, 64).toString('hex');
+    try {
+        return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(test, 'hex'));
+    } catch (err) {
+        return false;
+    }
+}
+
+function sanitizeUser(user, email) {
+    if (!user) return null;
+    return {
+        email: user.email || email,
+        name: user.name || '',
+        phone: user.phone || '',
+        addresses: user.addresses || [],
+        checkoutInfo: user.checkoutInfo || null,
+        hasPassword: Boolean(user.passwordHash),
+        isAdmin: isAdminEmail(user.email || email),
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+    };
+}
 
 const DATA_DIR = path.join(__dirname, 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
@@ -106,7 +147,7 @@ function requireAdmin(req, res, next) {
     const token = getToken(req);
     if (!token) return jsonErr(res, 401, 'Admin authentication required');
     try {
-        const decoded = jwt.verify(token, ADMIN_JWT_SECRET);
+        const decoded = jwt.verify(token, JWT_SECRET);
         if (decoded.role !== 'admin') return jsonErr(res, 403, 'Admin access required');
         req.admin = decoded;
         next();
@@ -265,7 +306,7 @@ app.post('/api/admin/login', (req, res) => {
     if (email !== adminEmail || password !== adminPassword) {
         return jsonErr(res, 401, 'Invalid admin credentials');
     }
-    const token = jwt.sign({ role: 'admin', email }, ADMIN_JWT_SECRET, { expiresIn: '12h' });
+    const token = jwt.sign({ role: 'admin', email }, JWT_SECRET, { expiresIn: '12h' });
     return jsonOk(res, { token, email });
 });
 
@@ -325,6 +366,44 @@ app.post('/api/cart/calculate', (req, res) => {
 });
 
 // Auth APIs
+app.post('/api/auth/check-email', (req, res) => {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    if (!email) return jsonErr(res, 400, 'Email is required');
+    const users = readJson(USERS_FILE, {});
+    const user = users[email];
+    return jsonOk(res, {
+        exists: Boolean(user),
+        hasPassword: Boolean(user?.passwordHash),
+        isAdmin: isAdminEmail(email)
+    });
+});
+
+app.post('/api/auth/login', (req, res) => {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const password = String(req.body?.password || '');
+    if (!email || !password) return jsonErr(res, 400, 'Email and password required');
+    const users = readJson(USERS_FILE, {});
+    const user = users[email];
+    if (!user?.passwordHash) return jsonErr(res, 400, 'No password set for this account. Use OTP login first.');
+    if (!verifyPassword(password, user.passwordHash)) return jsonErr(res, 401, 'Invalid email or password');
+    const token = jwt.sign({ email, role: isAdminEmail(email) ? 'admin' : 'user' }, JWT_SECRET, { expiresIn: '30d' });
+    return res.json({ success: true, token, email, user: sanitizeUser(user, email) });
+});
+
+app.post('/api/auth/set-password', requireAuth, (req, res) => {
+    const password = String(req.body?.password || '');
+    if (password.length < 6) return jsonErr(res, 400, 'Password must be at least 6 characters');
+    const users = readJson(USERS_FILE, {});
+    const email = req.auth.email;
+    const user = users[email];
+    if (!user) return jsonErr(res, 404, 'User not found');
+    user.passwordHash = hashPassword(password);
+    user.updatedAt = new Date().toISOString();
+    users[email] = user;
+    writeJson(USERS_FILE, users);
+    return jsonOk(res, sanitizeUser(user, email));
+});
+
 async function handleSendOtp(req, res) {
     const email = String(req.body?.email || '').trim().toLowerCase();
     if (!email) return jsonErr(res, 400, 'Email is required');
@@ -369,8 +448,15 @@ function handleVerifyOtp(req, res) {
         };
         writeJson(USERS_FILE, users);
     }
-    const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '30d' });
-    return res.json({ success: true, token, email });
+    const needsPasswordSetup = !users[email].passwordHash;
+    const token = jwt.sign({ email, role: isAdminEmail(email) ? 'admin' : 'user' }, JWT_SECRET, { expiresIn: '30d' });
+    return res.json({
+        success: true,
+        token,
+        email,
+        needsPasswordSetup,
+        user: sanitizeUser(users[email], email)
+    });
 }
 app.post('/api/auth/verify-otp', handleVerifyOtp);
 app.post('/api/verify-otp', handleVerifyOtp);
@@ -388,7 +474,8 @@ app.post('/api/verify-token', (req, res) => {
 
 app.get('/api/auth/me', requireAuth, (req, res) => {
     const users = readJson(USERS_FILE, {});
-    return jsonOk(res, users[req.auth.email] || null);
+    const user = users[req.auth.email];
+    return jsonOk(res, sanitizeUser(user, req.auth.email));
 });
 
 app.put('/api/auth/profile', requireAuth, (req, res) => {
@@ -400,7 +487,7 @@ app.put('/api/auth/profile', requireAuth, (req, res) => {
     user.updatedAt = new Date().toISOString();
     users[email] = user;
     writeJson(USERS_FILE, users);
-    return jsonOk(res, user);
+    return jsonOk(res, sanitizeUser(user, email));
 });
 
 app.get('/api/auth/checkout-info', requireAuth, (req, res) => {
@@ -608,9 +695,12 @@ app.post('/api/verify-payment', async (req, res) => {
 });
 
 app.get('/api/config', (req, res) => {
-    return res.json({
-        success: true,
-        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || ''
+    const key = process.env.GOOGLE_MAPS_API_KEY || '';
+    const masked = key ? `${key.slice(0, 6)}...${key.slice(-4)}` : '(empty)';
+    console.log(`[CONFIG] googleMapsApiKey=${masked} origin=${req.headers.origin || 'unknown'}`);
+    return jsonOk(res, {
+        googleMapsApiKey: key,
+        mapsEnabled: Boolean(key)
     });
 });
 
@@ -618,6 +708,12 @@ const { SYSTEM_PROMPT } = require('./ai/systemPrompt');
 const { toolDeclarations } = require('./ai/toolDeclarations');
 
 const wss = new WebSocket.Server({ noServer: true });
+const pendingCartTotals = new Map();
+
+function formatCartTotalsMessage(cart) {
+    const lines = cart.lines.map((l) => `${l.name} x${l.qty}: ₹${l.lineTotal}`).join(', ');
+    return `Subtotal ₹${cart.subtotal}, shipping ₹${cart.shipping}, total ₹${cart.grandTotal}. Items: ${lines || 'cart is empty'}`;
+}
 
 wss.on('connection', (clientWs) => {
     let geminiSession = null;
@@ -707,7 +803,54 @@ wss.on('connection', (clientWs) => {
                                     productName: args.productName || '',
                                     productPrice: Number(args.productPrice || 0)
                                 }));
-                                response = { result: `Added ${args.productName || 'product'} to cart` };
+                                const previewCart = calculateCart(
+                                    (Array.isArray(args.items) ? args.items : []).length
+                                        ? args.items
+                                        : [{ productId: resolvedProductId, qty: 1 }]
+                                );
+                                response = {
+                                    result: `Added ${args.productName || 'product'} to cart`,
+                                    hint: 'Call calculate_cart_total to announce updated totals including shipping.'
+                                };
+                                if (resolvedProductId && previewCart.lines.length) {
+                                    session.sendRealtimeInput({
+                                        text: `[SYSTEM NOTE: Item added. Current preview for that line: ${formatCartTotalsMessage(previewCart)}. Use calculate_cart_total for full cart.]`
+                                    });
+                                }
+                            } else if (fc.name === 'calculate_cart_total') {
+                                const requestId = crypto.randomUUID();
+                                const totalsPromise = new Promise((resolve, reject) => {
+                                    const timer = setTimeout(() => {
+                                        pendingCartTotals.delete(requestId);
+                                        reject(new Error('Cart totals request timed out'));
+                                    }, 6000);
+                                    pendingCartTotals.set(requestId, (payload) => {
+                                        clearTimeout(timer);
+                                        resolve(payload);
+                                    });
+                                });
+                                clientWs.send(JSON.stringify({ type: 'calculate_cart_total', requestId }));
+                                try {
+                                    const payload = await totalsPromise;
+                                    const cart = payload?.cart || calculateCart(payload?.items || []);
+                                    const spoken = formatCartTotalsMessage(cart);
+                                    session.sendRealtimeInput({
+                                        text: `[SYSTEM NOTE: Cart totals calculated on server — ${spoken}. Tell the customer clearly including shipping.]`
+                                    });
+                                    response = {
+                                        result: spoken,
+                                        subtotal: cart.subtotal,
+                                        shipping: cart.shipping,
+                                        grandTotal: cart.grandTotal,
+                                        currency: cart.currency,
+                                        lines: cart.lines
+                                    };
+                                } catch (err) {
+                                    response = { result: 'Could not read cart from browser. Ask user to open cart first.', error: err.message };
+                                }
+                            } else if (fc.name === 'open_checkout') {
+                                clientWs.send(JSON.stringify({ type: 'open_checkout' }));
+                                response = { result: 'Opened checkout page' };
                             } else if (fc.name === 'show_cart') {
                                 clientWs.send(JSON.stringify({ type: 'show_cart' }));
                                 response = { result: 'Opened cart' };
@@ -740,6 +883,14 @@ wss.on('connection', (clientWs) => {
         try {
             const message = JSON.parse(raw);
             if (!geminiSession) return;
+            if (message.type === 'cart_totals_response') {
+                const resolver = pendingCartTotals.get(message.requestId);
+                if (resolver) {
+                    pendingCartTotals.delete(message.requestId);
+                    resolver(message);
+                }
+                return;
+            }
             if (message.type === 'audio') {
                 geminiSession.sendRealtimeInput({ audio: { data: message.data, mimeType: 'audio/pcm;rate=16000' } });
             } else if (message.type === 'text') {

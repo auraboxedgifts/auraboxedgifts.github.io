@@ -200,16 +200,36 @@ function handleAuraBackendMessage(message) {
         case 'add_to_cart':
             if (message.productId && window.AuraCart && typeof window.AuraCart.addToCartById === 'function') {
                 window.AuraCart.addToCartById(message.productId);
+                if (auraWs && auraWs.readyState === WebSocket.OPEN) {
+                    auraWs.send(JSON.stringify({
+                        type: 'context_update',
+                        productId: message.productId,
+                        productName: message.productName,
+                        productPrice: message.productPrice,
+                        action: 'added_to_cart'
+                    }));
+                }
             } else if (typeof addToCart === 'function') {
                 addToCart({ item: message.productName, price: message.productPrice, img: window._lastViewedProductImg || '' });
-                // Tell backend it was successful
                 if (auraWs && auraWs.readyState === WebSocket.OPEN) {
                     auraWs.send(JSON.stringify({ type: 'context_update', productName: message.productName, productPrice: message.productPrice, action: 'added_to_cart' }));
                 }
             }
             break;
+        case 'calculate_cart_total':
+            handleAuraCalculateCartTotal(message.requestId);
+            break;
+        case 'open_checkout':
+            if (window.AuraCheckout && typeof window.AuraCheckout.openCheckoutPage === 'function') {
+                window.AuraCheckout.openCheckoutPage();
+            } else if (typeof openCheckoutPage === 'function') {
+                openCheckoutPage();
+            }
+            break;
         case 'show_cart': {
-            if (typeof openCartPage === 'function') openCartPage();
+            if (window.AuraCart && typeof window.AuraCart.openCartPage === 'function') {
+                window.AuraCart.openCartPage();
+            } else if (typeof openCartPage === 'function') openCartPage();
             break;
         }
         case 'scroll_to_section':
@@ -233,6 +253,33 @@ function handleAuraBackendMessage(message) {
             console.error('Aura AI error:', message.error);
             updateAuraStatus('Error', 'error');
             break;
+    }
+}
+
+async function handleAuraCalculateCartTotal(requestId) {
+    if (!requestId || !auraWs || auraWs.readyState !== WebSocket.OPEN) return;
+    try {
+        const items = window.AuraCart && typeof window.AuraCart.getItems === 'function'
+            ? window.AuraCart.getItems()
+            : [];
+        const calc = await AuraApi.apiFetch('/api/cart/calculate', {
+            method: 'POST',
+            body: JSON.stringify({ items: items.map((i) => ({ productId: i.productId, qty: i.qty || 1 })) })
+        });
+        auraWs.send(JSON.stringify({
+            type: 'cart_totals_response',
+            requestId,
+            items,
+            cart: calc.data || calc
+        }));
+    } catch (err) {
+        console.error('[AuraAI] cart totals error:', err);
+        auraWs.send(JSON.stringify({
+            type: 'cart_totals_response',
+            requestId,
+            items: [],
+            cart: { lines: [], subtotal: 0, shipping: 0, grandTotal: 0, currency: 'INR', error: err.message }
+        }));
     }
 }
 

@@ -1,53 +1,99 @@
 (function () {
   let mapsLoaded = false;
+  let mapsLoadPromise = null;
+
+  function logMaps(step, detail) {
+    console.log(`[AuraMaps] ${step}`, detail !== undefined ? detail : '');
+  }
 
   function ensureMapsLoaded(apiKey) {
-    if (!apiKey) return Promise.resolve(false);
-    if (mapsLoaded || (window.google && window.google.maps && window.google.maps.places)) {
-      mapsLoaded = true;
+    if (!apiKey) {
+      logMaps('skip', 'no API key from /api/config');
+      return Promise.resolve(false);
+    }
+    if (mapsLoaded && window.google?.maps?.places) {
       return Promise.resolve(true);
     }
-    return new Promise((resolve) => {
+    if (mapsLoadPromise) return mapsLoadPromise;
+
+    mapsLoadPromise = new Promise((resolve) => {
       const existing = document.getElementById('auraGoogleMapsPlacesScript');
       if (existing) {
-        existing.addEventListener('load', () => resolve(true), { once: true });
-        existing.addEventListener('error', () => resolve(false), { once: true });
+        logMaps('reuse-script', existing.src);
+        existing.addEventListener('load', () => {
+          mapsLoaded = Boolean(window.google?.maps?.places);
+          logMaps('loaded-existing', { ok: mapsLoaded });
+          resolve(mapsLoaded);
+        }, { once: true });
+        existing.addEventListener('error', (e) => {
+          logMaps('error-existing', e);
+          resolve(false);
+        }, { once: true });
         return;
       }
+
+      const callbackName = '__auraMapsInit';
+      window[callbackName] = function () {
+        mapsLoaded = Boolean(window.google?.maps?.places);
+        logMaps('callback', { ok: mapsLoaded, hasPlaces: Boolean(window.google?.maps?.places) });
+        resolve(mapsLoaded);
+      };
+
       const script = document.createElement('script');
       script.id = 'auraGoogleMapsPlacesScript';
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&loading=async&callback=${callbackName}`;
       script.async = true;
       script.defer = true;
-      script.onload = () => {
-        mapsLoaded = true;
-        resolve(true);
+      script.onerror = (e) => {
+        logMaps('script-error', e);
+        resolve(false);
       };
-      script.onerror = () => resolve(false);
+      logMaps('inject-script', { keyPrefix: apiKey.slice(0, 6) });
       document.head.appendChild(script);
     });
+    return mapsLoadPromise;
   }
 
   function initAddressAutocomplete(overlay) {
     const input = overlay.querySelector('#ckAddress');
-    if (!input || !window.google || !window.google.maps || !window.google.maps.places) return;
-    const autocomplete = new window.google.maps.places.Autocomplete(input, {
-      types: ['address'],
-      componentRestrictions: { country: 'in' }
-    });
-    autocomplete.addListener('place_changed', function () {
-      const place = autocomplete.getPlace();
-      if (!place || !Array.isArray(place.address_components)) return;
-      const city = overlay.querySelector('#ckCity');
-      const state = overlay.querySelector('#ckState');
-      const pincode = overlay.querySelector('#ckPincode');
-      place.address_components.forEach((comp) => {
-        const types = comp.types || [];
-        if (types.includes('locality') && city) city.value = comp.long_name;
-        if (types.includes('administrative_area_level_1') && state) state.value = comp.long_name;
-        if (types.includes('postal_code') && pincode) pincode.value = comp.long_name;
+    if (!input) {
+      logMaps('autocomplete-skip', 'no #ckAddress');
+      return;
+    }
+    if (!window.google?.maps?.places?.Autocomplete) {
+      logMaps('autocomplete-skip', 'Autocomplete class unavailable');
+      return;
+    }
+    try {
+      const autocomplete = new window.google.maps.places.Autocomplete(input, {
+        componentRestrictions: { country: 'in' },
+        fields: ['address_components', 'formatted_address', 'geometry']
       });
-    });
+      autocomplete.addListener('place_changed', function () {
+        const place = autocomplete.getPlace();
+        logMaps('place-selected', {
+          hasPlace: Boolean(place),
+          formatted: place?.formatted_address,
+          components: place?.address_components?.length || 0
+        });
+        if (!place) return;
+        if (place.formatted_address) input.value = place.formatted_address;
+        if (!Array.isArray(place.address_components)) return;
+        const city = overlay.querySelector('#ckCity');
+        const state = overlay.querySelector('#ckState');
+        const pincode = overlay.querySelector('#ckPincode');
+        place.address_components.forEach((comp) => {
+          const types = comp.types || [];
+          if (types.includes('locality') && city) city.value = comp.long_name;
+          if (types.includes('postal_town') && city && !city.value) city.value = comp.long_name;
+          if (types.includes('administrative_area_level_1') && state) state.value = comp.long_name;
+          if (types.includes('postal_code') && pincode) pincode.value = comp.long_name;
+        });
+      });
+      logMaps('autocomplete-ready', 'bound to #ckAddress');
+    } catch (err) {
+      logMaps('autocomplete-error', err.message);
+    }
   }
 
   function toggleManualAddressMode(overlay, manualMode) {
@@ -58,10 +104,12 @@
       button.dataset.manual = 'true';
       button.textContent = 'Use automatic Google address search';
       addressInput.placeholder = 'Address (House no, building, street, area)';
+      addressInput.removeAttribute('autocomplete');
     } else {
       button.dataset.manual = 'false';
       button.textContent = 'Enter address manually';
-      addressInput.placeholder = 'Search address (Google Places)';
+      addressInput.placeholder = 'Start typing your address…';
+      addressInput.setAttribute('autocomplete', 'off');
     }
   }
 
@@ -85,7 +133,8 @@
           <p class="ck-secure-text" id="ckLoginHint">Login required before payment.</p>
           <div class="ck-field"><input type="text" id="ckName" placeholder="Full name"></div>
           <div class="ck-field"><input type="text" id="ckPhone" placeholder="Phone"></div>
-          <div class="ck-field"><input type="text" id="ckAddress" placeholder="Search address (Google Places)"></div>
+          <div class="ck-field ck-address-field"><input type="text" id="ckAddress" placeholder="Start typing your address…" autocomplete="off"></div>
+          <p class="ck-maps-hint" id="ckMapsHint" style="display:none;font-size:12px;color:#888;margin:0 0 8px;"></p>
           <button class="ck-back-btn" id="ckManualAddressBtn" style="margin:0 0 8px;">Enter address manually</button>
           <div class="ck-row ck-row-3">
             <div class="ck-field"><input type="text" id="ckCity" placeholder="City"></div>
@@ -113,6 +162,7 @@
 
     const loginBtn = overlay.querySelector('#ckLoginBtn');
     const loginHint = overlay.querySelector('#ckLoginHint');
+    const mapsHint = overlay.querySelector('#ckMapsHint');
     const meAtLoad = await AuraAuth.refreshUser();
     if (meAtLoad) {
       loginBtn.style.display = 'none';
@@ -151,13 +201,29 @@
     });
     toggleManualAddressMode(overlay, false);
 
-    AuraApi.apiFetch('/api/config')
-      .then(async (cfg) => {
-        const key = cfg?.googleMapsApiKey || cfg?.data?.googleMapsApiKey || '';
+    try {
+      const cfg = await AuraApi.apiFetch('/api/config');
+      const key = cfg?.data?.googleMapsApiKey || cfg?.googleMapsApiKey || '';
+      logMaps('config', { hasKey: Boolean(key), mapsEnabled: cfg?.data?.mapsEnabled });
+      if (!key) {
+        mapsHint.style.display = '';
+        mapsHint.textContent = 'Address search unavailable (no Maps key on server). Use manual entry.';
+      } else {
         const ok = await ensureMapsLoaded(key);
-        if (ok) initAddressAutocomplete(overlay);
-      })
-      .catch(() => {});
+        if (ok) {
+          initAddressAutocomplete(overlay);
+          mapsHint.style.display = '';
+          mapsHint.textContent = 'Type at least 3 characters to search your address.';
+        } else {
+          mapsHint.style.display = '';
+          mapsHint.textContent = 'Google Maps failed to load. Check browser console [AuraMaps] logs and API key restrictions.';
+        }
+      }
+    } catch (err) {
+      logMaps('config-error', err.message);
+      mapsHint.style.display = '';
+      mapsHint.textContent = `Could not load maps config: ${err.message}`;
+    }
 
     overlay.querySelector('#ckPayNowBtn').addEventListener('click', async function () {
       const me = await AuraAuth.refreshUser();

@@ -22,6 +22,19 @@
     }
   }
 
+  function setAuthStep(modal, step) {
+    modal.dataset.step = step;
+    modal.querySelector('#authEmailBlock').style.display = step === 'email' ? '' : 'none';
+    modal.querySelector('#authPasswordLoginBlock').style.display = step === 'password' ? '' : 'none';
+    modal.querySelector('#authOtpBlock').style.display = step === 'otp' ? '' : 'none';
+    modal.querySelector('#authSetPasswordBlock').style.display = step === 'setPassword' ? '' : 'none';
+    const subtitle = modal.querySelector('.aura-auth-subtitle');
+    if (step === 'email') subtitle.textContent = 'Enter your email to continue.';
+    if (step === 'password') subtitle.textContent = 'Welcome back — enter your password.';
+    if (step === 'otp') subtitle.textContent = 'First time? Verify with the OTP sent to your email.';
+    if (step === 'setPassword') subtitle.textContent = 'Create a password for faster login next time.';
+  }
+
   function ensureAuthModal() {
     let modal = document.getElementById('auraAuthModal');
     if (modal) return modal;
@@ -35,70 +48,167 @@
           <h3>Login / Sign up</h3>
           <button class="aura-auth-close" id="authCloseBtn" aria-label="Close">&times;</button>
         </div>
-        <p class="aura-auth-subtitle">Enter your email to receive OTP.</p>
-        <div class="ck-field"><input type="email" id="authEmailInput" placeholder="Email"></div>
-        <button class="ck-pay-now-btn" id="authSendOtpBtn">Send OTP</button>
-        <div id="authOtpBlock" style="display:none;margin-top:12px;">
-            <div class="ck-field"><input type="text" id="authOtpInput" placeholder="Enter 6-digit OTP"></div>
-            <button class="ck-pay-now-btn" id="authVerifyOtpBtn">Verify OTP</button>
-            <button class="ck-back-btn aura-auth-resend" id="authResendBtn">Resend OTP</button>
-          </div>
+        <p class="aura-auth-subtitle">Enter your email to continue.</p>
+        <div id="authEmailBlock">
+          <div class="ck-field"><input type="email" id="authEmailInput" placeholder="Email" autocomplete="email"></div>
+          <button class="ck-pay-now-btn" id="authContinueBtn">Continue</button>
+        </div>
+        <div id="authPasswordLoginBlock" style="display:none;">
+          <div class="ck-field"><input type="password" id="authPasswordInput" placeholder="Password" autocomplete="current-password"></div>
+          <button class="ck-pay-now-btn" id="authPasswordLoginBtn">Login with password</button>
+          <button class="ck-back-btn aura-auth-resend" id="authUseOtpBtn">Use OTP instead</button>
+        </div>
+        <div id="authOtpBlock" style="display:none;">
+          <div class="ck-field"><input type="text" id="authOtpInput" placeholder="Enter 6-digit OTP" inputmode="numeric"></div>
+          <button class="ck-pay-now-btn" id="authVerifyOtpBtn">Verify OTP</button>
+          <button class="ck-back-btn aura-auth-resend" id="authResendBtn">Resend OTP</button>
+        </div>
+        <div id="authSetPasswordBlock" style="display:none;">
+          <div class="ck-field"><input type="password" id="authNewPasswordInput" placeholder="New password (min 6 chars)" autocomplete="new-password"></div>
+          <div class="ck-field"><input type="password" id="authConfirmPasswordInput" placeholder="Confirm password" autocomplete="new-password"></div>
+          <button class="ck-pay-now-btn" id="authSetPasswordBtn">Save password</button>
+        </div>
       </div>`;
     document.body.appendChild(modal);
 
     modal.querySelector('#authCloseBtn').addEventListener('click', closeAuthModal);
-    modal.querySelector('#authSendOtpBtn').addEventListener('click', async function () {
-      const email = modal.querySelector('#authEmailInput').value.trim();
-      if (!email) return;
-      try {
-        this.disabled = true;
-        this.textContent = 'Sending...';
-        await AuraApi.apiFetch('/api/auth/send-otp', { method: 'POST', body: JSON.stringify({ email }) });
-        modal.querySelector('#authOtpBlock').style.display = 'block';
-      } catch (err) {
-        alert(`Failed to send OTP: ${err.message}`);
-      } finally {
-        this.disabled = false;
-        this.textContent = 'Send OTP';
-      }
-    });
-    modal.querySelector('#authVerifyOtpBtn').addEventListener('click', async function () {
-      const email = modal.querySelector('#authEmailInput').value.trim();
-      const otp = modal.querySelector('#authOtpInput').value.trim();
-      if (!email || !otp) return;
-      try {
-        this.disabled = true;
-        this.textContent = 'Verifying...';
-        const response = await AuraApi.apiFetch('/api/auth/verify-otp', { method: 'POST', body: JSON.stringify({ email, otp }) });
-        if (!response.token) throw new Error('Token missing in verify response');
-        localStorage.setItem('auraAuthToken', response.token);
-        await refreshUser();
-        renderAccountState();
-        closeAuthModal();
-      } catch (err) {
-        alert(`OTP verification failed: ${err.message}`);
-      } finally {
-        this.disabled = false;
-        this.textContent = 'Verify OTP';
-      }
-    });
-    modal.querySelector('#authResendBtn').addEventListener('click', async function () {
-      const email = modal.querySelector('#authEmailInput').value.trim();
-      if (!email) return;
-      try {
-        await AuraApi.apiFetch('/api/auth/resend-otp', { method: 'POST', body: JSON.stringify({ email }) });
-      } catch (err) {
-        alert(`Failed to resend OTP: ${err.message}`);
-      }
-    });
+    modal.querySelector('#authContinueBtn').addEventListener('click', handleAuthContinue);
+    modal.querySelector('#authPasswordLoginBtn').addEventListener('click', handlePasswordLogin);
+    modal.querySelector('#authUseOtpBtn').addEventListener('click', handleSendOtpFromModal);
+    modal.querySelector('#authVerifyOtpBtn').addEventListener('click', handleVerifyOtp);
+    modal.querySelector('#authResendBtn').addEventListener('click', handleResendOtp);
+    modal.querySelector('#authSetPasswordBtn').addEventListener('click', handleSetPassword);
     modal.addEventListener('click', function (e) {
       if (e.target === modal) closeAuthModal();
     });
+    setAuthStep(modal, 'email');
     return modal;
+  }
+
+  async function handleAuthContinue() {
+    const modal = ensureAuthModal();
+    const email = modal.querySelector('#authEmailInput').value.trim().toLowerCase();
+    if (!email) return;
+    const btn = modal.querySelector('#authContinueBtn');
+    try {
+      btn.disabled = true;
+      btn.textContent = 'Checking...';
+      const check = await AuraApi.apiFetch('/api/auth/check-email', { method: 'POST', body: JSON.stringify({ email }) });
+      if (check.data?.hasPassword) {
+        setAuthStep(modal, 'password');
+      } else {
+        await AuraApi.apiFetch('/api/auth/send-otp', { method: 'POST', body: JSON.stringify({ email }) });
+        setAuthStep(modal, 'otp');
+      }
+    } catch (err) {
+      alert(`Could not continue: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Continue';
+    }
+  }
+
+  async function handlePasswordLogin() {
+    const modal = ensureAuthModal();
+    const email = modal.querySelector('#authEmailInput').value.trim().toLowerCase();
+    const password = modal.querySelector('#authPasswordInput').value;
+    if (!email || !password) return;
+    const btn = modal.querySelector('#authPasswordLoginBtn');
+    try {
+      btn.disabled = true;
+      btn.textContent = 'Logging in...';
+      const response = await AuraApi.apiFetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+      if (!response.token) throw new Error('Token missing');
+      localStorage.setItem('auraAuthToken', response.token);
+      user = response.user || null;
+      await refreshUser();
+      renderAccountState();
+      closeAuthModal();
+    } catch (err) {
+      alert(`Login failed: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Login with password';
+    }
+  }
+
+  async function handleSendOtpFromModal() {
+    const modal = ensureAuthModal();
+    const email = modal.querySelector('#authEmailInput').value.trim().toLowerCase();
+    if (!email) return;
+    try {
+      await AuraApi.apiFetch('/api/auth/send-otp', { method: 'POST', body: JSON.stringify({ email }) });
+      setAuthStep(modal, 'otp');
+    } catch (err) {
+      alert(`Failed to send OTP: ${err.message}`);
+    }
+  }
+
+  async function handleVerifyOtp() {
+    const modal = ensureAuthModal();
+    const email = modal.querySelector('#authEmailInput').value.trim().toLowerCase();
+    const otp = modal.querySelector('#authOtpInput').value.trim();
+    if (!email || !otp) return;
+    const btn = modal.querySelector('#authVerifyOtpBtn');
+    try {
+      btn.disabled = true;
+      btn.textContent = 'Verifying...';
+      const response = await AuraApi.apiFetch('/api/auth/verify-otp', { method: 'POST', body: JSON.stringify({ email, otp }) });
+      if (!response.token) throw new Error('Token missing in verify response');
+      localStorage.setItem('auraAuthToken', response.token);
+      user = response.user || null;
+      if (response.needsPasswordSetup) {
+        setAuthStep(modal, 'setPassword');
+      } else {
+        await refreshUser();
+        renderAccountState();
+        closeAuthModal();
+      }
+    } catch (err) {
+      alert(`OTP verification failed: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Verify OTP';
+    }
+  }
+
+  async function handleResendOtp() {
+    const modal = ensureAuthModal();
+    const email = modal.querySelector('#authEmailInput').value.trim().toLowerCase();
+    if (!email) return;
+    try {
+      await AuraApi.apiFetch('/api/auth/resend-otp', { method: 'POST', body: JSON.stringify({ email }) });
+      alert('OTP resent to your email.');
+    } catch (err) {
+      alert(`Failed to resend OTP: ${err.message}`);
+    }
+  }
+
+  async function handleSetPassword() {
+    const modal = ensureAuthModal();
+    const pw = modal.querySelector('#authNewPasswordInput').value;
+    const confirm = modal.querySelector('#authConfirmPasswordInput').value;
+    if (pw.length < 6) return alert('Password must be at least 6 characters.');
+    if (pw !== confirm) return alert('Passwords do not match.');
+    const btn = modal.querySelector('#authSetPasswordBtn');
+    try {
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+      await AuraApi.apiFetch('/api/auth/set-password', { method: 'POST', body: JSON.stringify({ password: pw }) });
+      await refreshUser();
+      renderAccountState();
+      closeAuthModal();
+    } catch (err) {
+      alert(`Could not save password: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save password';
+    }
   }
 
   function openAuthModal() {
     const modal = ensureAuthModal();
+    setAuthStep(modal, 'email');
     modal.style.display = 'flex';
     history.pushState({ auraOverlay: 'auth' }, '', '#auth');
   }
@@ -147,6 +257,9 @@
         user = null;
         dropdown.style.display = 'none';
         renderAccountState();
+        if (window.AuraAdmin && typeof window.AuraAdmin.updateAdminIcon === 'function') {
+          window.AuraAdmin.updateAdminIcon();
+        }
       };
     } else {
       icon.onclick = function (e) {
@@ -154,6 +267,9 @@
         openAuthModal();
       };
       dropdown.style.display = 'none';
+    }
+    if (window.AuraAdmin && typeof window.AuraAdmin.updateAdminIcon === 'function') {
+      window.AuraAdmin.updateAdminIcon();
     }
   }
 

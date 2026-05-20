@@ -3,6 +3,12 @@
     return localStorage.getItem('auraAdminToken') || null;
   }
 
+  function closeAdminModal() {
+    const modal = document.getElementById('auraAdminModal');
+    if (modal) modal.style.display = 'none';
+    if (window.location.hash === '#admin') history.back();
+  }
+
   function ensureAdminModal() {
     let modal = document.getElementById('auraAdminModal');
     if (modal) return modal;
@@ -11,25 +17,25 @@
     modal.className = 'aura-auth-overlay';
     modal.style.display = 'none';
     modal.innerHTML = `
-      <div class="aura-auth-card" style="max-width:900px;">
+      <div class="aura-auth-card aura-admin-card">
         <div class="aura-auth-header">
           <h3>Admin Console</h3>
           <button class="aura-auth-close" id="adminCloseBtn" aria-label="Close">&times;</button>
         </div>
         <div id="adminLoginBlock">
-          <p class="aura-auth-subtitle">Login as admin to manage products.</p>
+          <p class="aura-auth-subtitle">Manage products and catalog. Uses ADMIN_EMAIL / ADMIN_PASSWORD from server .env.</p>
           <div class="ck-field"><input type="email" id="adminEmail" placeholder="Admin email"></div>
           <div class="ck-field"><input type="password" id="adminPassword" placeholder="Admin password"></div>
           <button class="ck-pay-now-btn" id="adminLoginBtn">Login</button>
         </div>
         <div id="adminPanelBlock" style="display:none;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 10px;">
-            <button class="ck-pay-now-btn secondary" id="adminRefreshBtn" style="width:auto;padding:10px 14px;margin:0;">Refresh</button>
-            <button class="ck-pay-now-btn" id="adminLogoutBtn" style="width:auto;padding:10px 14px;margin:0;">Logout</button>
+          <div class="aura-admin-toolbar">
+            <button class="ck-pay-now-btn secondary" id="adminRefreshBtn">Refresh</button>
+            <button class="ck-pay-now-btn" id="adminLogoutBtn">Logout</button>
           </div>
-          <div style="max-height:420px;overflow:auto;border:1px solid #eee;border-radius:10px;">
-            <table style="width:100%;border-collapse:collapse;font-size:12px;" id="adminProductsTable">
-              <thead><tr><th style="text-align:left;padding:8px;">Name</th><th style="text-align:left;padding:8px;">Collection</th><th style="text-align:left;padding:8px;">Price</th><th style="text-align:left;padding:8px;">Action</th></tr></thead>
+          <div class="aura-admin-table-wrap">
+            <table class="aura-admin-table" id="adminProductsTable">
+              <thead><tr><th>Name</th><th>Collection</th><th>Price</th><th>Action</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -91,10 +97,10 @@
       const products = res.data || [];
       tbody.innerHTML = products.map((p) => `
         <tr>
-          <td style="padding:8px;"><input data-field="name" data-id="${p.id}" value="${p.name}" style="width:100%"></td>
-          <td style="padding:8px;"><input data-field="collection" data-id="${p.id}" value="${p.collection}" style="width:100%"></td>
-          <td style="padding:8px;"><input data-field="price" data-id="${p.id}" value="${p.price}" style="width:90px"></td>
-          <td style="padding:8px;"><button data-save-id="${p.id}" style="padding:6px 10px;">Save</button></td>
+          <td><input data-field="name" data-id="${p.id}" value="${p.name}"></td>
+          <td><input data-field="collection" data-id="${p.id}" value="${p.collection}"></td>
+          <td><input data-field="price" data-id="${p.id}" value="${p.price}"></td>
+          <td><button class="aura-admin-save" data-save-id="${p.id}">Save</button></td>
         </tr>
       `).join('');
       tbody.querySelectorAll('button[data-save-id]').forEach((btn) => {
@@ -109,6 +115,8 @@
             body: JSON.stringify(payload),
             authToken: token
           });
+          this.textContent = 'Saved ✓';
+          setTimeout(() => { this.textContent = 'Save'; }, 1500);
         });
       });
       showAdminPanel(true);
@@ -122,24 +130,62 @@
   function openAdminModal() {
     const modal = ensureAdminModal();
     modal.style.display = 'flex';
+    history.pushState({ auraOverlay: 'admin' }, '', '#admin');
     if (getAdminToken()) loadProducts();
     else showAdminPanel(false);
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
+  function ensureAdminIcon() {
     const navIcons = document.querySelector('.nav-icons');
-    if (!navIcons) return;
-    const adminBtn = document.createElement('a');
-    adminBtn.href = '#';
-    adminBtn.title = 'Admin';
-    adminBtn.setAttribute('aria-label', 'Admin');
-    adminBtn.innerHTML = '<i class="fas fa-user-shield"></i>';
-    adminBtn.addEventListener('click', function (e) {
-      e.preventDefault();
-      openAdminModal();
-    });
-    navIcons.appendChild(adminBtn);
+    const colNavLinks = document.querySelector('.col-nav-links');
+    const host = navIcons || colNavLinks;
+    if (!host) return null;
+    let btn = document.getElementById('navAdminIcon');
+    if (!btn) {
+      btn = document.createElement('a');
+      btn.href = '#';
+      btn.id = 'navAdminIcon';
+      btn.title = 'Admin';
+      btn.setAttribute('aria-label', 'Admin');
+      btn.className = 'aura-admin-icon';
+      btn.style.display = 'none';
+      btn.innerHTML = '<i class="fas fa-user-shield"></i>';
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        openAdminModal();
+      });
+      if (navIcons) navIcons.appendChild(btn);
+      else colNavLinks.appendChild(btn);
+    }
+    return btn;
+  }
+
+  async function updateAdminIcon() {
+    const btn = ensureAdminIcon();
+    if (!btn) return;
+    let show = Boolean(getAdminToken());
+    if (!show && window.AuraAuth && typeof window.AuraAuth.getUser === 'function') {
+      const u = window.AuraAuth.getUser();
+      if (u?.isAdmin) show = true;
+    }
+    if (!show && window.AuraAuth?.refreshUser) {
+      const u = await window.AuraAuth.refreshUser();
+      show = Boolean(u?.isAdmin);
+    }
+    btn.style.display = show ? '' : 'none';
+  }
+
+  window.addEventListener('popstate', function () {
+    if (window.location.hash !== '#admin') {
+      const modal = document.getElementById('auraAdminModal');
+      if (modal) modal.style.display = 'none';
+    }
   });
 
-  window.AuraAdmin = { openAdminModal };
+  document.addEventListener('DOMContentLoaded', function () {
+    ensureAdminIcon();
+    updateAdminIcon();
+  });
+
+  window.AuraAdmin = { openAdminModal, updateAdminIcon };
 })();

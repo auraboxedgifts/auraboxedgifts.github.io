@@ -64,7 +64,12 @@ const toolDeclarations = [
             }
         }
     },
-    { name: 'show_cart', description: 'Open shopping cart.' }
+    {
+        name: 'calculate_cart_total',
+        description: 'Calculate cart subtotal, shipping (₹70 when cart not empty), and grand total from the user browser cart. Use after add_to_cart or when user asks price/total.'
+    },
+    { name: 'show_cart', description: 'Open shopping cart.' },
+    { name: 'open_checkout', description: 'Open checkout page for the user.' }
 ];
 
 module.exports = { toolDeclarations };
