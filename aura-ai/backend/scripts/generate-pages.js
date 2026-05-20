@@ -84,6 +84,7 @@ ${imageCards}
   <script src="../js/auth.js"></script>
   <script src="../js/cart.js"></script>
   <script src="../js/checkout.js"></script>
+  <script src="../js/admin.js"></script>
   <script src="../js/lightbox.js"></script>
 </body>
 </html>`;

@@ -641,9 +641,13 @@ button { cursor: pointer; border: none; font-family: inherit; }
   margin-bottom: 50px;
 }
 .footer-brand img {
-  height: 60px;
+  height: 72px;
   margin-bottom: 16px;
   filter: brightness(1.8);
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.22);
+  padding: 8px;
+  background: rgba(255,255,255,0.06);
 }
 .footer-brand p {
   font-size: 0.88rem;

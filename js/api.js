@@ -13,10 +13,17 @@
   }
 
   async function apiFetch(path, options) {
-    const token = localStorage.getItem('auraAuthToken');
+    const overrideToken = options && Object.prototype.hasOwnProperty.call(options, 'authToken')
+      ? options.authToken
+      : undefined;
+    const token = overrideToken !== undefined ? overrideToken : localStorage.getItem('auraAuthToken');
     const headers = Object.assign({ 'Content-Type': 'application/json' }, options && options.headers ? options.headers : {});
     if (token) headers.Authorization = `Bearer ${token}`;
-    const response = await fetch(`${API_BASE}${path}`, Object.assign({}, options || {}, { headers }));
+    const requestOptions = Object.assign({}, options || {}, { headers });
+    if (requestOptions && Object.prototype.hasOwnProperty.call(requestOptions, 'authToken')) {
+      delete requestOptions.authToken;
+    }
+    const response = await fetch(`${API_BASE}${path}`, requestOptions);
     const contentType = response.headers.get('content-type') || '';
     const data = contentType.includes('application/json') ? await response.json() : { success: false, error: await response.text() };
     if (!response.ok || data.success === false) {

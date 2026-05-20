@@ -50,6 +50,21 @@
     });
   }
 
+  function toggleManualAddressMode(overlay, manualMode) {
+    const button = overlay.querySelector('#ckManualAddressBtn');
+    const addressInput = overlay.querySelector('#ckAddress');
+    if (!button || !addressInput) return;
+    if (manualMode) {
+      button.dataset.manual = 'true';
+      button.textContent = 'Use automatic Google address search';
+      addressInput.placeholder = 'Address (House no, building, street, area)';
+    } else {
+      button.dataset.manual = 'false';
+      button.textContent = 'Enter address manually';
+      addressInput.placeholder = 'Search address (Google Places)';
+    }
+  }
+
   async function openCheckoutPage() {
     const items = AuraCart.getItems();
     const calc = await AuraApi.apiFetch('/api/cart/calculate', {
@@ -129,12 +144,12 @@
       AuraAuth.openAuthModal();
     });
     overlay.querySelector('#ckManualAddressBtn').addEventListener('click', function () {
+      const manualMode = this.dataset.manual !== 'true';
+      toggleManualAddressMode(overlay, manualMode);
       const current = overlay.querySelector('#ckAddress');
-      if (!current) return;
-      current.placeholder = 'Address (House no, building, street, area)';
-      current.focus();
-      this.style.display = 'none';
+      if (current) current.focus();
     });
+    toggleManualAddressMode(overlay, false);
 
     AuraApi.apiFetch('/api/config')
       .then(async (cfg) => {

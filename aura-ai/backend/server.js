@@ -18,6 +18,7 @@ if (!process.env.JWT_SECRET) {
     console.warn('WARN: JWT_SECRET is missing. Using fallback secret for this boot only.');
 }
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-dev-secret-change-me';
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || JWT_SECRET;
 
 const DATA_DIR = path.join(__dirname, 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
@@ -101,6 +102,19 @@ function requireAuth(req, res, next) {
     }
 }
 
+function requireAdmin(req, res, next) {
+    const token = getToken(req);
+    if (!token) return jsonErr(res, 401, 'Admin authentication required');
+    try {
+        const decoded = jwt.verify(token, ADMIN_JWT_SECRET);
+        if (decoded.role !== 'admin') return jsonErr(res, 403, 'Admin access required');
+        req.admin = decoded;
+        next();
+    } catch (err) {
+        return jsonErr(res, 401, 'Invalid admin token');
+    }
+}
+
 function getCatalog() {
     return readJson(PRODUCTS_FILE, []);
 }
@@ -164,6 +178,29 @@ async function sendEmailNotification(message, senderInfo = '', inquiryType = 'Ge
     }
 }
 
+async function sendCustomerOrderEmail(customer, order) {
+    if (!customer?.email || !process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) return;
+    const lines = order.cart.lines.map((l) => `<li>${l.name} x${l.qty} - ₹${l.lineTotal}</li>`).join('');
+    await emailTransporter.sendMail({
+        from: `"Aura Boxed Gifts" <${process.env.EMAIL_USER}>`,
+        to: customer.email,
+        subject: `Your Aura Boxed Gifts order ${order.id} is confirmed`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
+                <h2>Thank you for your order, ${customer.name || 'Customer'}!</h2>
+                <p>Your payment was successful. Here are your order details:</p>
+                <p><strong>Order ID:</strong> ${order.id}</p>
+                <ul>${lines}</ul>
+                <p><strong>Subtotal:</strong> ₹${order.cart.subtotal}</p>
+                <p><strong>Shipping:</strong> ₹${order.cart.shipping}</p>
+                <p><strong>Total paid:</strong> ₹${order.cart.grandTotal}</p>
+                <p><strong>Shipping address:</strong> ${customer.address || '-'}</p>
+                <p>We appreciate you shopping with Aura Boxed Gifts.</p>
+            </div>
+        `
+    });
+}
+
 // OTP store
 const otpStore = new Map();
 
@@ -215,6 +252,71 @@ app.get('/api/products/:collection/:idx', (req, res) => {
 
 app.get('/api/collections', (req, res) => {
     return jsonOk(res, readJson(COLLECTIONS_FILE, []));
+});
+
+app.post('/api/admin/login', (req, res) => {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const password = String(req.body?.password || '');
+    const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+    const adminPassword = String(process.env.ADMIN_PASSWORD || '');
+    if (!adminEmail || !adminPassword) {
+        return jsonErr(res, 500, 'Admin credentials not configured on server');
+    }
+    if (email !== adminEmail || password !== adminPassword) {
+        return jsonErr(res, 401, 'Invalid admin credentials');
+    }
+    const token = jwt.sign({ role: 'admin', email }, ADMIN_JWT_SECRET, { expiresIn: '12h' });
+    return jsonOk(res, { token, email });
+});
+
+app.get('/api/admin/products', requireAdmin, (req, res) => {
+    return jsonOk(res, getCatalog());
+});
+
+app.post('/api/admin/products', requireAdmin, (req, res) => {
+    const products = getCatalog();
+    const payload = req.body || {};
+    if (!payload.name || !payload.collection || !payload.image || !payload.price) {
+        return jsonErr(res, 400, 'name, collection, image, and price are required');
+    }
+    const nextId = payload.id || `prod_${Date.now()}`;
+    const product = {
+        id: nextId,
+        slug: payload.slug || payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+        name: String(payload.name),
+        collection: String(payload.collection),
+        price: Number(payload.price),
+        image: String(payload.image),
+        description: String(payload.description || ''),
+        tags: Array.isArray(payload.tags) ? payload.tags : []
+    };
+    products.push(product);
+    writeJson(PRODUCTS_FILE, products);
+    return jsonOk(res, product);
+});
+
+app.put('/api/admin/products/:id', requireAdmin, (req, res) => {
+    const products = getCatalog();
+    const idx = products.findIndex((p) => p.id === req.params.id);
+    if (idx === -1) return jsonErr(res, 404, 'Product not found');
+    const allowed = ['slug', 'name', 'collection', 'price', 'image', 'description', 'tags'];
+    const next = { ...products[idx] };
+    for (const key of allowed) {
+        if (Object.prototype.hasOwnProperty.call(req.body || {}, key)) {
+            next[key] = key === 'price' ? Number(req.body[key]) : req.body[key];
+        }
+    }
+    products[idx] = next;
+    writeJson(PRODUCTS_FILE, products);
+    return jsonOk(res, next);
+});
+
+app.delete('/api/admin/products/:id', requireAdmin, (req, res) => {
+    const products = getCatalog();
+    const next = products.filter((p) => p.id !== req.params.id);
+    if (next.length === products.length) return jsonErr(res, 404, 'Product not found');
+    writeJson(PRODUCTS_FILE, next);
+    return jsonOk(res, { deleted: true });
 });
 
 app.post('/api/cart/calculate', (req, res) => {
@@ -497,6 +599,7 @@ app.post('/api/verify-payment', async (req, res) => {
             `${customer?.name || ''} (${customer?.email || ''})`,
             'Razorpay Order'
         );
+        await sendCustomerOrderEmail(customer, order);
 
         return jsonOk(res, { order });
     } catch (err) {
@@ -519,6 +622,7 @@ const wss = new WebSocket.Server({ noServer: true });
 wss.on('connection', (clientWs) => {
     let geminiSession = null;
     let activeCollection = null;
+    let lastViewedProduct = null;
 
     const connectToGemini = async () => {
         const { GoogleGenAI, Modality } = await import('@google/genai');
@@ -585,6 +689,9 @@ wss.on('connection', (clientWs) => {
                                 response = { result: `Opened product ${index}` };
                             } else if (fc.name === 'add_to_cart') {
                                 let resolvedProductId = args.productId || '';
+                                if (!resolvedProductId && lastViewedProduct?.productId) {
+                                    resolvedProductId = lastViewedProduct.productId;
+                                }
                                 if (!resolvedProductId && args.productName) {
                                     const catalog = getCatalog();
                                     const byExact = catalog.find((p) =>
@@ -638,11 +745,18 @@ wss.on('connection', (clientWs) => {
             } else if (message.type === 'text') {
                 geminiSession.sendRealtimeInput({ text: message.data });
             } else if (message.type === 'context_update') {
+                if (message.productId || message.productName) {
+                    lastViewedProduct = {
+                        productId: message.productId || '',
+                        productName: message.productName || '',
+                        productPrice: Number(message.productPrice || 0)
+                    };
+                }
                 let sysNote = '';
                 if (message.action === 'added_to_cart') {
                     sysNote = `[SYSTEM NOTE: Added to cart: ${message.productName}]`;
                 } else {
-                    sysNote = `[SYSTEM NOTE: User is viewing ${message.productName} priced at Rs.${message.productPrice}. Ask if they want add-to-cart or another product.]`;
+                    sysNote = `[SYSTEM NOTE: User is viewing productId=${message.productId || 'unknown'} name=${message.productName} priced at Rs.${message.productPrice}. If adding to cart, include productId in add_to_cart arguments.]`;
                 }
                 geminiSession.sendRealtimeInput({ text: sysNote });
             }

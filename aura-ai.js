@@ -32,6 +32,7 @@ let auraScheduledSources = [];
 const auraIsMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 let auraWidgetPanel, auraWidgetText, auraMuteBtn, auraEndBtn, auraOrb, auraVisualizer;
+let auraPendingCollectionCommand = null;
 
 function createAuraAIWidget() {
     const widgetHTML = `
@@ -189,7 +190,10 @@ function handleAuraBackendMessage(message) {
         case 'view_product': {
             var viewIframe = document.getElementById('collection-iframe');
             if (viewIframe && viewIframe.contentWindow) {
-                viewIframe.contentWindow.postMessage({ type: 'view_product', index: message.index || 1 }, '*');
+                auraPendingCollectionCommand = { type: 'view_product', index: message.index || 1 };
+                try {
+                    viewIframe.contentWindow.postMessage(auraPendingCollectionCommand, '*');
+                } catch (err) {}
             }
             break;
         }
@@ -490,6 +494,11 @@ function openCollectionOverlay(url) {
         const iframe = document.createElement('iframe');
         iframe.id = 'collection-iframe';
         iframe.style.cssText = 'width:100%; height:100%; border:none;';
+        iframe.addEventListener('load', function() {
+            if (auraPendingCollectionCommand && iframe.contentWindow) {
+                iframe.contentWindow.postMessage(auraPendingCollectionCommand, '*');
+            }
+        });
         overlay.appendChild(iframe);
         document.body.appendChild(overlay);
         
