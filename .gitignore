@@ -27,3 +27,7 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Runtime data files (created by the backend at runtime)
+aura-ai/backend/data/users.json
+aura-ai/backend/data/orders.json

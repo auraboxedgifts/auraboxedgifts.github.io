@@ -7,7 +7,10 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
 require('dotenv').config();
+
+const { generateAllPages } = require('./scripts/generate-pages');
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {
@@ -67,13 +70,60 @@ const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
 const COLLECTIONS_FILE = path.join(DATA_DIR, 'collections.json');
 
+const ROOT_DIR = path.resolve(__dirname, '../..');
+const IMAGES_DIR = path.join(ROOT_DIR, 'images');
+const UPLOADS_DIR = path.join(IMAGES_DIR, 'web');
+
 if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+if (!fs.existsSync(IMAGES_DIR)) {
+    fs.mkdirSync(IMAGES_DIR, { recursive: true });
+}
+if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, '{}');
 if (!fs.existsSync(ORDERS_FILE)) fs.writeFileSync(ORDERS_FILE, '[]');
 if (!fs.existsSync(PRODUCTS_FILE)) fs.writeFileSync(PRODUCTS_FILE, '[]');
 if (!fs.existsSync(COLLECTIONS_FILE)) fs.writeFileSync(COLLECTIONS_FILE, '[]');
+
+const ALLOWED_IMAGE_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']);
+const uploadStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, UPLOADS_DIR);
+    },
+    filename: function (req, file, cb) {
+        const ext = path.extname(file.originalname || '').toLowerCase();
+        const safeExt = ALLOWED_IMAGE_EXT.has(ext) ? ext : '.jpg';
+        const base = path.basename(file.originalname || 'upload', ext)
+            .replace(/[^a-z0-9\-_]+/gi, '-')
+            .replace(/(^-|-$)/g, '')
+            .toLowerCase()
+            .slice(0, 40) || 'upload';
+        const stamp = Date.now().toString(36) + crypto.randomBytes(3).toString('hex');
+        cb(null, `${base}-${stamp}${safeExt}`);
+    }
+});
+const upload = multer({
+    storage: uploadStorage,
+    limits: { fileSize: 8 * 1024 * 1024 },
+    fileFilter: function (req, file, cb) {
+        const ext = path.extname(file.originalname || '').toLowerCase();
+        if (!ALLOWED_IMAGE_EXT.has(ext)) {
+            return cb(new Error('Only image files (jpg/png/webp/gif/avif) are allowed'));
+        }
+        cb(null, true);
+    }
+});
+
+function regenerateCollectionPages() {
+    try {
+        generateAllPages();
+    } catch (err) {
+        console.error('Page regeneration failed:', err.message);
+    }
+}
 
 const app = express();
 const PORT = process.env.PORT || 5013;
@@ -97,12 +147,14 @@ app.use(cors({
     },
     credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use((req, res, next) => {
     const ts = new Date().toISOString();
     console.log(`[API] ${ts} ${req.method} ${req.path}`);
     next();
 });
+
+app.use('/images', express.static(IMAGES_DIR, { maxAge: '7d' }));
 
 function readJson(filePath, fallback) {
     try {
@@ -314,25 +366,55 @@ app.get('/api/admin/products', requireAdmin, (req, res) => {
     return jsonOk(res, getCatalog());
 });
 
+app.get('/api/admin/collections', requireAdmin, (req, res) => {
+    return jsonOk(res, readJson(COLLECTIONS_FILE, []));
+});
+
+function toSlug(value) {
+    return String(value || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+}
+
+function parseTags(value) {
+    if (Array.isArray(value)) return value.map((t) => String(t).trim()).filter(Boolean);
+    if (typeof value === 'string') {
+        return value.split(',').map((t) => t.trim()).filter(Boolean);
+    }
+    return [];
+}
+
 app.post('/api/admin/products', requireAdmin, (req, res) => {
     const products = getCatalog();
     const payload = req.body || {};
-    if (!payload.name || !payload.collection || !payload.image || !payload.price) {
+    if (!payload.name || !payload.collection || !payload.image || payload.price === undefined || payload.price === '') {
         return jsonErr(res, 400, 'name, collection, image, and price are required');
     }
-    const nextId = payload.id || `prod_${Date.now()}`;
+    const baseSlug = payload.slug ? toSlug(payload.slug) : toSlug(payload.name);
+    let slug = baseSlug || `prod-${Date.now()}`;
+    let collision = 1;
+    while (products.some((p) => p.slug === slug)) {
+        slug = `${baseSlug}-${collision++}`;
+    }
+    let nextId = payload.id || `prod_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+    while (products.some((p) => p.id === nextId)) {
+        nextId = `prod_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+    }
     const product = {
         id: nextId,
-        slug: payload.slug || payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
-        name: String(payload.name),
-        collection: String(payload.collection),
-        price: Number(payload.price),
+        slug,
+        name: String(payload.name).trim(),
+        collection: String(payload.collection).trim(),
+        price: Number(payload.price) || 0,
         image: String(payload.image),
         description: String(payload.description || ''),
-        tags: Array.isArray(payload.tags) ? payload.tags : []
+        tags: parseTags(payload.tags)
     };
     products.push(product);
     writeJson(PRODUCTS_FILE, products);
+    regenerateCollectionPages();
     return jsonOk(res, product);
 });
 
@@ -344,11 +426,20 @@ app.put('/api/admin/products/:id', requireAdmin, (req, res) => {
     const next = { ...products[idx] };
     for (const key of allowed) {
         if (Object.prototype.hasOwnProperty.call(req.body || {}, key)) {
-            next[key] = key === 'price' ? Number(req.body[key]) : req.body[key];
+            if (key === 'price') {
+                next.price = Number(req.body.price) || 0;
+            } else if (key === 'tags') {
+                next.tags = parseTags(req.body.tags);
+            } else if (key === 'slug') {
+                next.slug = toSlug(req.body.slug) || next.slug;
+            } else {
+                next[key] = String(req.body[key] == null ? '' : req.body[key]);
+            }
         }
     }
     products[idx] = next;
     writeJson(PRODUCTS_FILE, products);
+    regenerateCollectionPages();
     return jsonOk(res, next);
 });
 
@@ -357,7 +448,101 @@ app.delete('/api/admin/products/:id', requireAdmin, (req, res) => {
     const next = products.filter((p) => p.id !== req.params.id);
     if (next.length === products.length) return jsonErr(res, 404, 'Product not found');
     writeJson(PRODUCTS_FILE, next);
+    regenerateCollectionPages();
     return jsonOk(res, { deleted: true });
+});
+
+app.post('/api/admin/products/reorder', requireAdmin, (req, res) => {
+    const collection = String(req.body?.collection || '').trim();
+    const order = Array.isArray(req.body?.order) ? req.body.order : [];
+    if (!collection || !order.length) return jsonErr(res, 400, 'collection and order are required');
+    const products = getCatalog();
+    const inCollection = products.filter((p) => p.collection === collection);
+    const others = products.filter((p) => p.collection !== collection);
+    const orderedIds = order.filter((id) => inCollection.some((p) => p.id === id));
+    const seen = new Set(orderedIds);
+    const tail = inCollection.filter((p) => !seen.has(p.id));
+    const reordered = orderedIds
+        .map((id) => inCollection.find((p) => p.id === id))
+        .filter(Boolean)
+        .concat(tail);
+    writeJson(PRODUCTS_FILE, [...others, ...reordered]);
+    regenerateCollectionPages();
+    return jsonOk(res, { reordered: reordered.map((p) => p.id) });
+});
+
+app.post('/api/admin/upload', requireAdmin, upload.single('image'), (req, res) => {
+    if (!req.file) return jsonErr(res, 400, 'No image uploaded');
+    const relativePath = `/images/web/${req.file.filename}`;
+    return jsonOk(res, {
+        url: relativePath,
+        filename: req.file.filename,
+        size: req.file.size
+    });
+});
+
+app.post('/api/admin/collections', requireAdmin, (req, res) => {
+    const collections = readJson(COLLECTIONS_FILE, []);
+    const name = String(req.body?.name || '').trim();
+    if (!name) return jsonErr(res, 400, 'Collection name is required');
+    const slug = toSlug(req.body?.slug || name);
+    if (!slug) return jsonErr(res, 400, 'Invalid slug');
+    if (collections.some((c) => c.slug === slug)) {
+        return jsonErr(res, 409, 'A collection with this slug already exists');
+    }
+    const collection = {
+        slug,
+        name,
+        description: String(req.body?.description || '')
+    };
+    collections.push(collection);
+    writeJson(COLLECTIONS_FILE, collections);
+    regenerateCollectionPages();
+    return jsonOk(res, collection);
+});
+
+app.put('/api/admin/collections/:slug', requireAdmin, (req, res) => {
+    const collections = readJson(COLLECTIONS_FILE, []);
+    const idx = collections.findIndex((c) => c.slug === req.params.slug);
+    if (idx === -1) return jsonErr(res, 404, 'Collection not found');
+    const next = { ...collections[idx] };
+    if (typeof req.body?.name === 'string' && req.body.name.trim()) {
+        next.name = req.body.name.trim();
+    }
+    if (typeof req.body?.description === 'string') {
+        next.description = req.body.description;
+    }
+    collections[idx] = next;
+    writeJson(COLLECTIONS_FILE, collections);
+    regenerateCollectionPages();
+    return jsonOk(res, next);
+});
+
+app.delete('/api/admin/collections/:slug', requireAdmin, (req, res) => {
+    const collections = readJson(COLLECTIONS_FILE, []);
+    const slug = req.params.slug;
+    const next = collections.filter((c) => c.slug !== slug);
+    if (next.length === collections.length) return jsonErr(res, 404, 'Collection not found');
+    const products = getCatalog();
+    const inUse = products.some((p) => p.collection === slug);
+    if (inUse && !req.query.force) {
+        return jsonErr(res, 400, 'Collection has products. Move or delete them first, or pass ?force=1 to remove products as well.');
+    }
+    writeJson(COLLECTIONS_FILE, next);
+    if (inUse) {
+        writeJson(PRODUCTS_FILE, products.filter((p) => p.collection !== slug));
+    }
+    regenerateCollectionPages();
+    return jsonOk(res, { deleted: true });
+});
+
+app.post('/api/admin/regenerate-pages', requireAdmin, (req, res) => {
+    try {
+        const generated = generateAllPages();
+        return jsonOk(res, { generated });
+    } catch (err) {
+        return jsonErr(res, 500, err.message);
+    }
 });
 
 app.post('/api/cart/calculate', (req, res) => {
