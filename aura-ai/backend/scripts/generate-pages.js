@@ -78,7 +78,7 @@ function renderPage(collection, products) {
   </section>
 
   <section class="col-gallery">
-    <div class="col-grid">
+    <div class="col-grid" data-collection="${escapeAttr(collection.slug)}">
 ${imageCards}${emptyState}
     </div>
   </section>

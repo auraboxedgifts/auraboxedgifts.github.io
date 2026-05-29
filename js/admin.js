@@ -19,6 +19,22 @@
     else localStorage.removeItem(TOKEN_KEY);
   }
 
+  function getUserAuthToken() {
+    return localStorage.getItem('auraAuthToken') || null;
+  }
+
+  function loggedInUserIsAdmin() {
+    const u = window.AuraAuth && typeof window.AuraAuth.getUser === 'function' ? window.AuraAuth.getUser() : null;
+    return Boolean(u && u.isAdmin);
+  }
+
+  // The admin API accepts any JWT whose role is "admin". A user who signs in
+  // with the admin email already holds such a token, so we reuse it instead of
+  // forcing a second, separate admin login.
+  function getEffectiveAdminToken() {
+    return getAdminToken() || (loggedInUserIsAdmin() ? getUserAuthToken() : null);
+  }
+
   function resolveImage(src) {
     if (!src) return '';
     if (/^https?:\/\//i.test(src) || src.startsWith('data:')) return src;
@@ -58,7 +74,7 @@
   }
 
   function adminFetch(path, options) {
-    const token = getAdminToken();
+    const token = getEffectiveAdminToken();
     return window.AuraApi.apiFetch(path, Object.assign({}, options || {}, { authToken: token }));
   }
 
@@ -119,7 +135,11 @@
     panel.querySelector('#aapLogout').addEventListener('click', function () {
       setAdminToken(null);
       closeAdminModal();
-      setTimeout(openAdminModal, 200);
+      // Note: if the admin session came from the signed-in user's own admin
+      // token, they remain logged in as that user (use the account menu to fully
+      // sign out). We just end the dedicated admin session and close the panel
+      // without bouncing straight back into a login prompt.
+      updateAdminIcon();
     });
     panel.querySelector('#aapRefresh').addEventListener('click', reloadAll);
     panel.querySelector('#aapNav').addEventListener('click', function (e) {
@@ -211,7 +231,7 @@
     const panel = ensureAdminPanel();
     panel.classList.add('open');
     document.body.classList.add('aura-admin-open');
-    if (!getAdminToken()) {
+    if (!getEffectiveAdminToken()) {
       openLoginModal();
       return;
     }
@@ -1175,8 +1195,13 @@
   }
 
   // ─── Public entry points & nav icon ───
-  function openAdminModal() {
-    if (!getAdminToken()) {
+  async function openAdminModal() {
+    // If we don't yet have an admin session but a user is signed in, make sure
+    // their profile is loaded so we can detect admin role and skip re-login.
+    if (!getEffectiveAdminToken() && getUserAuthToken() && window.AuraAuth && typeof window.AuraAuth.refreshUser === 'function') {
+      try { await window.AuraAuth.refreshUser(); } catch (e) {}
+    }
+    if (!getEffectiveAdminToken()) {
       openLoginModal();
       try { history.pushState({ auraOverlay: 'admin' }, '', '#admin'); } catch (e) {}
       return;
