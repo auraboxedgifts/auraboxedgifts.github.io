@@ -5,11 +5,17 @@
 
 const _auraHost = window.location.hostname;
 const _auraIsLocalHost = _auraHost === 'localhost' || _auraHost === '127.0.0.1';
-const AURA_AI_WS_URL = window.AURA_AI_WS_URL || (_auraIsLocalHost
-    ? 'ws://localhost:5013'
-    : 'wss://aura.devshubh.me');
+
+function getAuraWsUrl() {
+    if (window.AURA_AI_WS_URL) return window.AURA_AI_WS_URL;
+    if (window.AuraApi && window.AuraApi.API_BASE) {
+        return window.AuraApi.API_BASE.replace(/^https:/i, 'wss:').replace(/^http:/i, 'ws:');
+    }
+    return _auraIsLocalHost ? 'ws://localhost:5013' : 'wss://aura.devshubh.me';
+}
 
 let auraWs = null;
+let auraGeminiReady = false;
 let auraAudioContext = null;
 let auraMicrophone = null;
 let auraProcessor = null;
@@ -134,38 +140,92 @@ function handleAuraMuteToggle(e) {
 
 async function connectToAuraBackend() {
     return new Promise((resolve, reject) => {
+        let settled = false;
+        const startupTimeout = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            reject(new Error('Aura AI took too long to start. Check server logs and GEMINI_API_KEY.'));
+        }, 30000);
+
+        function finishOk() {
+            if (settled) return;
+            settled = true;
+            clearTimeout(startupTimeout);
+            auraIsConnected = true;
+            resolve();
+        }
+
+        function finishErr(err) {
+            if (settled) return;
+            settled = true;
+            clearTimeout(startupTimeout);
+            reject(err);
+        }
+
         try {
-            auraWs = new WebSocket(AURA_AI_WS_URL);
+            auraGeminiReady = false;
+            const wsUrl = getAuraWsUrl();
+            console.log('[AuraAI] Connecting WebSocket:', wsUrl);
+            auraWs = new WebSocket(wsUrl);
+
             auraWs.onopen = () => {
-                console.log('Connected to Aura AI');
-                updateAuraStatus('Connected', 'connected');
-                auraIsConnected = true;
-                resolve();
+                console.log('[AuraAI] WebSocket open — waiting for Gemini Live…');
+                updateAuraStatus('Starting Aura AI…');
             };
+
             auraWs.onmessage = async (event) => {
-                const message = JSON.parse(event.data);
+                let message;
+                try {
+                    message = JSON.parse(event.data);
+                } catch (parseErr) {
+                    console.error('[AuraAI] Bad WS message:', parseErr);
+                    return;
+                }
                 handleAuraBackendMessage(message);
+
+                if (message.type === 'status' && message.status === 'connected') {
+                    auraGeminiReady = true;
+                    finishOk();
+                }
+                if (message.type === 'error') {
+                    finishErr(new Error(message.error || 'Aura AI error'));
+                }
             };
-            auraWs.onerror = (error) => {
-                console.error('Aura AI WebSocket error:', error);
+
+            auraWs.onerror = () => {
+                console.error('[AuraAI] WebSocket error');
                 updateAuraStatus('Connection Error', 'error');
-                reject(error);
+                finishErr(new Error('Could not reach Aura AI server. WebSocket failed — check nginx proxy for Upgrade headers.'));
             };
+
             auraWs.onclose = () => {
-                console.log('Disconnected from Aura AI');
+                console.log('[AuraAI] WebSocket closed');
                 auraIsConnected = false;
+                auraGeminiReady = false;
                 auraIsListening = false;
-                updateAuraStatus('Disconnected', 'error');
+                if (!settled) {
+                    finishErr(new Error('Aura AI connection closed before ready'));
+                } else {
+                    updateAuraStatus('Disconnected', 'error');
+                }
                 stopAuraMicrophone();
             };
-        } catch (error) { reject(error); }
+        } catch (error) {
+            finishErr(error);
+        }
     });
 }
 
 function handleAuraBackendMessage(message) {
     switch (message.type) {
         case 'status':
-            if (message.status === 'connected') updateAuraStatus('Ready', 'connected');
+            if (message.status === 'connecting') updateAuraStatus('Starting Aura AI…');
+            else if (message.status === 'connected') updateAuraStatus('Ready', 'connected');
+            else if (message.status === 'disconnected') {
+                updateAuraStatus('Disconnected', 'error');
+                auraIsConnected = false;
+                auraGeminiReady = false;
+            }
             break;
         case 'gemini_message':
             handleAuraGeminiMessage(message.data);
@@ -252,8 +312,8 @@ function handleAuraBackendMessage(message) {
             }, 100);
             break;
         case 'error':
-            console.error('Aura AI error:', message.error);
-            updateAuraStatus('Error', 'error');
+            console.error('[AuraAI] Server error:', message.error);
+            updateAuraStatus(message.error || 'Error', 'error');
             break;
     }
 }
@@ -465,9 +525,10 @@ function startAuraVisualization() {
 }
 
 function updateAuraStatus(text) {
-    if (['Listening...', 'Speaking...', 'Connected', 'Ready'].includes(text)) {
+    const plain = ['Listening...', 'Speaking...', 'Connected', 'Ready', 'Connecting...', 'Starting Aura AI…'];
+    if (plain.includes(text) || text.endsWith('…')) {
         auraWidgetText.innerHTML = text;
-    } else if (text.includes('Error') || text === 'Disconnected') {
+    } else if (text.includes('Error') || text === 'Disconnected' || text.includes('failed') || text.includes('Could not')) {
         auraWidgetText.innerHTML = `<span style="color: #ff6b6b;">${text}</span>`;
     } else {
         auraWidgetText.innerHTML = text;
@@ -497,6 +558,7 @@ function handleAuraEndClick(e) {
     e.stopPropagation();
     stopAuraMicrophone();
     stopAuraAudioPlayback();
+    auraGeminiReady = false;
     if (auraWs) auraWs.close();
     if (auraPlaybackContext && auraPlaybackContext.state !== 'closed') {
         auraPlaybackContext.close();

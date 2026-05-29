@@ -1060,28 +1060,70 @@ function formatCartTotalsMessage(cart) {
     return `Subtotal ₹${cart.subtotal}, shipping ₹${cart.shipping}, total ₹${cart.grandTotal}. Items: ${lines || 'cart is empty'}`;
 }
 
-wss.on('connection', (clientWs) => {
+function extractAudioChunksFromLiveMessage(message) {
+    const chunks = [];
+    const parts = message?.serverContent?.modelTurn?.parts || [];
+    for (const part of parts) {
+        const mime = part?.inlineData?.mimeType || '';
+        if (part?.inlineData?.data && mime.includes('audio')) {
+            chunks.push(part.inlineData.data);
+        }
+    }
+    return chunks;
+}
+
+function sendGeminiPayloadToClient(clientWs, message) {
+    const audioChunks = extractAudioChunksFromLiveMessage(message);
+    if (audioChunks.length) {
+        for (const chunk of audioChunks) {
+            clientWs.send(JSON.stringify({ type: 'gemini_message', data: { ...message, data: chunk } }));
+        }
+        return;
+    }
+    clientWs.send(JSON.stringify({ type: 'gemini_message', data: message }));
+}
+
+wss.on('connection', (clientWs, request) => {
+    const clientIp = request?.socket?.remoteAddress || 'unknown';
+    console.log(`[WS] Aura AI client connected (${clientIp})`);
+
     let geminiSession = null;
+    let geminiReady = false;
+    const inboundQueue = [];
     let activeCollection = null;
     let lastViewedProduct = null;
 
+    clientWs.send(JSON.stringify({ type: 'status', status: 'connecting' }));
+
+    const flushInboundQueue = () => {
+        if (!geminiSession || !geminiReady) return;
+        while (inboundQueue.length) {
+            handleClientMessage(inboundQueue.shift());
+        }
+    };
+
     const connectToGemini = async () => {
-        const { GoogleGenAI, Modality } = await import('@google/genai');
-        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-        const session = await ai.live.connect({
+        try {
+            console.log('[Gemini] Connecting Live session…');
+            const { GoogleGenAI, Modality } = await import('@google/genai');
+            const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+            const session = await ai.live.connect({
             model: 'gemini-3.1-flash-live-preview',
             callbacks: {
-                onopen: () => clientWs.send(JSON.stringify({ type: 'status', status: 'connected' })),
-                onmessage: async (message) => {
-                    let audioData = null;
-                    if (message.serverContent?.modelTurn?.parts) {
-                        for (const part of message.serverContent.modelTurn.parts) {
-                            if (part.inlineData?.mimeType?.includes('audio')) {
-                                audioData = part.inlineData.data;
-                                break;
-                            }
-                        }
+                onopen: () => {
+                    geminiReady = true;
+                    console.log('[Gemini] Live session ready');
+                    clientWs.send(JSON.stringify({ type: 'status', status: 'connected' }));
+                    try {
+                        session.sendRealtimeInput({
+                            text: '[SYSTEM NOTE: The customer just opened Aura AI on the Aura Boxed Gifts website. Greet them warmly in one short sentence and ask how you can help with gifts or hampers.]'
+                        });
+                    } catch (kickErr) {
+                        console.warn('[Gemini] Kickoff message failed:', kickErr.message);
                     }
+                    flushInboundQueue();
+                },
+                onmessage: async (message) => {
                     if (message.toolCall?.functionCalls) {
                         for (const fc of message.toolCall.functionCalls) {
                             const args = fc.args || {};
@@ -1234,29 +1276,42 @@ wss.on('connection', (clientWs) => {
                             });
                         }
                     }
-                    clientWs.send(JSON.stringify({ type: 'gemini_message', data: { ...message, data: audioData } }));
+                    sendGeminiPayloadToClient(clientWs, message);
                 },
-                onerror: (error) => clientWs.send(JSON.stringify({ type: 'error', error: error.message || 'Unknown error' })),
-                onclose: (event) => clientWs.send(JSON.stringify({ type: 'status', status: 'disconnected', reason: event?.reason || 'Connection closed' }))
+                onerror: (error) => {
+                    const msg = error?.message || String(error);
+                    console.error('[Gemini] Live session error:', msg);
+                    clientWs.send(JSON.stringify({ type: 'error', error: msg }));
+                },
+                onclose: (event) => {
+                    geminiReady = false;
+                    const reason = event?.reason || 'Connection closed';
+                    console.log(`[Gemini] Live session closed: ${reason}`);
+                    clientWs.send(JSON.stringify({ type: 'status', status: 'disconnected', reason }));
+                }
             },
             config: {
                 responseModalities: [Modality.AUDIO],
                 systemInstruction: SYSTEM_PROMPT,
                 tools: [{ googleSearch: {} }, { functionDeclarations: toolDeclarations }],
                 speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
-                thinkingConfig: { thinkingLevel: 'low' },
+                thinkingLevel: 'minimal',
                 contextWindowCompression: { slidingWindow: {} }
             }
-        });
-        geminiSession = session;
+            });
+            geminiSession = session;
+        } catch (err) {
+            console.error('[Gemini] Failed to connect:', err);
+            clientWs.send(JSON.stringify({
+                type: 'error',
+                error: err.message || 'Could not start Aura AI. Check GEMINI_API_KEY on the server.'
+            }));
+        }
     };
 
     connectToGemini();
 
-    clientWs.on('message', async (raw) => {
-        try {
-            const message = JSON.parse(raw);
-            if (!geminiSession) return;
+    function handleClientMessage(message) {
             if (message.type === 'cart_totals_response') {
                 const resolver = pendingCartTotals.get(message.requestId);
                 if (resolver) {
@@ -1285,18 +1340,42 @@ wss.on('connection', (clientWs) => {
                 }
                 geminiSession.sendRealtimeInput({ text: sysNote });
             }
+    }
+
+    clientWs.on('message', async (raw) => {
+        try {
+            const message = JSON.parse(raw);
+            if (!geminiSession || !geminiReady) {
+                if (message.type === 'audio' || message.type === 'text' || message.type === 'context_update') {
+                    inboundQueue.push(message);
+                }
+                return;
+            }
+            handleClientMessage(message);
         } catch (err) {
-            console.error('Message handling error:', err);
+            console.error('[WS] Message handling error:', err);
         }
     });
 
     clientWs.on('close', () => {
-        if (geminiSession) geminiSession.close();
+        console.log('[WS] Aura AI client disconnected');
+        geminiReady = false;
+        if (geminiSession) {
+            try { geminiSession.close(); } catch (err) {}
+            geminiSession = null;
+        }
     });
 });
 
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', service: 'Aura AI Backend' });
+    res.json({
+        status: 'ok',
+        service: 'Aura AI Backend',
+        auraAi: {
+            websocket: true,
+            geminiConfigured: Boolean(GEMINI_API_KEY)
+        }
+    });
 });
 
 const server = app.listen(PORT, () => {
@@ -1307,4 +1386,8 @@ server.on('upgrade', (request, socket, head) => {
     wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit('connection', ws, request);
     });
+});
+
+process.on('unhandledRejection', (reason) => {
+    console.error('[Aura] Unhandled rejection:', reason);
 });
