@@ -1083,6 +1083,19 @@ function sendGeminiPayloadToClient(clientWs, message) {
     clientWs.send(JSON.stringify({ type: 'gemini_message', data: message }));
 }
 
+function friendlyGeminiError(raw) {
+    const msg = String(raw || 'Unknown error');
+    if (/quota|billing|exceeded|resource_exhausted|429/i.test(msg)) {
+        return 'Aura AI voice is unavailable — your Gemini API quota is exceeded. Add billing or wait for quota reset in Google AI Studio, then restart the server.';
+    }
+    if (/api key|api_key|invalid.*key|401|403/i.test(msg)) {
+        return 'Aura AI could not authenticate — check GEMINI_API_KEY in the server .env file.';
+    }
+    return msg;
+}
+
+const GEMINI_KICKOFF_TEXT = '[SYSTEM NOTE: The customer just opened Aura AI on the Aura Boxed Gifts website. Greet them warmly in one short sentence and ask how you can help with gifts or hampers.]';
+
 wss.on('connection', (clientWs, request) => {
     const clientIp = request?.socket?.remoteAddress || 'unknown';
     console.log(`[WS] Aura AI client connected (${clientIp})`);
@@ -1107,23 +1120,14 @@ wss.on('connection', (clientWs, request) => {
             console.log('[Gemini] Connecting Live session…');
             const { GoogleGenAI, Modality } = await import('@google/genai');
             const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-            const session = await ai.live.connect({
+            geminiSession = await ai.live.connect({
             model: 'gemini-3.1-flash-live-preview',
             callbacks: {
                 onopen: () => {
-                    geminiReady = true;
-                    console.log('[Gemini] Live session ready');
-                    clientWs.send(JSON.stringify({ type: 'status', status: 'connected' }));
-                    try {
-                        session.sendRealtimeInput({
-                            text: '[SYSTEM NOTE: The customer just opened Aura AI on the Aura Boxed Gifts website. Greet them warmly in one short sentence and ask how you can help with gifts or hampers.]'
-                        });
-                    } catch (kickErr) {
-                        console.warn('[Gemini] Kickoff message failed:', kickErr.message);
-                    }
-                    flushInboundQueue();
+                    console.log('[Gemini] Live socket open');
                 },
                 onmessage: async (message) => {
+                    if (!geminiSession) return;
                     if (message.toolCall?.functionCalls) {
                         for (const fc of message.toolCall.functionCalls) {
                             const args = fc.args || {};
@@ -1141,7 +1145,7 @@ wss.on('connection', (clientWs, request) => {
                                     const note = collectionProducts
                                         .map((p, i) => `${i + 1}. ${p.name} (₹${p.price})`)
                                         .join('\n');
-                                    session.sendRealtimeInput({
+                                    geminiSession.sendRealtimeInput({
                                         text: `[SYSTEM NOTE: Current collection products:\n${note}\nUser is currently shown product #${randomIndex}.]`
                                     });
                                 }
@@ -1160,7 +1164,7 @@ wss.on('connection', (clientWs, request) => {
                                 const hampers = getSite().hampers || [];
                                 if (hampers.length) {
                                     const note = hampers.map((h, i) => `${i + 1}. ${h.title}`).join('\n');
-                                    session.sendRealtimeInput({
+                                    geminiSession.sendRealtimeInput({
                                         text: `[SYSTEM NOTE: Trending hampers now visible to the user:\n${note}\nAll are fully customisable. Suggest ones matching their occasion.]`
                                     });
                                 }
@@ -1178,7 +1182,7 @@ wss.on('connection', (clientWs, request) => {
                                     'Custom Hamper'
                                 );
                                 if (response && response.success) {
-                                    session.sendRealtimeInput({
+                                    geminiSession.sendRealtimeInput({
                                         text: `[SYSTEM NOTE: Custom hamper request emailed to the team successfully. Reassure the customer the team will follow up and invite them to DM @aura_boxedgifts too.]`
                                     });
                                 }
@@ -1229,7 +1233,7 @@ wss.on('connection', (clientWs, request) => {
                                     hint: 'Call calculate_cart_total to announce updated totals including shipping.'
                                 };
                                 if (resolvedProductId && previewCart.lines.length) {
-                                    session.sendRealtimeInput({
+                                    geminiSession.sendRealtimeInput({
                                         text: `[SYSTEM NOTE: Item added. Current preview for that line: ${formatCartTotalsMessage(previewCart)}. Use calculate_cart_total for full cart.]`
                                     });
                                 }
@@ -1250,7 +1254,7 @@ wss.on('connection', (clientWs, request) => {
                                     const payload = await totalsPromise;
                                     const cart = payload?.cart || calculateCart(payload?.items || []);
                                     const spoken = formatCartTotalsMessage(cart);
-                                    session.sendRealtimeInput({
+                                    geminiSession.sendRealtimeInput({
                                         text: `[SYSTEM NOTE: Cart totals calculated on server — ${spoken}. Tell the customer clearly including shipping.]`
                                     });
                                     response = {
@@ -1271,7 +1275,7 @@ wss.on('connection', (clientWs, request) => {
                                 clientWs.send(JSON.stringify({ type: 'show_cart' }));
                                 response = { result: 'Opened cart' };
                             }
-                            session.sendToolResponse({
+                            geminiSession.sendToolResponse({
                                 functionResponses: [{ id: fc.id, name: fc.name, response }]
                             });
                         }
@@ -1279,14 +1283,18 @@ wss.on('connection', (clientWs, request) => {
                     sendGeminiPayloadToClient(clientWs, message);
                 },
                 onerror: (error) => {
-                    const msg = error?.message || String(error);
+                    const msg = friendlyGeminiError(error?.message || String(error));
                     console.error('[Gemini] Live session error:', msg);
+                    geminiReady = false;
                     clientWs.send(JSON.stringify({ type: 'error', error: msg }));
                 },
                 onclose: (event) => {
                     geminiReady = false;
-                    const reason = event?.reason || 'Connection closed';
+                    const reason = friendlyGeminiError(event?.reason || 'Connection closed');
                     console.log(`[Gemini] Live session closed: ${reason}`);
+                    if (/quota|billing|exceeded/i.test(String(event?.reason || ''))) {
+                        clientWs.send(JSON.stringify({ type: 'error', error: reason }));
+                    }
                     clientWs.send(JSON.stringify({ type: 'status', status: 'disconnected', reason }));
                 }
             },
@@ -1299,13 +1307,22 @@ wss.on('connection', (clientWs, request) => {
                 contextWindowCompression: { slidingWindow: {} }
             }
             });
-            geminiSession = session;
+
+            geminiReady = true;
+            console.log('[Gemini] Live session ready');
+            clientWs.send(JSON.stringify({ type: 'status', status: 'connected' }));
+            try {
+                geminiSession.sendRealtimeInput({ text: GEMINI_KICKOFF_TEXT });
+            } catch (kickErr) {
+                console.warn('[Gemini] Kickoff message failed:', kickErr.message);
+            }
+            flushInboundQueue();
         } catch (err) {
-            console.error('[Gemini] Failed to connect:', err);
-            clientWs.send(JSON.stringify({
-                type: 'error',
-                error: err.message || 'Could not start Aura AI. Check GEMINI_API_KEY on the server.'
-            }));
+            geminiReady = false;
+            geminiSession = null;
+            const msg = friendlyGeminiError(err.message || String(err));
+            console.error('[Gemini] Failed to connect:', msg);
+            clientWs.send(JSON.stringify({ type: 'error', error: msg }));
         }
     };
 
