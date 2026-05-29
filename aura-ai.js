@@ -237,6 +237,8 @@ function handleAuraBackendMessage(message) {
             setTimeout(() => {
                 const sectionMap = {
                     'home': 'home',
+                    'hampers': 'trending-hampers',
+                    'trending-hampers': 'trending-hampers',
                     'collections': 'collections',
                     'gallery': 'gallery',
                     'about': 'about',

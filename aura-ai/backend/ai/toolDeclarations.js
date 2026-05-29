@@ -32,11 +32,30 @@ const toolDeclarations = [
     { name: 'navigate_home', description: 'Navigate back to home page.' },
     {
         name: 'scroll_to_section',
-        description: 'Scroll to specific section.',
+        description: 'Scroll to specific section of the homepage.',
         parameters: {
             type: 'object',
-            properties: { section: { type: 'string', enum: ['home', 'collections', 'gallery', 'about', 'contact'] } },
+            properties: { section: { type: 'string', enum: ['home', 'hampers', 'collections', 'gallery', 'about', 'contact'] } },
             required: ['section']
+        }
+    },
+    {
+        name: 'show_hampers',
+        description: 'Show the Trending Hampers showcase on the homepage. Use when the user asks about gift hampers, customised hampers, gift boxes, or wants ideas for occasions like birthdays, weddings, baby showers, or mother\'s day.'
+    },
+    {
+        name: 'request_custom_hamper',
+        description: 'Send a customised hamper request/inquiry to the Aura team by email. Use after collecting the details from the user. Always confirm before sending.',
+        parameters: {
+            type: 'object',
+            properties: {
+                occasion: { type: 'string', description: 'e.g. Birthday, Wedding, Baby Shower, Anniversary' },
+                recipient: { type: 'string', description: 'Who the hamper is for (relationship, gender, age if shared)' },
+                budget: { type: 'string', description: 'Approximate budget in INR' },
+                preferences: { type: 'string', description: 'Theme, colours, items, or any special notes' },
+                contact: { type: 'string', description: 'Customer name, phone, or email to reach them' }
+            },
+            required: ['occasion']
         }
     },
     { name: 'next_product', description: 'Go to next product image.' },

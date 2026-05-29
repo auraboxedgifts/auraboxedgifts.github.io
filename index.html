@@ -75,7 +75,7 @@
 
   <!-- ═══ HERO SECTION ═══ -->
   <section class="hero" id="home">
-    <div class="hero-slider">
+    <div class="hero-slider" id="heroSlider">
       <div class="hero-slide active">
         <img src="images/web/auraboxedgifts.png" alt="Aura Boxed Gifts - Curated Gift Hampers">
       </div>
@@ -90,9 +90,9 @@
       <p class="hero-subtitle">Welcome to</p>
       <h1 class="hero-title">Aura Boxed Gifts</h1>
       <p class="hero-tagline">Gifts that speak your heart — Wrapped with love, sent from the heart.</p>
-      <a href="#collections" class="hero-btn">Explore Collections</a>
+      <a href="#trending-hampers" class="hero-btn">Explore Hampers</a>
     </div>
-    <div class="hero-dots">
+    <div class="hero-dots" id="heroDots">
       <button class="hero-dot active" data-slide="0"></button>
       <button class="hero-dot" data-slide="1"></button>
       <button class="hero-dot" data-slide="2"></button>
@@ -111,18 +111,19 @@
     </div>
   </div>
 
-  <!-- ═══ FEATURED PRODUCTS ═══ -->
-  <section class="collections-section" id="featured-products" style="background: var(--white); padding-bottom: 20px;">
+  <!-- ═══ TRENDING HAMPERS ═══ -->
+  <section class="hampers-section" id="trending-hampers">
     <div class="section-header reveal">
       <p class="section-label">Handpicked For You</p>
-      <h2 class="section-title">Trending Gifts</h2>
+      <h2 class="section-title">Trending Hampers</h2>
       <div class="section-divider"></div>
+      <p class="section-intro">Real hampers we've lovingly curated for our customers. Every box is fully customisable — pick your theme, colours, and items.</p>
     </div>
-    <div class="featured-grid reveal" id="randomProductsContainer">
-      <!-- Random products injected here by script.js -->
+    <div class="hampers-grid reveal" id="hampersContainer">
+      <!-- Hampers injected here by script.js -->
     </div>
-    <div style="text-align: center; margin-top: 40px;">
-        <a href="#collections" class="hero-btn" style="color: var(--text-dark); border-color: var(--rose-gold);">View All Collections</a>
+    <div style="text-align: center; margin-top: 44px;">
+        <a href="#collections" class="hero-btn" style="color: var(--text-dark); border-color: var(--rose-gold);">Shop Individual Items</a>
     </div>
   </section>
 

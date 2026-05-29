@@ -1,9 +1,30 @@
 (function () {
   let cart = JSON.parse(localStorage.getItem('aura_cart_v2') || '[]');
   let catalogCache = null;
+  // Cart no longer pops open on every add. We count individual adds and only
+  // auto-open the cart once this reaches the threshold, then reset.
+  const AUTO_OPEN_THRESHOLD = 5;
+  let addsSinceOpen = 0;
 
   function saveCart() {
     localStorage.setItem('aura_cart_v2', JSON.stringify(cart));
+  }
+
+  let toastTimer = null;
+  function showCartToast(message) {
+    let toast = document.getElementById('auraCartToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'auraCartToast';
+      toast.className = 'aura-cart-toast';
+      toast.addEventListener('click', function () { openCartPage(); });
+      document.body.appendChild(toast);
+    }
+    const count = itemCount();
+    toast.innerHTML = `<i class="fas fa-circle-check"></i><span>${message}</span><span class="aura-cart-toast-count">${count} in cart</span><span class="aura-cart-toast-view">View</span>`;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 2600);
   }
 
   function itemCount() {
@@ -93,6 +114,7 @@
   }
 
   async function openCartPage() {
+    addsSinceOpen = 0;
     await renderCartPage();
     getOverlay().classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -115,7 +137,14 @@
     else cart.push({ productId, qty: 1 });
     saveCart();
     updateBadge();
-    await openCartPage();
+
+    addsSinceOpen += 1;
+    if (addsSinceOpen >= AUTO_OPEN_THRESHOLD) {
+      addsSinceOpen = 0;
+      await openCartPage();
+    } else {
+      showCartToast('Added to your cart');
+    }
   }
 
   async function addToCartById(productId) {

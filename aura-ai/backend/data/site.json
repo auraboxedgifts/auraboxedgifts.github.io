@@ -1,0 +1,79 @@
+{
+  "hero": {
+    "slides": [
+      {
+        "id": "hero_1",
+        "image": "/images/web/auraboxedgifts.png",
+        "alt": "Aura Boxed Gifts - Curated Gift Hampers"
+      },
+      {
+        "id": "hero_2",
+        "image": "/images/web/pendents-1.jpeg",
+        "alt": "Elegant Pendants Collection"
+      },
+      {
+        "id": "hero_3",
+        "image": "/images/web/bracelets-2.jpeg",
+        "alt": "Beautiful Bracelets"
+      }
+    ]
+  },
+  "hampers": [
+    {
+      "id": "hamper_mom_to_be",
+      "title": "Mom-to-be Hamper Gift",
+      "subtitle": "Customised",
+      "image": "/images/hampers/mom-to-be.jpeg",
+      "price": 1999
+    },
+    {
+      "id": "hamper_wedding_gift",
+      "title": "Wedding Hamper Gift",
+      "subtitle": "Customised",
+      "image": "/images/hampers/wedding-gift.jpeg",
+      "price": 2499
+    },
+    {
+      "id": "hamper_birthday",
+      "title": "Customised Birthday Hamper",
+      "subtitle": "Personalised",
+      "image": "/images/hampers/birthday-customised.jpeg",
+      "price": 1499
+    },
+    {
+      "id": "hamper_virat_kohli",
+      "title": "Customised Virat Kohli Fangirl Hamper",
+      "subtitle": "Personalised",
+      "image": "/images/hampers/virat-kohli-fangirl.jpeg",
+      "price": 1799
+    },
+    {
+      "id": "hamper_mens_birthday",
+      "title": "Customised Men's Birthday Hamper",
+      "subtitle": "Personalised",
+      "image": "/images/hampers/mens-birthday.jpeg",
+      "price": 1999
+    },
+    {
+      "id": "hamper_mothers_day",
+      "title": "Customised Mother's Day Hamper",
+      "subtitle": "Personalised",
+      "image": "/images/hampers/mothers-day.jpeg",
+      "price": 1899
+    },
+    {
+      "id": "hamper_wedding_bride",
+      "title": "Wedding Hamper for Bride",
+      "subtitle": "Customised",
+      "image": "/images/hampers/wedding-bride.jpeg",
+      "price": 2299
+    },
+    {
+      "id": "hamper_babygirl_1st_birthday",
+      "title": "1st Birthday Hamper Gift for Babygirl",
+      "subtitle": "Customised",
+      "image": "/images/hampers/babygirl-1st-birthday.jpeg",
+      "price": 1599
+    }
+  ]
+}

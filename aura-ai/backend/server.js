@@ -69,6 +69,16 @@ const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
 const COLLECTIONS_FILE = path.join(DATA_DIR, 'collections.json');
+const SITE_FILE = path.join(DATA_DIR, 'site.json');
+
+const DEFAULT_SITE = {
+    hero: {
+        slides: [
+            { id: 'hero_1', image: '/images/web/auraboxedgifts.png', alt: 'Aura Boxed Gifts' }
+        ]
+    },
+    hampers: []
+};
 
 const ROOT_DIR = path.resolve(__dirname, '../..');
 const IMAGES_DIR = path.join(ROOT_DIR, 'images');
@@ -87,6 +97,7 @@ if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, '{}');
 if (!fs.existsSync(ORDERS_FILE)) fs.writeFileSync(ORDERS_FILE, '[]');
 if (!fs.existsSync(PRODUCTS_FILE)) fs.writeFileSync(PRODUCTS_FILE, '[]');
 if (!fs.existsSync(COLLECTIONS_FILE)) fs.writeFileSync(COLLECTIONS_FILE, '[]');
+if (!fs.existsSync(SITE_FILE)) fs.writeFileSync(SITE_FILE, JSON.stringify(DEFAULT_SITE, null, 2));
 
 const ALLOWED_IMAGE_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']);
 const uploadStorage = multer.diskStorage({
@@ -212,13 +223,35 @@ function getCatalog() {
     return readJson(PRODUCTS_FILE, []);
 }
 
-function calculateCart(items) {
+function getSite() {
+    const site = readJson(SITE_FILE, DEFAULT_SITE);
+    if (!site.hero || !Array.isArray(site.hero.slides)) site.hero = { slides: [] };
+    if (!Array.isArray(site.hampers)) site.hampers = [];
+    return site;
+}
+
+function saveSite(site) {
+    writeJson(SITE_FILE, site);
+}
+
+function getSellable(productId) {
     const products = getCatalog();
+    const product = products.find((p) => p.id === productId);
+    if (product) return product;
+    // Hampers are sellable too — resolve them from the site config
+    const hamper = (getSite().hampers || []).find((h) => h.id === productId);
+    if (hamper && Number(hamper.price) > 0) {
+        return { id: hamper.id, name: hamper.title, image: hamper.image, price: Number(hamper.price) };
+    }
+    return null;
+}
+
+function calculateCart(items) {
     const lines = [];
     let subtotal = 0;
     for (const row of items || []) {
         const qty = Math.max(1, Number(row.qty || 1));
-        const product = products.find((p) => p.id === row.productId);
+        const product = getSellable(row.productId);
         if (!product) continue;
         const lineTotal = qty * product.price;
         subtotal += lineTotal;
@@ -347,6 +380,15 @@ app.get('/api/collections', (req, res) => {
     return jsonOk(res, readJson(COLLECTIONS_FILE, []));
 });
 
+// Public site content (hero slides + hampers showcase)
+app.get('/api/site', (req, res) => {
+    return jsonOk(res, getSite());
+});
+
+app.get('/api/hampers', (req, res) => {
+    return jsonOk(res, getSite().hampers);
+});
+
 app.post('/api/admin/login', (req, res) => {
     const email = String(req.body?.email || '').trim().toLowerCase();
     const password = String(req.body?.password || '');
@@ -471,11 +513,22 @@ app.post('/api/admin/products/reorder', requireAdmin, (req, res) => {
     return jsonOk(res, { reordered: reordered.map((p) => p.id) });
 });
 
+function getPublicBaseUrl(req) {
+    if (process.env.PUBLIC_BASE_URL) return process.env.PUBLIC_BASE_URL.replace(/\/+$/, '');
+    const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0].trim();
+    const host = req.headers['x-forwarded-host'] || req.get('host');
+    return `${proto}://${host}`;
+}
+
 app.post('/api/admin/upload', requireAdmin, upload.single('image'), (req, res) => {
     if (!req.file) return jsonErr(res, 400, 'No image uploaded');
     const relativePath = `/images/web/${req.file.filename}`;
+    // Absolute URL so uploaded images load even when the frontend is hosted on a
+    // different origin than this backend (e.g. static site + remote API).
+    const absoluteUrl = `${getPublicBaseUrl(req)}${relativePath}`;
     return jsonOk(res, {
         url: relativePath,
+        absoluteUrl,
         filename: req.file.filename,
         size: req.file.size
     });
@@ -543,6 +596,113 @@ app.post('/api/admin/regenerate-pages', requireAdmin, (req, res) => {
     } catch (err) {
         return jsonErr(res, 500, err.message);
     }
+});
+
+// ─── Admin: Homepage content (hero slides + hampers) ───
+app.get('/api/admin/site', requireAdmin, (req, res) => {
+    return jsonOk(res, getSite());
+});
+
+// Hero slides
+app.post('/api/admin/hero', requireAdmin, (req, res) => {
+    const site = getSite();
+    const image = String(req.body?.image || '').trim();
+    if (!image) return jsonErr(res, 400, 'Image is required');
+    const slide = {
+        id: `hero_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`,
+        image,
+        alt: String(req.body?.alt || 'Aura Boxed Gifts')
+    };
+    site.hero.slides.push(slide);
+    saveSite(site);
+    return jsonOk(res, slide);
+});
+
+app.put('/api/admin/hero/:id', requireAdmin, (req, res) => {
+    const site = getSite();
+    const idx = site.hero.slides.findIndex((s) => s.id === req.params.id);
+    if (idx === -1) return jsonErr(res, 404, 'Hero slide not found');
+    if (typeof req.body?.image === 'string' && req.body.image.trim()) {
+        site.hero.slides[idx].image = req.body.image.trim();
+    }
+    if (typeof req.body?.alt === 'string') {
+        site.hero.slides[idx].alt = req.body.alt;
+    }
+    saveSite(site);
+    return jsonOk(res, site.hero.slides[idx]);
+});
+
+app.delete('/api/admin/hero/:id', requireAdmin, (req, res) => {
+    const site = getSite();
+    const next = site.hero.slides.filter((s) => s.id !== req.params.id);
+    if (next.length === site.hero.slides.length) return jsonErr(res, 404, 'Hero slide not found');
+    if (!next.length) return jsonErr(res, 400, 'At least one hero slide is required');
+    site.hero.slides = next;
+    saveSite(site);
+    return jsonOk(res, { deleted: true });
+});
+
+app.post('/api/admin/hero/reorder', requireAdmin, (req, res) => {
+    const site = getSite();
+    const order = Array.isArray(req.body?.order) ? req.body.order : [];
+    const map = new Map(site.hero.slides.map((s) => [s.id, s]));
+    const reordered = order.map((id) => map.get(id)).filter(Boolean);
+    const tail = site.hero.slides.filter((s) => !order.includes(s.id));
+    site.hero.slides = [...reordered, ...tail];
+    saveSite(site);
+    return jsonOk(res, site.hero.slides);
+});
+
+// Hampers showcase
+app.post('/api/admin/hampers', requireAdmin, (req, res) => {
+    const site = getSite();
+    const title = String(req.body?.title || '').trim();
+    const image = String(req.body?.image || '').trim();
+    if (!title || !image) return jsonErr(res, 400, 'Title and image are required');
+    const hamper = {
+        id: `hamper_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`,
+        title,
+        subtitle: String(req.body?.subtitle || 'Customised'),
+        image,
+        price: Math.max(0, Number(req.body?.price) || 0)
+    };
+    site.hampers.push(hamper);
+    saveSite(site);
+    return jsonOk(res, hamper);
+});
+
+app.put('/api/admin/hampers/:id', requireAdmin, (req, res) => {
+    const site = getSite();
+    const idx = site.hampers.findIndex((h) => h.id === req.params.id);
+    if (idx === -1) return jsonErr(res, 404, 'Hamper not found');
+    const next = { ...site.hampers[idx] };
+    if (typeof req.body?.title === 'string' && req.body.title.trim()) next.title = req.body.title.trim();
+    if (typeof req.body?.subtitle === 'string') next.subtitle = req.body.subtitle;
+    if (typeof req.body?.image === 'string' && req.body.image.trim()) next.image = req.body.image.trim();
+    if (req.body?.price !== undefined && req.body.price !== '') next.price = Math.max(0, Number(req.body.price) || 0);
+    site.hampers[idx] = next;
+    saveSite(site);
+    return jsonOk(res, next);
+});
+
+app.delete('/api/admin/hampers/:id', requireAdmin, (req, res) => {
+    const site = getSite();
+    const next = site.hampers.filter((h) => h.id !== req.params.id);
+    if (next.length === site.hampers.length) return jsonErr(res, 404, 'Hamper not found');
+    site.hampers = next;
+    saveSite(site);
+    return jsonOk(res, { deleted: true });
+});
+
+app.post('/api/admin/hampers/reorder', requireAdmin, (req, res) => {
+    const site = getSite();
+    const order = Array.isArray(req.body?.order) ? req.body.order : [];
+    const map = new Map(site.hampers.map((h) => [h.id, h]));
+    const reordered = order.map((id) => map.get(id)).filter(Boolean);
+    const tail = site.hampers.filter((h) => !order.includes(h.id));
+    site.hampers = [...reordered, ...tail];
+    saveSite(site);
+    return jsonOk(res, site.hampers);
 });
 
 app.post('/api/cart/calculate', (req, res) => {
@@ -951,6 +1111,35 @@ wss.on('connection', (clientWs) => {
                             } else if (fc.name === 'scroll_to_section') {
                                 clientWs.send(JSON.stringify({ type: 'scroll_to_section', section: args.section }));
                                 response = { result: `Scrolled to ${args.section}` };
+                            } else if (fc.name === 'show_hampers') {
+                                activeCollection = null;
+                                clientWs.send(JSON.stringify({ type: 'navigate_home' }));
+                                clientWs.send(JSON.stringify({ type: 'scroll_to_section', section: 'hampers' }));
+                                const hampers = getSite().hampers || [];
+                                if (hampers.length) {
+                                    const note = hampers.map((h, i) => `${i + 1}. ${h.title}`).join('\n');
+                                    session.sendRealtimeInput({
+                                        text: `[SYSTEM NOTE: Trending hampers now visible to the user:\n${note}\nAll are fully customisable. Suggest ones matching their occasion.]`
+                                    });
+                                }
+                                response = { result: 'Showing trending hampers', count: hampers.length };
+                            } else if (fc.name === 'request_custom_hamper') {
+                                const details = [
+                                    args.occasion ? `Occasion: ${args.occasion}` : '',
+                                    args.recipient ? `For: ${args.recipient}` : '',
+                                    args.budget ? `Budget: ${args.budget}` : '',
+                                    args.preferences ? `Preferences: ${args.preferences}` : ''
+                                ].filter(Boolean).join('<br>');
+                                response = await sendEmailNotification(
+                                    `New custom hamper request via Aura AI:<br><br>${details}`,
+                                    args.contact || 'Not provided',
+                                    'Custom Hamper'
+                                );
+                                if (response && response.success) {
+                                    session.sendRealtimeInput({
+                                        text: `[SYSTEM NOTE: Custom hamper request emailed to the team successfully. Reassure the customer the team will follow up and invite them to DM @aura_boxedgifts too.]`
+                                    });
+                                }
                             } else if (fc.name === 'next_product') {
                                 clientWs.send(JSON.stringify({ type: 'next_product' }));
                                 response = { result: 'Moved to next product' };

@@ -3,6 +3,7 @@
   const state = {
     products: [],
     collections: [],
+    site: { hero: { slides: [] }, hampers: [] },
     activeCollection: 'all',
     search: '',
     view: 'products',
@@ -89,6 +90,7 @@
           <nav class="aap-nav" id="aapNav">
             <button class="aap-nav-item active" data-view="products"><i class="fas fa-box-open"></i><span>Products</span></button>
             <button class="aap-nav-item" data-view="collections"><i class="fas fa-layer-group"></i><span>Collections</span></button>
+            <button class="aap-nav-item" data-view="homepage"><i class="fas fa-house"></i><span>Homepage</span></button>
             <button class="aap-nav-item" data-view="help"><i class="fas fa-question-circle"></i><span>Quick Help</span></button>
           </nav>
           <div class="aap-side-footer">
@@ -220,12 +222,16 @@
     const content = document.getElementById('aapContent');
     if (content) content.innerHTML = renderLoadingState();
     try {
-      const [productsRes, collectionsRes] = await Promise.all([
+      const [productsRes, collectionsRes, siteRes] = await Promise.all([
         adminFetch('/api/admin/products'),
-        adminFetch('/api/admin/collections')
+        adminFetch('/api/admin/collections'),
+        adminFetch('/api/admin/site')
       ]);
       state.products = productsRes.data || [];
       state.collections = collectionsRes.data || [];
+      state.site = siteRes.data || { hero: { slides: [] }, hampers: [] };
+      if (!state.site.hero) state.site.hero = { slides: [] };
+      if (!Array.isArray(state.site.hampers)) state.site.hampers = [];
       renderView();
     } catch (err) {
       if (/401|admin|token/i.test(err.message || '')) {
@@ -255,6 +261,10 @@
       title.textContent = 'Collections';
       sub.textContent = 'Create and manage collections (categories) for your products.';
       renderCollectionsView();
+    } else if (state.view === 'homepage') {
+      title.textContent = 'Homepage';
+      sub.textContent = 'Manage your hero banner images and the Trending Hampers showcase.';
+      renderHomepageView();
     } else if (state.view === 'help') {
       title.textContent = 'Quick Help';
       sub.textContent = 'Tips to manage your catalog without writing any code.';
@@ -583,7 +593,7 @@
         });
         const data = await res.json();
         if (!res.ok || !data.success) throw new Error(data.error || 'Upload failed');
-        const url = data.data?.url || data.url;
+        const url = data.data?.absoluteUrl || data.data?.url || data.url;
         urlInput.value = url;
         refreshPreview(url);
         status.innerHTML = `<i class="fas fa-check-circle" style="color:#3ba35a;"></i> Uploaded`;
@@ -845,6 +855,288 @@
           <p>Collections appear as categories on your shop. Create, rename, or delete them from the Collections tab.</p>
         </div>
       </div>`;
+  }
+
+  // ─── Homepage (hero + hampers) ───
+  function renderHomepageView() {
+    const content = document.getElementById('aapContent');
+    const slides = (state.site.hero && state.site.hero.slides) || [];
+    const hampers = state.site.hampers || [];
+
+    const heroCards = slides.map((s) => `
+      <article class="aap-hp-card" data-id="${escapeHtml(s.id)}" draggable="true">
+        <div class="aap-hp-media">
+          <img src="${escapeHtml(resolveImage(s.image))}" alt="${escapeHtml(s.alt || '')}" loading="lazy">
+          <div class="aap-drag-handle" title="Drag to reorder"><i class="fas fa-grip-vertical"></i></div>
+        </div>
+        <div class="aap-hp-body">
+          <p class="aap-hp-caption">${escapeHtml(s.alt || 'Hero image')}</p>
+          <div class="aap-hp-actions">
+            <button class="aap-btn-secondary" data-hero-edit="${escapeHtml(s.id)}"><i class="fas fa-pen"></i></button>
+            <button class="aap-btn-ghost danger" data-hero-delete="${escapeHtml(s.id)}"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      </article>`).join('');
+
+    const hamperCards = hampers.map((h) => `
+      <article class="aap-hp-card" data-id="${escapeHtml(h.id)}" draggable="true">
+        <div class="aap-hp-media tall">
+          <img src="${escapeHtml(resolveImage(h.image))}" alt="${escapeHtml(h.title)}" loading="lazy">
+          ${h.subtitle ? `<span class="aap-hp-badge">${escapeHtml(h.subtitle)}</span>` : ''}
+          <div class="aap-drag-handle" title="Drag to reorder"><i class="fas fa-grip-vertical"></i></div>
+        </div>
+        <div class="aap-hp-body">
+          <p class="aap-hp-caption">${escapeHtml(h.title)}</p>
+          <p class="aap-hp-price">${Number(h.price) > 0 ? '₹' + Number(h.price).toLocaleString('en-IN') : '<span class="aap-hp-price-warn">No price — set one to sell</span>'}</p>
+          <div class="aap-hp-actions">
+            <button class="aap-btn-secondary" data-hamper-edit="${escapeHtml(h.id)}"><i class="fas fa-pen"></i> Edit</button>
+            <button class="aap-btn-ghost danger" data-hamper-delete="${escapeHtml(h.id)}"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      </article>`).join('');
+
+    content.innerHTML = `
+      <div class="aap-section-block">
+        <div class="aap-block-head">
+          <div>
+            <h3><i class="fas fa-images"></i> Hero Banner Slides</h3>
+            <p class="aap-hint" style="margin:4px 0 0;">These rotate at the top of your homepage. Drag to reorder.</p>
+          </div>
+          <button class="aap-btn-primary" id="aapAddHero"><i class="fas fa-plus"></i> Add Slide</button>
+        </div>
+        <div class="aap-hp-grid" id="aapHeroGrid">${heroCards || '<div class="aap-empty"><i class="far fa-image"></i><h3>No hero slides</h3><p>Add at least one banner image.</p></div>'}</div>
+      </div>
+
+      <div class="aap-section-block">
+        <div class="aap-block-head">
+          <div>
+            <h3><i class="fas fa-gift"></i> Trending Hampers</h3>
+            <p class="aap-hint" style="margin:4px 0 0;">Showcase hampers on the homepage. Drag to reorder.</p>
+          </div>
+          <button class="aap-btn-primary" id="aapAddHamper"><i class="fas fa-plus"></i> Add Hamper</button>
+        </div>
+        <div class="aap-hp-grid hampers" id="aapHamperGrid">${hamperCards || '<div class="aap-empty"><i class="far fa-image"></i><h3>No hampers yet</h3><p>Add your first hamper showcase.</p></div>'}</div>
+      </div>`;
+
+    content.querySelector('#aapAddHero').addEventListener('click', () => openHeroForm(null));
+    content.querySelector('#aapAddHamper').addEventListener('click', () => openHamperForm(null));
+
+    content.querySelectorAll('[data-hero-edit]').forEach((b) => b.addEventListener('click', function () {
+      const s = slides.find((x) => x.id === this.dataset.heroEdit);
+      if (s) openHeroForm(s);
+    }));
+    content.querySelectorAll('[data-hero-delete]').forEach((b) => b.addEventListener('click', function () {
+      confirmDeleteHero(this.dataset.heroDelete);
+    }));
+    content.querySelectorAll('[data-hamper-edit]').forEach((b) => b.addEventListener('click', function () {
+      const h = hampers.find((x) => x.id === this.dataset.hamperEdit);
+      if (h) openHamperForm(h);
+    }));
+    content.querySelectorAll('[data-hamper-delete]').forEach((b) => b.addEventListener('click', function () {
+      const h = hampers.find((x) => x.id === this.dataset.hamperDelete);
+      if (h) confirmDeleteHamper(h);
+    }));
+
+    enableHomepageDrag(content.querySelector('#aapHeroGrid'), 'hero');
+    enableHomepageDrag(content.querySelector('#aapHamperGrid'), 'hampers');
+  }
+
+  function enableHomepageDrag(grid, kind) {
+    if (!grid) return;
+    grid.querySelectorAll('.aap-hp-card').forEach((card) => {
+      card.addEventListener('dragstart', function () { card.classList.add('dragging'); });
+      card.addEventListener('dragend', function () {
+        card.classList.remove('dragging');
+        commitHomepageReorder(grid, kind);
+      });
+    });
+    grid.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      const dragging = grid.querySelector('.aap-hp-card.dragging');
+      if (!dragging) return;
+      const after = getDragAfterElement(grid, e.clientX, e.clientY);
+      if (after == null) grid.appendChild(dragging);
+      else grid.insertBefore(dragging, after);
+    });
+  }
+
+  async function commitHomepageReorder(grid, kind) {
+    const order = Array.from(grid.querySelectorAll('.aap-hp-card')).map((c) => c.dataset.id);
+    const endpoint = kind === 'hero' ? '/api/admin/hero/reorder' : '/api/admin/hampers/reorder';
+    try {
+      const res = await adminFetch(endpoint, { method: 'POST', body: JSON.stringify({ order }) });
+      if (kind === 'hero') state.site.hero.slides = res.data || state.site.hero.slides;
+      else state.site.hampers = res.data || state.site.hampers;
+      toast('Order saved', 'success');
+    } catch (err) {
+      toast(`Reorder failed: ${err.message}`, 'error');
+      renderView();
+    }
+  }
+
+  function openHeroForm(slide) {
+    const isEdit = Boolean(slide);
+    openModal({
+      title: isEdit ? 'Edit hero slide' : 'Add hero slide',
+      html: imageFormHtml({
+        image: slide?.image,
+        captionLabel: 'Image description (alt text)',
+        captionValue: slide?.alt,
+        captionPlaceholder: 'e.g. Elegant gift hampers'
+      }),
+      actions: [
+        { label: 'Cancel', kind: 'secondary', onClick: closeModal },
+        {
+          label: isEdit ? 'Save slide' : 'Add slide', kind: 'primary', onClick: async function (btn) {
+            const image = document.getElementById('aapImageUrl').value.trim();
+            const alt = document.getElementById('aapCaption').value.trim();
+            if (!image) return toast('Please add an image.', 'error');
+            btn.disabled = true; btn.textContent = 'Saving…';
+            try {
+              if (isEdit) {
+                const res = await adminFetch(`/api/admin/hero/${encodeURIComponent(slide.id)}`, { method: 'PUT', body: JSON.stringify({ image, alt }) });
+                const i = state.site.hero.slides.findIndex((s) => s.id === slide.id);
+                if (i !== -1) state.site.hero.slides[i] = res.data;
+              } else {
+                const res = await adminFetch('/api/admin/hero', { method: 'POST', body: JSON.stringify({ image, alt }) });
+                state.site.hero.slides.push(res.data);
+              }
+              toast('Hero slide saved', 'success');
+              closeModal();
+              renderView();
+            } catch (err) {
+              toast(`Save failed: ${err.message}`, 'error');
+              btn.disabled = false; btn.textContent = isEdit ? 'Save slide' : 'Add slide';
+            }
+          }
+        }
+      ]
+    });
+    setTimeout(bindUploader, 0);
+  }
+
+  function confirmDeleteHero(id) {
+    openModal({
+      title: 'Delete hero slide?',
+      html: '<p>This banner image will be removed from your homepage slider.</p>',
+      actions: [
+        { label: 'Cancel', kind: 'secondary', onClick: closeModal },
+        { label: 'Delete', kind: 'danger', onClick: async function (btn) {
+            btn.disabled = true; btn.textContent = 'Deleting…';
+            try {
+              await adminFetch(`/api/admin/hero/${encodeURIComponent(id)}`, { method: 'DELETE' });
+              state.site.hero.slides = state.site.hero.slides.filter((s) => s.id !== id);
+              toast('Slide deleted', 'success');
+              closeModal();
+              renderView();
+            } catch (err) {
+              toast(`Delete failed: ${err.message}`, 'error');
+              btn.disabled = false; btn.textContent = 'Delete';
+            }
+          } }
+      ]
+    });
+  }
+
+  function openHamperForm(hamper) {
+    const isEdit = Boolean(hamper);
+    const extra = `
+      <div class="aap-form-row">
+        <div>
+          <label class="aap-label">Badge / tag <span class="aap-label-sub">(optional)</span></label>
+          <input class="aap-input" id="aapHamperSubtitle" type="text" placeholder="Customised" value="${escapeHtml(hamper?.subtitle || 'Customised')}">
+        </div>
+        <div>
+          <label class="aap-label">Price (₹)</label>
+          <input class="aap-input" id="aapHamperPrice" type="number" min="0" step="1" placeholder="1999" value="${escapeHtml(hamper?.price ?? '')}">
+        </div>
+      </div>`;
+    openModal({
+      title: isEdit ? 'Edit hamper' : 'Add a hamper',
+      html: imageFormHtml({
+        image: hamper?.image,
+        captionLabel: 'Hamper title',
+        captionValue: hamper?.title,
+        captionPlaceholder: "e.g. Customised Birthday Hamper",
+        extra
+      }),
+      actions: [
+        { label: 'Cancel', kind: 'secondary', onClick: closeModal },
+        {
+          label: isEdit ? 'Save hamper' : 'Add hamper', kind: 'primary', onClick: async function (btn) {
+            const image = document.getElementById('aapImageUrl').value.trim();
+            const title = document.getElementById('aapCaption').value.trim();
+            const subtitle = document.getElementById('aapHamperSubtitle').value.trim();
+            const price = Number(document.getElementById('aapHamperPrice').value) || 0;
+            if (!title) return toast('Please add a hamper title.', 'error');
+            if (!image) return toast('Please add a hamper image.', 'error');
+            btn.disabled = true; btn.textContent = 'Saving…';
+            try {
+              if (isEdit) {
+                const res = await adminFetch(`/api/admin/hampers/${encodeURIComponent(hamper.id)}`, { method: 'PUT', body: JSON.stringify({ title, subtitle, image, price }) });
+                const i = state.site.hampers.findIndex((h) => h.id === hamper.id);
+                if (i !== -1) state.site.hampers[i] = res.data;
+              } else {
+                const res = await adminFetch('/api/admin/hampers', { method: 'POST', body: JSON.stringify({ title, subtitle, image, price }) });
+                state.site.hampers.push(res.data);
+              }
+              toast('Hamper saved', 'success');
+              closeModal();
+              renderView();
+            } catch (err) {
+              toast(`Save failed: ${err.message}`, 'error');
+              btn.disabled = false; btn.textContent = isEdit ? 'Save hamper' : 'Add hamper';
+            }
+          }
+        }
+      ]
+    });
+    setTimeout(bindUploader, 0);
+  }
+
+  function confirmDeleteHamper(hamper) {
+    openModal({
+      title: 'Delete hamper?',
+      html: `<p>Remove <strong>${escapeHtml(hamper.title)}</strong> from the homepage showcase?</p>`,
+      actions: [
+        { label: 'Cancel', kind: 'secondary', onClick: closeModal },
+        { label: 'Delete hamper', kind: 'danger', onClick: async function (btn) {
+            btn.disabled = true; btn.textContent = 'Deleting…';
+            try {
+              await adminFetch(`/api/admin/hampers/${encodeURIComponent(hamper.id)}`, { method: 'DELETE' });
+              state.site.hampers = state.site.hampers.filter((h) => h.id !== hamper.id);
+              toast('Hamper deleted', 'success');
+              closeModal();
+              renderView();
+            } catch (err) {
+              toast(`Delete failed: ${err.message}`, 'error');
+              btn.disabled = false; btn.textContent = 'Delete hamper';
+            }
+          } }
+      ]
+    });
+  }
+
+  // Shared image-form markup used by hero & hamper modals (reuses uploader element IDs)
+  function imageFormHtml({ image, captionLabel, captionValue, captionPlaceholder, extra }) {
+    return `
+      <form class="aap-form">
+        <label class="aap-label">Image</label>
+        <div class="aap-uploader" id="aapUploader">
+          <div class="aap-uploader-preview" id="aapPreview">
+            ${image ? `<img src="${escapeHtml(resolveImage(image))}" alt="">` : `<div class="aap-uploader-placeholder"><i class="fas fa-image"></i><p>Drag &amp; drop or click to upload</p><span>JPG, PNG, WEBP up to 8&nbsp;MB</span></div>`}
+          </div>
+          <input type="file" id="aapImageFile" accept="image/*" hidden>
+          <div class="aap-uploader-actions">
+            <button type="button" class="aap-btn-secondary" id="aapPickImage"><i class="fas fa-upload"></i> Choose file</button>
+            <input type="text" id="aapImageUrl" class="aap-input" placeholder="or paste image URL/path" value="${escapeHtml(image || '')}">
+          </div>
+          <p class="aap-uploader-hint" id="aapUploadStatus"></p>
+        </div>
+        <label class="aap-label">${escapeHtml(captionLabel)}</label>
+        <input class="aap-input" id="aapCaption" type="text" placeholder="${escapeHtml(captionPlaceholder || '')}" value="${escapeHtml(captionValue || '')}">
+        ${extra || ''}
+      </form>`;
   }
 
   // ─── Modal helpers ───

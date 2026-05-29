@@ -21,36 +21,83 @@ function closeMobileNav() {
 mobileNavClose.addEventListener('click', closeMobileNav);
 
 // ─── HERO SLIDER ───
-const slides = document.querySelectorAll('.hero-slide');
-const dots = document.querySelectorAll('.hero-dot');
+let slides = [];
+let dots = [];
 let currentSlide = 0;
 let slideInterval;
 
 function goToSlide(index) {
+  if (!slides.length) return;
   slides[currentSlide].classList.remove('active');
-  dots[currentSlide].classList.remove('active');
+  if (dots[currentSlide]) dots[currentSlide].classList.remove('active');
   currentSlide = index;
   slides[currentSlide].classList.add('active');
-  dots[currentSlide].classList.add('active');
+  if (dots[currentSlide]) dots[currentSlide].classList.add('active');
 }
 
 function nextSlide() {
-  goToSlide((currentSlide + 1) % slides.length);
+  if (slides.length) goToSlide((currentSlide + 1) % slides.length);
 }
 
 function startSlider() {
-  slideInterval = setInterval(nextSlide, 5000);
+  clearInterval(slideInterval);
+  if (slides.length > 1) slideInterval = setInterval(nextSlide, 5000);
 }
 
-dots.forEach(dot => {
-  dot.addEventListener('click', () => {
-    clearInterval(slideInterval);
-    goToSlide(parseInt(dot.dataset.slide));
-    startSlider();
+function initHeroSlider() {
+  const sliderEl = document.getElementById('heroSlider');
+  const dotsEl = document.getElementById('heroDots');
+  slides = Array.from(document.querySelectorAll('.hero-slide'));
+  dots = Array.from(document.querySelectorAll('.hero-dot'));
+  currentSlide = 0;
+  slides.forEach((s, i) => s.classList.toggle('active', i === 0));
+  dots.forEach((d, i) => d.classList.toggle('active', i === 0));
+  dots.forEach(dot => {
+    dot.addEventListener('click', () => {
+      clearInterval(slideInterval);
+      goToSlide(parseInt(dot.dataset.slide));
+      startSlider();
+    });
   });
-});
+  startSlider();
 
-startSlider();
+  // Try to hydrate slides from the live site config (admin-managed)
+  if (window.AuraApi && window.AuraApi.apiFetch && sliderEl && dotsEl) {
+    window.AuraApi.apiFetch('/api/site')
+      .then((resp) => {
+        const heroSlides = (resp.data && resp.data.hero && resp.data.hero.slides) || [];
+        if (!heroSlides.length) return;
+        sliderEl.innerHTML = heroSlides.map((s, i) => `
+          <div class="hero-slide${i === 0 ? ' active' : ''}">
+            <img src="${window.AuraApi.resolveAssetPath(s.image)}" alt="${(s.alt || 'Aura Boxed Gifts').replace(/"/g, '&quot;')}"${i === 0 ? '' : ' loading="lazy"'}>
+          </div>`).join('');
+        dotsEl.innerHTML = heroSlides.map((s, i) => `<button class="hero-dot${i === 0 ? ' active' : ''}" data-slide="${i}"></button>`).join('');
+        initHeroSliderControls();
+      })
+      .catch(() => { /* keep static fallback slides */ });
+  }
+}
+
+function initHeroSliderControls() {
+  clearInterval(slideInterval);
+  slides = Array.from(document.querySelectorAll('.hero-slide'));
+  dots = Array.from(document.querySelectorAll('.hero-dot'));
+  currentSlide = 0;
+  dots.forEach(dot => {
+    dot.addEventListener('click', () => {
+      clearInterval(slideInterval);
+      goToSlide(parseInt(dot.dataset.slide));
+      startSlider();
+    });
+  });
+  startSlider();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initHeroSlider);
+} else {
+  initHeroSlider();
+}
 
 // ─── SCROLL REVEAL ───
 const revealElements = document.querySelectorAll('.reveal');
@@ -105,45 +152,141 @@ window.addEventListener('scroll', () => {
     }
   }
 });
-// ─── RANDOM FEATURED PRODUCTS ───
+// ─── TRENDING HAMPERS ───
 document.addEventListener('DOMContentLoaded', () => {
-    const featuredContainer = document.getElementById('randomProductsContainer');
-    if (!featuredContainer) return;
-    if (!window.AuraApi || !window.AuraApi.apiFetch) return;
+    const hampersContainer = document.getElementById('hampersContainer');
+    if (!hampersContainer) return;
 
-    function renderProducts(products) {
-      featuredContainer.innerHTML = products.map((p, idx) => `
-        <div class="featured-item" style="animation-delay: ${idx * 0.1}s">
-            <img src="${window.AuraApi.resolveAssetPath(p.image)}" alt="${p.name}" loading="lazy">
-          <div class="featured-info">
-            <h3 class="featured-title">${p.name}</h3>
-            <p class="featured-price">Rs. ${p.price}.00</p>
-            <button class="featured-add-btn" data-product-id="${p.id}"><i class="fas fa-shopping-cart"></i> Add to cart</button>
+    const INSTAGRAM_URL = 'https://www.instagram.com/aura_boxedgifts?utm_source=qr&igsh=MTYwbTYzNjJ6anUwdA==';
+    const resolve = (src) => (window.AuraApi && window.AuraApi.resolveAssetPath ? window.AuraApi.resolveAssetPath(src) : src);
+    const esc = (str) => String(str == null ? '' : str).replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    const FALLBACK_HAMPERS = [
+      { id: 'hamper_mom_to_be', title: 'Mom-to-be Hamper Gift', subtitle: 'Customised', image: 'images/hampers/mom-to-be.jpeg', price: 1999 },
+      { id: 'hamper_wedding_gift', title: 'Wedding Hamper Gift', subtitle: 'Customised', image: 'images/hampers/wedding-gift.jpeg', price: 2499 },
+      { id: 'hamper_birthday', title: 'Customised Birthday Hamper', subtitle: 'Personalised', image: 'images/hampers/birthday-customised.jpeg', price: 1499 },
+      { id: 'hamper_virat_kohli', title: 'Customised Virat Kohli Fangirl Hamper', subtitle: 'Personalised', image: 'images/hampers/virat-kohli-fangirl.jpeg', price: 1799 },
+      { id: 'hamper_mens_birthday', title: "Customised Men's Birthday Hamper", subtitle: 'Personalised', image: 'images/hampers/mens-birthday.jpeg', price: 1999 },
+      { id: 'hamper_mothers_day', title: "Customised Mother's Day Hamper", subtitle: 'Personalised', image: 'images/hampers/mothers-day.jpeg', price: 1899 },
+      { id: 'hamper_wedding_bride', title: 'Wedding Hamper for Bride', subtitle: 'Customised', image: 'images/hampers/wedding-bride.jpeg', price: 2299 },
+      { id: 'hamper_babygirl_1st_birthday', title: '1st Birthday Hamper Gift for Babygirl', subtitle: 'Customised', image: 'images/hampers/babygirl-1st-birthday.jpeg', price: 1599 }
+    ];
+
+    const fmtPrice = (p) => (Number(p) > 0 ? '₹' + Number(p).toLocaleString('en-IN') : '');
+
+    function addHamperToCart(h, btn) {
+      if (window.AuraCart && typeof window.AuraCart.addToCartById === 'function') {
+        window.AuraCart.addToCartById(h.id);
+      } else if (window.parent !== window) {
+        window.parent.postMessage({ type: 'addToCart', productId: h.id }, '*');
+      }
+      if (btn) {
+        const original = btn.innerHTML;
+        btn.classList.add('added');
+        btn.innerHTML = '<i class="fas fa-check"></i> Added';
+        setTimeout(() => { btn.classList.remove('added'); btn.innerHTML = original; }, 1400);
+      }
+    }
+
+    function renderHampers(hampers) {
+      if (!hampers.length) { hampersContainer.innerHTML = ''; return; }
+      hampersContainer.innerHTML = hampers.map((h, idx) => `
+        <article class="hamper-card" style="animation-delay: ${idx * 0.08}s" data-index="${idx}">
+          <div class="hamper-card-media">
+            <img src="${esc(resolve(h.image))}" alt="${esc(h.title)}" loading="lazy">
+            ${h.subtitle ? `<span class="hamper-badge">${esc(h.subtitle)}</span>` : ''}
+            <div class="hamper-card-overlay">
+              <button class="hamper-view-btn" data-index="${idx}"><i class="fas fa-expand"></i> Quick view</button>
+            </div>
           </div>
-        </div>
+          <div class="hamper-card-info">
+            <h3 class="hamper-card-title">${esc(h.title)}</h3>
+            ${fmtPrice(h.price) ? `<div class="hamper-card-price">${fmtPrice(h.price)}</div>` : ''}
+            <button class="hamper-add-btn" data-add="${idx}"><i class="fas fa-bag-shopping"></i> Add to cart</button>
+          </div>
+        </article>
       `).join('');
-      featuredContainer.querySelectorAll('.featured-add-btn').forEach((btn) => {
-        btn.addEventListener('click', function () {
-          if (window.AuraCart) window.AuraCart.addToCartById(btn.dataset.productId);
+
+      hampersContainer.querySelectorAll('.hamper-card-media, .hamper-view-btn').forEach((el) => {
+        el.addEventListener('click', function (e) {
+          e.preventDefault();
+          const idx = Number(this.dataset.index || this.closest('[data-index]').dataset.index || 0);
+          openHamperLightbox(hampers, idx);
+        });
+      });
+
+      hampersContainer.querySelectorAll('.hamper-add-btn').forEach((btn) => {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          addHamperToCart(hampers[Number(this.dataset.add || 0)], this);
         });
       });
     }
 
-    window.AuraApi.apiFetch('/api/products?featured=true')
-      .then((resp) => {
-        const products = (resp.data || [])
-          .slice()
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 4);
-        renderProducts(products);
-      })
-      .catch(() => {
-        const fallback = [
-          { id: 'pend_1', name: 'Butterfly Pendant Necklace', price: 599, image: 'images/web/pendents-1.jpeg' },
-          { id: 'bracelet_2', name: 'Rainbow Charm Beaded Bracelet Set', price: 699, image: 'images/web/bracelets-2.jpeg' },
-          { id: 'earring_3', name: 'Party Glam Earrings', price: 499, image: 'images/web/earings-3.jpeg' },
-          { id: 'key_1', name: 'Mini Bag Keychain - Pastel', price: 299, image: 'images/web/mini-bags-1.jpeg' }
-        ].sort(() => Math.random() - 0.5);
-        renderProducts(fallback);
-      });
+    function openHamperLightbox(hampers, startIndex) {
+      let lb = document.getElementById('hamperLightbox');
+      if (!lb) {
+        lb = document.createElement('div');
+        lb.id = 'hamperLightbox';
+        lb.className = 'hamper-lightbox';
+        lb.innerHTML = `
+          <button class="hamper-lb-close" aria-label="Close">&times;</button>
+          <button class="hamper-lb-nav hamper-lb-prev" aria-label="Previous">&#8249;</button>
+          <div class="hamper-lb-stage">
+            <img class="hamper-lb-img" src="" alt="">
+            <div class="hamper-lb-info">
+              <h3 class="hamper-lb-title"></h3>
+              <div class="hamper-lb-price"></div>
+              <p class="hamper-lb-sub">Fully customisable — choose your theme, colours, and items.</p>
+              <button class="hamper-lb-cta"><i class="fas fa-bag-shopping"></i> Add to cart</button>
+              <a class="hamper-lb-customise" href="${INSTAGRAM_URL}" target="_blank" rel="noopener"><i class="fab fa-instagram"></i> Or customise on Instagram</a>
+            </div>
+          </div>
+          <button class="hamper-lb-nav hamper-lb-next" aria-label="Next">&#8250;</button>
+          <div class="hamper-lb-counter"></div>`;
+        document.body.appendChild(lb);
+        lb.querySelector('.hamper-lb-close').addEventListener('click', closeHamperLightbox);
+        lb.addEventListener('click', (e) => { if (e.target === lb) closeHamperLightbox(); });
+      }
+      let current = startIndex;
+      const imgEl = lb.querySelector('.hamper-lb-img');
+      const titleEl = lb.querySelector('.hamper-lb-title');
+      const priceEl = lb.querySelector('.hamper-lb-price');
+      const ctaEl = lb.querySelector('.hamper-lb-cta');
+      const counterEl = lb.querySelector('.hamper-lb-counter');
+      function show(i) {
+        current = (i + hampers.length) % hampers.length;
+        const h = hampers[current];
+        imgEl.src = resolve(h.image);
+        imgEl.alt = h.title;
+        titleEl.textContent = h.title;
+        priceEl.textContent = fmtPrice(h.price);
+        priceEl.style.display = fmtPrice(h.price) ? '' : 'none';
+        counterEl.textContent = `${current + 1} / ${hampers.length}`;
+      }
+      ctaEl.onclick = (e) => { e.preventDefault(); addHamperToCart(hampers[current], ctaEl); };
+      lb.querySelector('.hamper-lb-prev').onclick = () => show(current - 1);
+      lb.querySelector('.hamper-lb-next').onclick = () => show(current + 1);
+      show(startIndex);
+      lb.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeHamperLightbox() {
+      const lb = document.getElementById('hamperLightbox');
+      if (lb) lb.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    if (window.AuraApi && window.AuraApi.apiFetch) {
+      window.AuraApi.apiFetch('/api/hampers')
+        .then((resp) => {
+          const hampers = (resp.data && resp.data.length) ? resp.data : FALLBACK_HAMPERS;
+          renderHampers(hampers);
+        })
+        .catch(() => renderHampers(FALLBACK_HAMPERS));
+    } else {
+      renderHampers(FALLBACK_HAMPERS);
+    }
 });
