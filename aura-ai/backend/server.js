@@ -486,6 +486,7 @@ app.put('/api/admin/products/:id', requireAdmin, (req, res) => {
 });
 
 app.delete('/api/admin/products/:id', requireAdmin, (req, res) => {
+    autoSnapshot('Before product delete: ' + req.params.id);
     const products = getCatalog();
     const next = products.filter((p) => p.id !== req.params.id);
     if (next.length === products.length) return jsonErr(res, 404, 'Product not found');
@@ -572,21 +573,19 @@ app.put('/api/admin/collections/:slug', requireAdmin, (req, res) => {
 });
 
 app.delete('/api/admin/collections/:slug', requireAdmin, (req, res) => {
+    autoSnapshot('Before collection delete: ' + req.params.slug);
     const collections = readJson(COLLECTIONS_FILE, []);
     const slug = req.params.slug;
     const next = collections.filter((c) => c.slug !== slug);
     if (next.length === collections.length) return jsonErr(res, 404, 'Collection not found');
-    const products = getCatalog();
-    const inUse = products.some((p) => p.collection === slug);
-    if (inUse && !req.query.force) {
-        return jsonErr(res, 400, 'Collection has products. Move or delete them first, or pass ?force=1 to remove products as well.');
-    }
     writeJson(COLLECTIONS_FILE, next);
-    if (inUse) {
+    // If force=1, also delete all products in this collection
+    if (req.query.force) {
+        const products = getCatalog();
         writeJson(PRODUCTS_FILE, products.filter((p) => p.collection !== slug));
     }
     regenerateCollectionPages();
-    return jsonOk(res, { deleted: true });
+    return jsonOk(res, { deleted: true, productsRemoved: Boolean(req.query.force) });
 });
 
 app.post('/api/admin/regenerate-pages', requireAdmin, (req, res) => {
@@ -703,6 +702,136 @@ app.post('/api/admin/hampers/reorder', requireAdmin, (req, res) => {
     site.hampers = [...reordered, ...tail];
     saveSite(site);
     return jsonOk(res, site.hampers);
+});
+
+// ─── Snapshot / Rollback System ───
+const SNAPSHOTS_DIR = path.join(__dirname, 'data', 'snapshots');
+if (!fs.existsSync(SNAPSHOTS_DIR)) fs.mkdirSync(SNAPSHOTS_DIR, { recursive: true });
+const MAX_SNAPSHOTS = 20;
+
+function createSnapshot(label) {
+    const id = Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+    const dir = path.join(SNAPSHOTS_DIR, id);
+    fs.mkdirSync(dir, { recursive: true });
+    // Copy data files
+    ['products.json', 'collections.json', 'site.json'].forEach((f) => {
+        const src = path.join(__dirname, 'data', f);
+        if (fs.existsSync(src)) fs.copyFileSync(src, path.join(dir, f));
+    });
+    // Write metadata
+    fs.writeFileSync(path.join(dir, 'meta.json'), JSON.stringify({
+        id, label: label || 'Manual snapshot',
+        createdAt: new Date().toISOString(),
+        productCount: getCatalog().length,
+        collectionCount: readJson(COLLECTIONS_FILE, []).length
+    }, null, 2));
+    // Prune old snapshots
+    const all = listSnapshots();
+    if (all.length > MAX_SNAPSHOTS) {
+        const toRemove = all.slice(MAX_SNAPSHOTS);
+        toRemove.forEach((s) => {
+            const d = path.join(SNAPSHOTS_DIR, s.id);
+            if (fs.existsSync(d)) fs.rmSync(d, { recursive: true, force: true });
+        });
+    }
+    return id;
+}
+
+function listSnapshots() {
+    if (!fs.existsSync(SNAPSHOTS_DIR)) return [];
+    const dirs = fs.readdirSync(SNAPSHOTS_DIR).filter((d) => {
+        return fs.statSync(path.join(SNAPSHOTS_DIR, d)).isDirectory();
+    });
+    const metas = dirs.map((d) => {
+        const metaFile = path.join(SNAPSHOTS_DIR, d, 'meta.json');
+        if (!fs.existsSync(metaFile)) return null;
+        try { return JSON.parse(fs.readFileSync(metaFile, 'utf8')); } catch (e) { return null; }
+    }).filter(Boolean);
+    metas.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return metas;
+}
+
+function restoreSnapshot(id) {
+    const dir = path.join(SNAPSHOTS_DIR, id);
+    if (!fs.existsSync(dir)) throw new Error('Snapshot not found');
+    ['products.json', 'collections.json', 'site.json'].forEach((f) => {
+        const src = path.join(dir, f);
+        const dest = path.join(__dirname, 'data', f);
+        if (fs.existsSync(src)) fs.copyFileSync(src, dest);
+    });
+}
+
+// Auto-snapshot helper — called before destructive ops
+function autoSnapshot(label) {
+    try { createSnapshot(label); } catch (e) { console.error('[Snapshot] auto-snapshot failed:', e.message); }
+}
+
+app.post('/api/admin/snapshot', requireAdmin, (req, res) => {
+    const label = String(req.body?.label || 'Manual snapshot');
+    const id = createSnapshot(label);
+    return jsonOk(res, { id, label });
+});
+
+app.get('/api/admin/snapshots', requireAdmin, (req, res) => {
+    return jsonOk(res, listSnapshots());
+});
+
+app.post('/api/admin/restore/:id', requireAdmin, (req, res) => {
+    try {
+        // Create a snapshot of current state before restoring
+        createSnapshot('Auto-backup before restore');
+        restoreSnapshot(req.params.id);
+        regenerateCollectionPages();
+        return jsonOk(res, { restored: req.params.id });
+    } catch (err) {
+        return jsonErr(res, 400, err.message);
+    }
+});
+
+app.delete('/api/admin/snapshots/:id', requireAdmin, (req, res) => {
+    const dir = path.join(SNAPSHOTS_DIR, req.params.id);
+    if (!fs.existsSync(dir)) return jsonErr(res, 404, 'Snapshot not found');
+    fs.rmSync(dir, { recursive: true, force: true });
+    return jsonOk(res, { deleted: req.params.id });
+});
+
+// ─── GitHub Auto-Publish ───
+const { execSync } = require('child_process');
+
+app.post('/api/admin/publish', requireAdmin, (req, res) => {
+    try {
+        // The repo root is two levels up from this backend directory
+        const repoRoot = path.resolve(__dirname, '..', '..');
+        const gitExists = fs.existsSync(path.join(repoRoot, '.git'));
+        if (!gitExists) return jsonErr(res, 500, 'No git repository found at project root');
+
+        // Create a snapshot before publishing
+        autoSnapshot('Pre-publish backup');
+
+        // Regenerate collection pages
+        regenerateCollectionPages();
+
+        // Stage, commit, and push
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const commitMsg = `admin: publish changes ${timestamp}`;
+        try {
+            execSync('git add -A', { cwd: repoRoot, timeout: 15000 });
+            // Check if there are changes to commit
+            const status = execSync('git status --porcelain', { cwd: repoRoot, timeout: 5000 }).toString().trim();
+            if (!status) {
+                return jsonOk(res, { message: 'No changes to publish', pushed: false });
+            }
+            execSync(`git commit -m "${commitMsg}"`, { cwd: repoRoot, timeout: 15000 });
+            execSync('git push origin main', { cwd: repoRoot, timeout: 30000 });
+            console.log(`[Admin] Published changes: ${commitMsg}`);
+            return jsonOk(res, { message: 'Published successfully', pushed: true, commit: commitMsg });
+        } catch (gitErr) {
+            console.error('[Admin] Git publish error:', gitErr.message);
+            return jsonErr(res, 500, `Git publish failed: ${gitErr.message.slice(0, 200)}`);
+        }
+    } catch (err) {
+        return jsonErr(res, 500, err.message);
+    }
 });
 
 app.post('/api/cart/calculate', (req, res) => {
@@ -1060,6 +1189,73 @@ function formatCartTotalsMessage(cart) {
     return `Subtotal ₹${cart.subtotal}, shipping ₹${cart.shipping}, total ₹${cart.grandTotal}. Items: ${lines || 'cart is empty'}`;
 }
 
+function normalizeProductName(name) {
+    return String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function resolveProductId(args, lastViewedProduct) {
+    if (args.productId) return args.productId;
+    if (lastViewedProduct?.productId) return lastViewedProduct.productId;
+    if (!args.productName) return '';
+    const catalog = getCatalog();
+    const wantPrice = args.productPrice ? Number(args.productPrice) : null;
+    const byExact = catalog.find(
+        (p) => p.name === args.productName && (wantPrice == null || Number(p.price) === wantPrice)
+    );
+    if (byExact) return byExact.id;
+    const byName = catalog.find((p) => p.name === args.productName);
+    if (byName) return byName.id;
+    const needle = normalizeProductName(args.productName);
+    const byFuzzy = catalog.find((p) => {
+        const n = normalizeProductName(p.name);
+        return n === needle || n.includes(needle) || needle.includes(n);
+    });
+    if (byFuzzy) return byFuzzy.id;
+    const hampers = getSite().hampers || [];
+    const hamper = hampers.find((h) => {
+        const t = normalizeProductName(h.title);
+        return h.title === args.productName || t === needle || t.includes(needle) || needle.includes(t);
+    });
+    if (hamper) return hamper.id;
+    return '';
+}
+
+const TOOL_DEDUPE_MS = {
+    add_to_cart: 6000,
+    calculate_cart_total: 5000,
+    browse_collection: 12000,
+    show_hampers: 12000,
+    navigate_home: 6000,
+    scroll_to_section: 6000,
+    view_product: 4000,
+    next_product: 2500,
+    previous_product: 2500
+};
+
+function makeToolDedupeKey(name, args) {
+    return `${name}:${JSON.stringify(args || {})}`;
+}
+
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function requestCartTotalsFromClient(clientWs) {
+    const requestId = crypto.randomUUID();
+    const totalsPromise = new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            pendingCartTotals.delete(requestId);
+            reject(new Error('Cart totals request timed out'));
+        }, 6000);
+        pendingCartTotals.set(requestId, (payload) => {
+            clearTimeout(timer);
+            resolve(payload);
+        });
+    });
+    clientWs.send(JSON.stringify({ type: 'calculate_cart_total', requestId }));
+    return totalsPromise;
+}
+
 function extractAudioChunksFromLiveMessage(message) {
     const chunks = [];
     const parts = message?.serverContent?.modelTurn?.parts || [];
@@ -1105,6 +1301,12 @@ wss.on('connection', (clientWs, request) => {
     const inboundQueue = [];
     let activeCollection = null;
     let lastViewedProduct = null;
+    const toolDedupe = new Map();
+    let lastCartTotals = null;
+    let lastCartTotalsAt = 0;
+    let lastBrowseCollection = null;
+    let lastBrowseAt = 0;
+    let toolChain = Promise.resolve();
 
     clientWs.send(JSON.stringify({ type: 'status', status: 'connecting' }));
 
@@ -1128,157 +1330,194 @@ wss.on('connection', (clientWs, request) => {
                 },
                 onmessage: async (message) => {
                     if (!geminiSession) return;
-                    if (message.toolCall?.functionCalls) {
-                        for (const fc of message.toolCall.functionCalls) {
-                            const args = fc.args || {};
-                            console.log(`[AI_TOOL] ${fc.name} ${JSON.stringify(args)}`);
-                            let response = { result: 'ok' };
-                            if (fc.name === 'send_message') {
-                                response = await sendEmailNotification(args.message, args.senderInfo, args.inquiryType || 'General');
-                            } else if (fc.name === 'browse_collection') {
-                                activeCollection = args.collection;
-                                clientWs.send(JSON.stringify({ type: 'navigate', url: `collections/${args.collection}.html` }));
-                                const collectionProducts = getCatalog().filter((p) => p.collection === args.collection);
-                                if (collectionProducts.length) {
-                                    const randomIndex = Math.floor(Math.random() * collectionProducts.length) + 1;
-                                    clientWs.send(JSON.stringify({ type: 'view_product', index: randomIndex }));
+                    if (message.toolCall?.functionCalls?.length) {
+                        toolChain = toolChain.then(async () => {
+                            const functionResponses = [];
+                            for (const fc of message.toolCall.functionCalls) {
+                                const args = fc.args || {};
+                                const dedupeKey = makeToolDedupeKey(fc.name, args);
+                                const dedupeMs = TOOL_DEDUPE_MS[fc.name] || 2500;
+                                const cached = toolDedupe.get(dedupeKey);
+                                if (cached && Date.now() - cached.ts < dedupeMs) {
+                                    console.log(`[AI_TOOL] dedupe ${fc.name} ${JSON.stringify(args)}`);
+                                    functionResponses.push({
+                                        id: fc.id,
+                                        name: fc.name,
+                                        response: { ...cached.response, deduped: true }
+                                    });
+                                    continue;
+                                }
+
+                                console.log(`[AI_TOOL] ${fc.name} ${JSON.stringify(args)}`);
+                                let response = { result: 'ok' };
+
+                                if (fc.name === 'send_message') {
+                                    response = await sendEmailNotification(
+                                        args.message,
+                                        args.senderInfo,
+                                        args.inquiryType || 'General'
+                                    );
+                                } else if (fc.name === 'browse_collection') {
+                                    const collection = args.collection;
+                                    const collectionProducts = getCatalog().filter((p) => p.collection === collection);
                                     const note = collectionProducts
                                         .map((p, i) => `${i + 1}. ${p.name} (₹${p.price})`)
                                         .join('\n');
-                                    geminiSession.sendRealtimeInput({
-                                        text: `[SYSTEM NOTE: Current collection products:\n${note}\nUser is currently shown product #${randomIndex}.]`
-                                    });
-                                }
-                                response = { result: `Navigated to ${args.collection}` };
-                            } else if (fc.name === 'navigate_home') {
-                                activeCollection = null;
-                                clientWs.send(JSON.stringify({ type: 'navigate_home' }));
-                                response = { result: 'Navigated home' };
-                            } else if (fc.name === 'scroll_to_section') {
-                                clientWs.send(JSON.stringify({ type: 'scroll_to_section', section: args.section }));
-                                response = { result: `Scrolled to ${args.section}` };
-                            } else if (fc.name === 'show_hampers') {
-                                activeCollection = null;
-                                clientWs.send(JSON.stringify({ type: 'navigate_home' }));
-                                clientWs.send(JSON.stringify({ type: 'scroll_to_section', section: 'hampers' }));
-                                const hampers = getSite().hampers || [];
-                                if (hampers.length) {
-                                    const note = hampers.map((h, i) => `${i + 1}. ${h.title}`).join('\n');
-                                    geminiSession.sendRealtimeInput({
-                                        text: `[SYSTEM NOTE: Trending hampers now visible to the user:\n${note}\nAll are fully customisable. Suggest ones matching their occasion.]`
-                                    });
-                                }
-                                response = { result: 'Showing trending hampers', count: hampers.length };
-                            } else if (fc.name === 'request_custom_hamper') {
-                                const details = [
-                                    args.occasion ? `Occasion: ${args.occasion}` : '',
-                                    args.recipient ? `For: ${args.recipient}` : '',
-                                    args.budget ? `Budget: ${args.budget}` : '',
-                                    args.preferences ? `Preferences: ${args.preferences}` : ''
-                                ].filter(Boolean).join('<br>');
-                                response = await sendEmailNotification(
-                                    `New custom hamper request via Aura AI:<br><br>${details}`,
-                                    args.contact || 'Not provided',
-                                    'Custom Hamper'
-                                );
-                                if (response && response.success) {
-                                    geminiSession.sendRealtimeInput({
-                                        text: `[SYSTEM NOTE: Custom hamper request emailed to the team successfully. Reassure the customer the team will follow up and invite them to DM @aura_boxedgifts too.]`
-                                    });
-                                }
-                            } else if (fc.name === 'next_product') {
-                                clientWs.send(JSON.stringify({ type: 'next_product' }));
-                                response = { result: 'Moved to next product' };
-                            } else if (fc.name === 'previous_product') {
-                                clientWs.send(JSON.stringify({ type: 'previous_product' }));
-                                response = { result: 'Moved to previous product' };
-                            } else if (fc.name === 'view_product') {
-                                let index = Number(args.index || 1);
-                                if (!Number.isFinite(index) || index < 1) index = 1;
-                                const map = { first: 1, second: 2, third: 3, fourth: 4, fifth: 5 };
-                                if (args.ordinal && map[args.ordinal]) index = map[args.ordinal];
-                                if (args.ordinal === 'last' && activeCollection) {
-                                    const len = getCatalog().filter((p) => p.collection === activeCollection).length;
-                                    if (len) index = len;
-                                }
-                                clientWs.send(JSON.stringify({ type: 'view_product', index }));
-                                response = { result: `Opened product ${index}` };
-                            } else if (fc.name === 'add_to_cart') {
-                                let resolvedProductId = args.productId || '';
-                                if (!resolvedProductId && lastViewedProduct?.productId) {
-                                    resolvedProductId = lastViewedProduct.productId;
-                                }
-                                if (!resolvedProductId && args.productName) {
-                                    const catalog = getCatalog();
-                                    const byExact = catalog.find((p) =>
-                                        p.name === args.productName &&
-                                        (!args.productPrice || Number(p.price) === Number(args.productPrice))
-                                    );
-                                    const byName = catalog.find((p) => p.name === args.productName);
-                                    resolvedProductId = (byExact || byName || {}).id || '';
-                                }
-                                clientWs.send(JSON.stringify({
-                                    type: 'add_to_cart',
-                                    productId: resolvedProductId,
-                                    productName: args.productName || '',
-                                    productPrice: Number(args.productPrice || 0)
-                                }));
-                                const previewCart = calculateCart(
-                                    (Array.isArray(args.items) ? args.items : []).length
-                                        ? args.items
-                                        : [{ productId: resolvedProductId, qty: 1 }]
-                                );
-                                response = {
-                                    result: `Added ${args.productName || 'product'} to cart`,
-                                    hint: 'Call calculate_cart_total to announce updated totals including shipping.'
-                                };
-                                if (resolvedProductId && previewCart.lines.length) {
-                                    geminiSession.sendRealtimeInput({
-                                        text: `[SYSTEM NOTE: Item added. Current preview for that line: ${formatCartTotalsMessage(previewCart)}. Use calculate_cart_total for full cart.]`
-                                    });
-                                }
-                            } else if (fc.name === 'calculate_cart_total') {
-                                const requestId = crypto.randomUUID();
-                                const totalsPromise = new Promise((resolve, reject) => {
-                                    const timer = setTimeout(() => {
-                                        pendingCartTotals.delete(requestId);
-                                        reject(new Error('Cart totals request timed out'));
-                                    }, 6000);
-                                    pendingCartTotals.set(requestId, (payload) => {
-                                        clearTimeout(timer);
-                                        resolve(payload);
-                                    });
-                                });
-                                clientWs.send(JSON.stringify({ type: 'calculate_cart_total', requestId }));
-                                try {
-                                    const payload = await totalsPromise;
-                                    const cart = payload?.cart || calculateCart(payload?.items || []);
-                                    const spoken = formatCartTotalsMessage(cart);
-                                    geminiSession.sendRealtimeInput({
-                                        text: `[SYSTEM NOTE: Cart totals calculated on server — ${spoken}. Tell the customer clearly including shipping.]`
-                                    });
+                                    const alreadyThere =
+                                        activeCollection === collection &&
+                                        lastBrowseCollection === collection &&
+                                        Date.now() - lastBrowseAt < (TOOL_DEDUPE_MS.browse_collection || 12000);
+                                    if (!alreadyThere) {
+                                        activeCollection = collection;
+                                        lastBrowseCollection = collection;
+                                        lastBrowseAt = Date.now();
+                                        clientWs.send(JSON.stringify({
+                                            type: 'navigate',
+                                            url: `collections/${collection}.html`
+                                        }));
+                                    }
                                     response = {
-                                        result: spoken,
-                                        subtotal: cart.subtotal,
-                                        shipping: cart.shipping,
-                                        grandTotal: cart.grandTotal,
-                                        currency: cart.currency,
-                                        lines: cart.lines
+                                        result: alreadyThere
+                                            ? `Already showing ${collection} collection`
+                                            : `Navigated to ${collection}`,
+                                        products: note || 'No products in this collection'
                                     };
-                                } catch (err) {
-                                    response = { result: 'Could not read cart from browser. Ask user to open cart first.', error: err.message };
+                                } else if (fc.name === 'navigate_home') {
+                                    activeCollection = null;
+                                    clientWs.send(JSON.stringify({ type: 'navigate_home' }));
+                                    response = { result: 'Navigated home' };
+                                } else if (fc.name === 'scroll_to_section') {
+                                    clientWs.send(JSON.stringify({ type: 'scroll_to_section', section: args.section }));
+                                    response = { result: `Scrolled to ${args.section}` };
+                                } else if (fc.name === 'show_hampers') {
+                                    activeCollection = null;
+                                    clientWs.send(JSON.stringify({ type: 'navigate_home' }));
+                                    clientWs.send(JSON.stringify({ type: 'scroll_to_section', section: 'hampers' }));
+                                    const hampers = getSite().hampers || [];
+                                    const note = hampers.map((h, i) => `${i + 1}. ${h.title}`).join('\n');
+                                    response = {
+                                        result: 'Showing trending hampers',
+                                        count: hampers.length,
+                                        hampers: note || 'No hampers configured'
+                                    };
+                                } else if (fc.name === 'request_custom_hamper') {
+                                    const details = [
+                                        args.occasion ? `Occasion: ${args.occasion}` : '',
+                                        args.recipient ? `For: ${args.recipient}` : '',
+                                        args.budget ? `Budget: ${args.budget}` : '',
+                                        args.preferences ? `Preferences: ${args.preferences}` : ''
+                                    ]
+                                        .filter(Boolean)
+                                        .join('<br>');
+                                    response = await sendEmailNotification(
+                                        `New custom hamper request via Aura AI:<br><br>${details}`,
+                                        args.contact || 'Not provided',
+                                        'Custom Hamper'
+                                    );
+                                } else if (fc.name === 'next_product') {
+                                    clientWs.send(JSON.stringify({ type: 'next_product' }));
+                                    response = { result: 'Moved to next product' };
+                                } else if (fc.name === 'previous_product') {
+                                    clientWs.send(JSON.stringify({ type: 'previous_product' }));
+                                    response = { result: 'Moved to previous product' };
+                                } else if (fc.name === 'view_product') {
+                                    let index = Number(args.index || 1);
+                                    if (!Number.isFinite(index) || index < 1) index = 1;
+                                    const map = { first: 1, second: 2, third: 3, fourth: 4, fifth: 5 };
+                                    if (args.ordinal && map[args.ordinal]) index = map[args.ordinal];
+                                    if (args.ordinal === 'last' && activeCollection) {
+                                        const len = getCatalog().filter((p) => p.collection === activeCollection).length;
+                                        if (len) index = len;
+                                    }
+                                    clientWs.send(JSON.stringify({ type: 'view_product', index }));
+                                    response = { result: `Opened product ${index}` };
+                                } else if (fc.name === 'add_to_cart') {
+                                    const resolvedProductId = resolveProductId(args, lastViewedProduct);
+                                    const sellable = resolvedProductId ? getSellable(resolvedProductId) : null;
+                                    clientWs.send(JSON.stringify({
+                                        type: 'add_to_cart',
+                                        productId: resolvedProductId,
+                                        productName: args.productName || sellable?.name || '',
+                                        productPrice: Number(args.productPrice || sellable?.price || 0)
+                                    }));
+                                    try {
+                                        await sleep(450);
+                                        const payload = await requestCartTotalsFromClient(clientWs);
+                                        const cart = payload?.cart || calculateCart(payload?.items || []);
+                                        lastCartTotals = cart;
+                                        lastCartTotalsAt = Date.now();
+                                        const spoken = formatCartTotalsMessage(cart);
+                                        response = {
+                                            result: `Added ${args.productName || sellable?.name || 'item'}. ${spoken}`,
+                                            productId: resolvedProductId,
+                                            subtotal: cart.subtotal,
+                                            shipping: cart.shipping,
+                                            grandTotal: cart.grandTotal,
+                                            currency: cart.currency,
+                                            lines: cart.lines
+                                        };
+                                    } catch (err) {
+                                        const fallback = calculateCart(
+                                            resolvedProductId ? [{ productId: resolvedProductId, qty: 1 }] : []
+                                        );
+                                        response = {
+                                            result: `Added ${args.productName || sellable?.name || 'item'}${resolvedProductId ? '' : ' (product id unknown)'}. ${formatCartTotalsMessage(fallback)}`,
+                                            productId: resolvedProductId,
+                                            error: err.message,
+                                            subtotal: fallback.subtotal,
+                                            shipping: fallback.shipping,
+                                            grandTotal: fallback.grandTotal,
+                                            lines: fallback.lines
+                                        };
+                                    }
+                                } else if (fc.name === 'calculate_cart_total') {
+                                    if (lastCartTotals && Date.now() - lastCartTotalsAt < 5000) {
+                                        const cart = lastCartTotals;
+                                        response = {
+                                            result: formatCartTotalsMessage(cart),
+                                            subtotal: cart.subtotal,
+                                            shipping: cart.shipping,
+                                            grandTotal: cart.grandTotal,
+                                            currency: cart.currency,
+                                            lines: cart.lines,
+                                            cached: true
+                                        };
+                                    } else {
+                                        try {
+                                            const payload = await requestCartTotalsFromClient(clientWs);
+                                            const cart = payload?.cart || calculateCart(payload?.items || []);
+                                            lastCartTotals = cart;
+                                            lastCartTotalsAt = Date.now();
+                                            response = {
+                                                result: formatCartTotalsMessage(cart),
+                                                subtotal: cart.subtotal,
+                                                shipping: cart.shipping,
+                                                grandTotal: cart.grandTotal,
+                                                currency: cart.currency,
+                                                lines: cart.lines
+                                            };
+                                        } catch (err) {
+                                            response = {
+                                                result: 'Could not read cart from browser.',
+                                                error: err.message
+                                            };
+                                        }
+                                    }
+                                } else if (fc.name === 'open_checkout') {
+                                    clientWs.send(JSON.stringify({ type: 'open_checkout' }));
+                                    response = { result: 'Opened checkout page' };
+                                } else if (fc.name === 'show_cart') {
+                                    clientWs.send(JSON.stringify({ type: 'show_cart' }));
+                                    response = { result: 'Opened cart' };
                                 }
-                            } else if (fc.name === 'open_checkout') {
-                                clientWs.send(JSON.stringify({ type: 'open_checkout' }));
-                                response = { result: 'Opened checkout page' };
-                            } else if (fc.name === 'show_cart') {
-                                clientWs.send(JSON.stringify({ type: 'show_cart' }));
-                                response = { result: 'Opened cart' };
+
+                                toolDedupe.set(dedupeKey, { ts: Date.now(), response });
+                                functionResponses.push({ id: fc.id, name: fc.name, response });
                             }
-                            geminiSession.sendToolResponse({
-                                functionResponses: [{ id: fc.id, name: fc.name, response }]
-                            });
-                        }
+                            if (functionResponses.length && geminiSession) {
+                                geminiSession.sendToolResponse({ functionResponses });
+                            }
+                        }).catch((err) => console.error('[AI_TOOL] batch error:', err));
                     }
                     sendGeminiPayloadToClient(clientWs, message);
                 },
@@ -1351,7 +1590,7 @@ wss.on('connection', (clientWs, request) => {
                 }
                 let sysNote = '';
                 if (message.action === 'added_to_cart') {
-                    sysNote = `[SYSTEM NOTE: Added to cart: ${message.productName}]`;
+                    sysNote = `[SYSTEM NOTE: ${message.productName || 'Item'} is in the cart. Do not call add_to_cart or calculate_cart_total again unless the customer asks.]`;
                 } else {
                     sysNote = `[SYSTEM NOTE: User is viewing productId=${message.productId || 'unknown'} name=${message.productName} priced at Rs.${message.productPrice}. If adding to cart, include productId in add_to_cart arguments.]`;
                 }

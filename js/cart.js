@@ -3,7 +3,7 @@
   let catalogCache = null;
   // Cart no longer pops open on every add. We count individual adds and only
   // auto-open the cart once this reaches the threshold, then reset.
-  const AUTO_OPEN_THRESHOLD = 5;
+  const AUTO_OPEN_THRESHOLD = 12;
   let addsSinceOpen = 0;
 
   function saveCart() {

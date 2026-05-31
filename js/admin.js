@@ -107,6 +107,7 @@
             <button class="aap-nav-item active" data-view="products"><i class="fas fa-box-open"></i><span>Products</span></button>
             <button class="aap-nav-item" data-view="collections"><i class="fas fa-layer-group"></i><span>Collections</span></button>
             <button class="aap-nav-item" data-view="homepage"><i class="fas fa-house"></i><span>Homepage</span></button>
+            <button class="aap-nav-item" data-view="history"><i class="fas fa-clock-rotate-left"></i><span>History</span></button>
             <button class="aap-nav-item" data-view="help"><i class="fas fa-question-circle"></i><span>Quick Help</span></button>
           </nav>
           <div class="aap-side-footer">
@@ -121,6 +122,7 @@
               <p class="aap-sub" id="aapSubtitle">Manage your store catalog · add, edit or remove products.</p>
             </div>
             <div class="aap-top-actions">
+              <button class="aap-btn-publish" id="aapPublish" title="Save and push changes to live site"><i class="fas fa-rocket"></i> Apply &amp; Publish</button>
               <button class="aap-icon-btn" id="aapClose" aria-label="Close"><i class="fas fa-times"></i></button>
             </div>
           </header>
@@ -132,6 +134,7 @@
     document.body.appendChild(panel);
 
     panel.querySelector('#aapClose').addEventListener('click', closeAdminModal);
+    panel.querySelector('#aapPublish').addEventListener('click', handlePublish);
     panel.querySelector('#aapLogout').addEventListener('click', function () {
       setAdminToken(null);
       closeAdminModal();
@@ -285,6 +288,10 @@
       title.textContent = 'Homepage';
       sub.textContent = 'Manage your hero banner images and the Trending Hampers showcase.';
       renderHomepageView();
+    } else if (state.view === 'history') {
+      title.textContent = 'History';
+      sub.textContent = 'View past snapshots and roll back to any previous state.';
+      renderHistoryView();
     } else if (state.view === 'help') {
       title.textContent = 'Quick Help';
       sub.textContent = 'Tips to manage your catalog without writing any code.';
@@ -430,6 +437,29 @@
       });
       card.addEventListener('dragend', function () {
         card.classList.remove('dragging');
+        commitReorder(grid);
+      });
+
+      // Touch drag support for mobile
+      const handle = card.querySelector('.aap-drag-handle') || card;
+      let touchStartY = 0;
+      let touchStartX = 0;
+      handle.addEventListener('touchstart', function (e) {
+        touchStartY = e.touches[0].clientY;
+        touchStartX = e.touches[0].clientX;
+        card.classList.add('dragging');
+        card.style.zIndex = '1000';
+      }, { passive: true });
+      handle.addEventListener('touchmove', function (e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const after = getDragAfterElement(grid, touch.clientX, touch.clientY);
+        if (after == null) grid.appendChild(card);
+        else grid.insertBefore(card, after);
+      }, { passive: false });
+      handle.addEventListener('touchend', function () {
+        card.classList.remove('dragging');
+        card.style.zIndex = '';
         commitReorder(grid);
       });
     });
@@ -608,7 +638,7 @@
       try {
         const res = await fetch(`${window.AuraApi.API_BASE}/api/admin/upload`, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${getAdminToken()}` },
+          headers: { Authorization: `Bearer ${getEffectiveAdminToken()}` },
           body: form
         });
         const data = await res.json();
@@ -810,29 +840,63 @@
 
   function confirmDeleteCollection(coll, productCount) {
     const warn = productCount > 0
-      ? `<p style="margin-bottom:10px;color:#a4502b;"><i class="fas fa-exclamation-triangle"></i> This collection has <strong>${productCount}</strong> product${productCount === 1 ? '' : 's'}. Tick the box below to remove them too.</p>
-         <label class="aap-checkbox"><input type="checkbox" id="aapCollForce"> Also delete the ${productCount} product${productCount === 1 ? '' : 's'} in this collection.</label>`
-      : `<p>This collection has no products. Safe to delete.</p>`;
+      ? `<div style="margin-bottom:16px;">
+           <div style="background:#fff3e0;border:1px solid #f9a825;border-radius:8px;padding:14px;margin-bottom:14px;">
+             <p style="color:#e65100;font-weight:600;margin-bottom:6px;"><i class="fas fa-exclamation-triangle"></i> This section contains <strong>${productCount}</strong> product${productCount === 1 ? '' : 's'}</p>
+             <p style="color:#6d4c00;font-size:0.85rem;">Choose what to do with them below.</p>
+           </div>
+         </div>`
+      : `<p style="margin-bottom:14px;">This section has no products. Safe to delete.</p>`;
     openModal({
-      title: `Delete "${coll.name}"?`,
+      title: `Delete "${coll.name}" section?`,
       html: warn,
-      actions: [
+      actions: productCount > 0 ? [
         { label: 'Cancel', kind: 'secondary', onClick: closeModal },
         {
-          label: 'Delete collection', kind: 'danger', onClick: async function (btn) {
-            const force = document.getElementById('aapCollForce')?.checked;
-            if (productCount > 0 && !force) return toast('Tick the box to confirm.', 'error');
+          label: 'Delete section only', kind: 'secondary', onClick: async function (btn) {
             btn.disabled = true; btn.textContent = 'Deleting…';
             try {
-              await adminFetch(`/api/admin/collections/${encodeURIComponent(coll.slug)}${force ? '?force=1' : ''}`, { method: 'DELETE' });
+              await adminFetch(`/api/admin/collections/${encodeURIComponent(coll.slug)}`, { method: 'DELETE' });
               state.collections = state.collections.filter((c) => c.slug !== coll.slug);
-              if (force) state.products = state.products.filter((p) => p.collection !== coll.slug);
-              toast('Collection deleted', 'success');
+              toast('Section deleted (products kept)', 'success');
               closeModal();
               renderView();
             } catch (err) {
               toast(`Delete failed: ${err.message}`, 'error');
-              btn.disabled = false; btn.textContent = 'Delete collection';
+              btn.disabled = false; btn.textContent = 'Delete section only';
+            }
+          }
+        },
+        {
+          label: `Delete section & all ${productCount} products`, kind: 'danger', onClick: async function (btn) {
+            btn.disabled = true; btn.textContent = 'Deleting…';
+            try {
+              await adminFetch(`/api/admin/collections/${encodeURIComponent(coll.slug)}?force=1`, { method: 'DELETE' });
+              state.collections = state.collections.filter((c) => c.slug !== coll.slug);
+              state.products = state.products.filter((p) => p.collection !== coll.slug);
+              toast('Section and all products deleted', 'success');
+              closeModal();
+              renderView();
+            } catch (err) {
+              toast(`Delete failed: ${err.message}`, 'error');
+              btn.disabled = false; btn.textContent = `Delete section & all ${productCount} products`;
+            }
+          }
+        }
+      ] : [
+        { label: 'Cancel', kind: 'secondary', onClick: closeModal },
+        {
+          label: 'Delete section', kind: 'danger', onClick: async function (btn) {
+            btn.disabled = true; btn.textContent = 'Deleting…';
+            try {
+              await adminFetch(`/api/admin/collections/${encodeURIComponent(coll.slug)}`, { method: 'DELETE' });
+              state.collections = state.collections.filter((c) => c.slug !== coll.slug);
+              toast('Section deleted', 'success');
+              closeModal();
+              renderView();
+            } catch (err) {
+              toast(`Delete failed: ${err.message}`, 'error');
+              btn.disabled = false; btn.textContent = 'Delete section';
             }
           }
         }
@@ -846,6 +910,134 @@
       toast('Pages republished', 'success');
     } catch (err) {
       toast(`Republish failed: ${err.message}`, 'error');
+    }
+  }
+
+  async function handlePublish() {
+    const btn = document.getElementById('aapPublish');
+    if (!btn) return;
+    btn.disabled = true;
+    const origHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing…';
+    try {
+      const res = await adminFetch('/api/admin/publish', { method: 'POST' });
+      if (res.data?.pushed) {
+        toast('Changes published to live site!', 'success');
+      } else {
+        toast(res.data?.message || 'No changes to publish', 'info');
+      }
+    } catch (err) {
+      toast(`Publish failed: ${err.message}`, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }
+  }
+
+  async function renderHistoryView() {
+    const content = document.getElementById('aapContent');
+    content.innerHTML = renderLoadingState();
+    try {
+      const res = await adminFetch('/api/admin/snapshots');
+      const snapshots = res.data || [];
+      if (!snapshots.length) {
+        content.innerHTML = `
+          <div class="aap-toolbar">
+            <div class="aap-toolbar-row">
+              <p class="aap-hint" style="margin:0;flex:1;"><i class="fas fa-info-circle"></i> Snapshots are created automatically before destructive operations (deletes) and before publishing.</p>
+              <button class="aap-btn-primary" id="aapCreateSnapshot"><i class="fas fa-camera"></i> Create Snapshot Now</button>
+            </div>
+          </div>
+          <div class="aap-empty">
+            <i class="fas fa-clock-rotate-left"></i>
+            <h3>No snapshots yet</h3>
+            <p>Snapshots are created automatically before any delete or publish operation. You can also create one manually.</p>
+          </div>`;
+        content.querySelector('#aapCreateSnapshot').addEventListener('click', async function () {
+          this.disabled = true; this.textContent = 'Creating…';
+          try {
+            await adminFetch('/api/admin/snapshot', { method: 'POST', body: JSON.stringify({ label: 'Manual snapshot' }) });
+            toast('Snapshot created', 'success');
+            renderHistoryView();
+          } catch (err) { toast(`Failed: ${err.message}`, 'error'); }
+        });
+        return;
+      }
+
+      const cards = snapshots.map((s) => {
+        const date = new Date(s.createdAt);
+        const timeStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+          + ' at ' + date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+        return `
+          <article class="aap-history-card">
+            <div class="aap-history-info">
+              <h4><i class="fas fa-camera"></i> ${escapeHtml(s.label)}</h4>
+              <p class="aap-history-meta">${timeStr} · ${s.productCount || '?'} products · ${s.collectionCount || '?'} collections</p>
+            </div>
+            <div class="aap-history-actions">
+              <button class="aap-btn-secondary" data-restore="${escapeHtml(s.id)}"><i class="fas fa-rotate-left"></i> Restore</button>
+              <button class="aap-btn-ghost danger" data-snap-delete="${escapeHtml(s.id)}"><i class="fas fa-trash"></i></button>
+            </div>
+          </article>`;
+      }).join('');
+
+      content.innerHTML = `
+        <div class="aap-toolbar">
+          <div class="aap-toolbar-row">
+            <p class="aap-hint" style="margin:0;flex:1;"><i class="fas fa-info-circle"></i> Restoring a snapshot will replace all products, collections, and homepage data. A backup of the current state is created first.</p>
+            <button class="aap-btn-primary" id="aapCreateSnapshot"><i class="fas fa-camera"></i> Create Snapshot</button>
+          </div>
+        </div>
+        <div class="aap-history-list">${cards}</div>`;
+
+      content.querySelector('#aapCreateSnapshot').addEventListener('click', async function () {
+        this.disabled = true; this.textContent = 'Creating…';
+        try {
+          await adminFetch('/api/admin/snapshot', { method: 'POST', body: JSON.stringify({ label: 'Manual snapshot' }) });
+          toast('Snapshot created', 'success');
+          renderHistoryView();
+        } catch (err) { toast(`Failed: ${err.message}`, 'error'); }
+      });
+
+      content.querySelectorAll('[data-restore]').forEach((btn) => {
+        btn.addEventListener('click', function () {
+          const id = this.dataset.restore;
+          openModal({
+            title: 'Restore this snapshot?',
+            html: '<p>This will replace all current products, collections, and homepage content with the data from this snapshot. A backup of the current state will be saved first.</p>',
+            actions: [
+              { label: 'Cancel', kind: 'secondary', onClick: closeModal },
+              {
+                label: 'Restore', kind: 'primary', onClick: async function (btn) {
+                  btn.disabled = true; btn.textContent = 'Restoring…';
+                  try {
+                    await adminFetch(`/api/admin/restore/${encodeURIComponent(id)}`, { method: 'POST' });
+                    toast('Snapshot restored! Reloading data…', 'success');
+                    closeModal();
+                    await reloadAll();
+                  } catch (err) {
+                    toast(`Restore failed: ${err.message}`, 'error');
+                    btn.disabled = false; btn.textContent = 'Restore';
+                  }
+                }
+              }
+            ]
+          });
+        });
+      });
+
+      content.querySelectorAll('[data-snap-delete]').forEach((btn) => {
+        btn.addEventListener('click', async function () {
+          const id = this.dataset.snapDelete;
+          try {
+            await adminFetch(`/api/admin/snapshots/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            toast('Snapshot deleted', 'success');
+            renderHistoryView();
+          } catch (err) { toast(`Delete failed: ${err.message}`, 'error'); }
+        });
+      });
+    } catch (err) {
+      content.innerHTML = `<div class="aap-empty">Failed to load snapshots: ${escapeHtml(err.message)}</div>`;
     }
   }
 

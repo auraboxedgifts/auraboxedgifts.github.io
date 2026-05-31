@@ -2001,11 +2001,13 @@ body.aura-admin-open { overflow: hidden; }
   place-items: center;
   color: var(--text-medium);
   cursor: grab;
-  opacity: 0;
+  opacity: 0.6;
   transition: opacity 0.18s ease;
   font-size: 0.8rem;
 }
 .aap-card:hover .aap-drag-handle { opacity: 1; }
+.aap-card[draggable="true"] .aap-drag-handle { opacity: 0.8; }
+.aap-card.dragging { opacity: 0.4; transform: scale(0.95); }
 .aap-card-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 6px; }
 .aap-card-collection {
   font-size: 0.7rem;
@@ -2447,4 +2449,77 @@ textarea.aap-input { resize: vertical; min-height: 70px; line-height: 1.5; }
   .aap-modal-footer { flex-direction: column; }
   .aap-btn-primary, .aap-btn-secondary, .aap-btn-danger { width: 100%; justify-content: center; }
   .aura-toast-host { left: 16px; right: 16px; top: 16px; }
+  .aap-btn-publish { font-size: 0.7rem; padding: 8px 12px; }
+}
+
+/* ─── Publish Button ─── */
+.aap-btn-publish {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: linear-gradient(135deg, #43a047, #2e7d32);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 12px rgba(67, 160, 71, 0.3);
+}
+.aap-btn-publish:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(67, 160, 71, 0.4);
+}
+.aap-btn-publish:disabled {
+  opacity: 0.7;
+  cursor: wait;
+  transform: none;
+}
+
+/* ─── History View ─── */
+.aap-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.aap-history-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid rgba(183, 110, 121, 0.1);
+  border-radius: 12px;
+  padding: 16px 20px;
+  transition: all 0.25s ease;
+}
+.aap-history-card:hover {
+  border-color: rgba(183, 110, 121, 0.25);
+  box-shadow: 0 4px 16px rgba(183, 110, 121, 0.1);
+}
+.aap-history-info h4 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-dark);
+  margin-bottom: 4px;
+}
+.aap-history-info h4 i {
+  color: var(--rose-gold);
+  margin-right: 8px;
+}
+.aap-history-meta {
+  font-size: 0.78rem;
+  color: var(--text-light);
+}
+.aap-history-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+@media (max-width: 600px) {
+  .aap-history-card { flex-direction: column; align-items: stretch; }
+  .aap-history-actions { justify-content: flex-end; }
 }

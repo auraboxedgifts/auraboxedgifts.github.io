@@ -85,7 +85,7 @@ const toolDeclarations = [
     },
     {
         name: 'calculate_cart_total',
-        description: 'Calculate cart subtotal, shipping (₹70 when cart not empty), and grand total from the user browser cart. Use after add_to_cart or when user asks price/total.'
+        description: 'Read cart subtotal, shipping (₹70 when cart not empty), and grand total from the browser cart. Use only when the user asks for totals — not after add_to_cart (that response already includes totals).'
     },
     { name: 'show_cart', description: 'Open shopping cart.' },
     { name: 'open_checkout', description: 'Open checkout page for the user.' }
