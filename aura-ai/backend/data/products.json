@@ -133,45 +133,6 @@
     ]
   },
   {
-    "id": "jhumka_1",
-    "slug": "traditional-jhumka-drop",
-    "name": "Traditional Jhumka Drop",
-    "collection": "jhumkas",
-    "price": 499,
-    "image": "/images/web/earings-3.jpeg",
-    "description": "Traditional-inspired jhumka silhouette with modern finish.",
-    "tags": [
-      "jhumka",
-      "festive"
-    ]
-  },
-  {
-    "id": "jhumka_2",
-    "slug": "classic-jhumka-bell",
-    "name": "Classic Jhumka Bell",
-    "collection": "jhumkas",
-    "price": 549,
-    "image": "/images/web/earings-5.jpeg",
-    "description": "Classic bell-style jhumka suited for ethnic wear.",
-    "tags": [
-      "jhumka",
-      "classic"
-    ]
-  },
-  {
-    "id": "jhumka_3",
-    "slug": "antique-jhumka-pair",
-    "name": "Antique Jhumka Pair",
-    "collection": "jhumkas",
-    "price": 599,
-    "image": "/images/web/earings-6.jpeg",
-    "description": "Antique finish jhumka pair for festive gifting.",
-    "tags": [
-      "jhumka",
-      "antique"
-    ]
-  },
-  {
     "id": "makeup_eye_1",
     "slug": "nude-eyeshadow-palette",
     "name": "Nude Eyeshadow Palette",
@@ -706,19 +667,6 @@
     ]
   },
   {
-    "id": "bracelet_3",
-    "slug": "crystal-link-charm-bracelet",
-    "name": "Crystal Link Charm Bracelet",
-    "collection": "bracelets",
-    "price": 549,
-    "image": "/images/web/bracelets-3.jpeg",
-    "description": "Clear crystal links with playful charm details.",
-    "tags": [
-      "bracelet",
-      "crystal"
-    ]
-  },
-  {
     "id": "bracelet_5",
     "slug": "silver-motif-beaded-bracelet",
     "name": "Silver Motif Beaded Bracelet",
@@ -729,6 +677,19 @@
     "tags": [
       "bracelet",
       "silver"
+    ]
+  },
+  {
+    "id": "bracelet_3",
+    "slug": "crystal-link-charm-bracelet",
+    "name": "Crystal Link Charm Bracelet",
+    "collection": "bracelets",
+    "price": 549,
+    "image": "/images/web/bracelets-3.jpeg",
+    "description": "Clear crystal links with playful charm details.",
+    "tags": [
+      "bracelet",
+      "crystal"
     ]
   },
   {
