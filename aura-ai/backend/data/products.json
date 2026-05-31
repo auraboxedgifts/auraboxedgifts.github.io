@@ -42,164 +42,6 @@
     ]
   },
   {
-    "id": "bracelet_2",
-    "slug": "rainbow-charm-beaded-bracelet-set",
-    "name": "Rainbow Charm Beaded Bracelet Set",
-    "collection": "bracelets",
-    "price": 500,
-    "image": "/images/web/bracelets-2.jpeg",
-    "description": "Color-pop beaded bracelets finished with silver charms.",
-    "tags": [
-      "bracelet",
-      "beaded",
-      "charm"
-    ]
-  },
-  {
-    "id": "bracelet_3",
-    "slug": "crystal-link-charm-bracelet",
-    "name": "Crystal Link Charm Bracelet",
-    "collection": "bracelets",
-    "price": 549,
-    "image": "/images/web/bracelets-3.jpeg",
-    "description": "Clear crystal links with playful charm details.",
-    "tags": [
-      "bracelet",
-      "crystal"
-    ]
-  },
-  {
-    "id": "bracelet_4",
-    "slug": "floral-charm-bead-bracelet",
-    "name": "Floral Charm Bead Bracelet",
-    "collection": "bracelets",
-    "price": 499,
-    "image": "/images/web/bracelets-4.jpeg",
-    "description": "Hand-strung bracelet with flower-inspired charm accents.",
-    "tags": [
-      "bracelet",
-      "floral"
-    ]
-  },
-  {
-    "id": "bracelet_5",
-    "slug": "silver-motif-beaded-bracelet",
-    "name": "Silver Motif Beaded Bracelet",
-    "collection": "bracelets",
-    "price": 599,
-    "image": "/images/web/bracelets-5.jpeg",
-    "description": "Minimal silver motifs with crystal and color beads.",
-    "tags": [
-      "bracelet",
-      "silver"
-    ]
-  },
-  {
-    "id": "bracelet_6",
-    "slug": "candy-tone-stretch-bracelet",
-    "name": "Candy Tone Stretch Bracelet",
-    "collection": "bracelets",
-    "price": 399,
-    "image": "/images/web/bracelets-6.jpeg",
-    "description": "Lightweight stretch bracelet in bright candy shades.",
-    "tags": [
-      "bracelet",
-      "colorful"
-    ]
-  },
-  {
-    "id": "bracelet_7",
-    "slug": "ocean-blue-bead-bracelet",
-    "name": "Ocean Blue Bead Bracelet",
-    "collection": "bracelets",
-    "price": 449,
-    "image": "/images/web/bracelets-7.jpeg",
-    "description": "Blue palette bracelet with clear spacer crystals.",
-    "tags": [
-      "bracelet",
-      "blue"
-    ]
-  },
-  {
-    "id": "bracelet_8",
-    "slug": "multi-charms-friendship-bracelet",
-    "name": "Multi-Charms Friendship Bracelet",
-    "collection": "bracelets",
-    "price": 649,
-    "image": "/images/web/bracelets-8.jpeg",
-    "description": "Fun friendship-style bracelet with mixed dangling charms.",
-    "tags": [
-      "bracelet",
-      "friendship",
-      "charm"
-    ]
-  },
-  {
-    "id": "bracelet_9",
-    "slug": "pastel-gloss-bead-bracelet",
-    "name": "Pastel Gloss Bead Bracelet",
-    "collection": "bracelets",
-    "price": 429,
-    "image": "/images/web/bracelets-9.jpeg",
-    "description": "Pastel and crystal combination bracelet for gifting.",
-    "tags": [
-      "bracelet",
-      "pastel"
-    ]
-  },
-  {
-    "id": "bracelet_10",
-    "slug": "sparkle-bead-wrap-bracelet",
-    "name": "Sparkle Bead Wrap Bracelet",
-    "collection": "bracelets",
-    "price": 499,
-    "image": "/images/web/bracelets-10.jpeg",
-    "description": "Shimmering bead layout with festive styling.",
-    "tags": [
-      "bracelet",
-      "sparkle"
-    ]
-  },
-  {
-    "id": "bracelet_11",
-    "slug": "everyday-charm-bracelet",
-    "name": "Everyday Charm Bracelet",
-    "collection": "bracelets",
-    "price": 349,
-    "image": "/images/web/bracelets-11.jpeg",
-    "description": "Simple everyday bracelet finished with subtle charm pieces.",
-    "tags": [
-      "bracelet",
-      "everyday"
-    ]
-  },
-  {
-    "id": "bracelet_12",
-    "slug": "layered-crystal-bead-bracelet",
-    "name": "Layered Crystal Bead Bracelet",
-    "collection": "bracelets",
-    "price": 599,
-    "image": "/images/web/bracelets-12.jpeg",
-    "description": "Layered crystal bead look that pairs with western outfits.",
-    "tags": [
-      "bracelet",
-      "crystal"
-    ]
-  },
-  {
-    "id": "bracelet_13",
-    "slug": "festival-color-beaded-bracelet",
-    "name": "Festival Color Beaded Bracelet",
-    "collection": "bracelets",
-    "price": 529,
-    "image": "/images/web/bracelets-13.jpeg",
-    "description": "Bright color bracelet designed for festive gifting.",
-    "tags": [
-      "bracelet",
-      "festive"
-    ]
-  },
-  {
     "id": "earring_1",
     "slug": "statement-drop-earrings",
     "name": "Statement Drop Earrings",
@@ -861,6 +703,164 @@
     "tags": [
       "hamper",
       "affordable"
+    ]
+  },
+  {
+    "id": "bracelet_3",
+    "slug": "crystal-link-charm-bracelet",
+    "name": "Crystal Link Charm Bracelet",
+    "collection": "bracelets",
+    "price": 549,
+    "image": "/images/web/bracelets-3.jpeg",
+    "description": "Clear crystal links with playful charm details.",
+    "tags": [
+      "bracelet",
+      "crystal"
+    ]
+  },
+  {
+    "id": "bracelet_2",
+    "slug": "rainbow-charm-beaded-bracelet-set",
+    "name": "Rainbow Charm Beaded Bracelet Set",
+    "collection": "bracelets",
+    "price": 500,
+    "image": "/images/web/bracelets-2.jpeg",
+    "description": "Color-pop beaded bracelets finished with silver charms.",
+    "tags": [
+      "bracelet",
+      "beaded",
+      "charm"
+    ]
+  },
+  {
+    "id": "bracelet_4",
+    "slug": "floral-charm-bead-bracelet",
+    "name": "Floral Charm Bead Bracelet",
+    "collection": "bracelets",
+    "price": 499,
+    "image": "/images/web/bracelets-4.jpeg",
+    "description": "Hand-strung bracelet with flower-inspired charm accents.",
+    "tags": [
+      "bracelet",
+      "floral"
+    ]
+  },
+  {
+    "id": "bracelet_5",
+    "slug": "silver-motif-beaded-bracelet",
+    "name": "Silver Motif Beaded Bracelet",
+    "collection": "bracelets",
+    "price": 599,
+    "image": "/images/web/bracelets-5.jpeg",
+    "description": "Minimal silver motifs with crystal and color beads.",
+    "tags": [
+      "bracelet",
+      "silver"
+    ]
+  },
+  {
+    "id": "bracelet_6",
+    "slug": "candy-tone-stretch-bracelet",
+    "name": "Candy Tone Stretch Bracelet",
+    "collection": "bracelets",
+    "price": 399,
+    "image": "/images/web/bracelets-6.jpeg",
+    "description": "Lightweight stretch bracelet in bright candy shades.",
+    "tags": [
+      "bracelet",
+      "colorful"
+    ]
+  },
+  {
+    "id": "bracelet_7",
+    "slug": "ocean-blue-bead-bracelet",
+    "name": "Ocean Blue Bead Bracelet",
+    "collection": "bracelets",
+    "price": 449,
+    "image": "/images/web/bracelets-7.jpeg",
+    "description": "Blue palette bracelet with clear spacer crystals.",
+    "tags": [
+      "bracelet",
+      "blue"
+    ]
+  },
+  {
+    "id": "bracelet_8",
+    "slug": "multi-charms-friendship-bracelet",
+    "name": "Multi-Charms Friendship Bracelet",
+    "collection": "bracelets",
+    "price": 649,
+    "image": "/images/web/bracelets-8.jpeg",
+    "description": "Fun friendship-style bracelet with mixed dangling charms.",
+    "tags": [
+      "bracelet",
+      "friendship",
+      "charm"
+    ]
+  },
+  {
+    "id": "bracelet_9",
+    "slug": "pastel-gloss-bead-bracelet",
+    "name": "Pastel Gloss Bead Bracelet",
+    "collection": "bracelets",
+    "price": 429,
+    "image": "/images/web/bracelets-9.jpeg",
+    "description": "Pastel and crystal combination bracelet for gifting.",
+    "tags": [
+      "bracelet",
+      "pastel"
+    ]
+  },
+  {
+    "id": "bracelet_10",
+    "slug": "sparkle-bead-wrap-bracelet",
+    "name": "Sparkle Bead Wrap Bracelet",
+    "collection": "bracelets",
+    "price": 499,
+    "image": "/images/web/bracelets-10.jpeg",
+    "description": "Shimmering bead layout with festive styling.",
+    "tags": [
+      "bracelet",
+      "sparkle"
+    ]
+  },
+  {
+    "id": "bracelet_11",
+    "slug": "everyday-charm-bracelet",
+    "name": "Everyday Charm Bracelet",
+    "collection": "bracelets",
+    "price": 349,
+    "image": "/images/web/bracelets-11.jpeg",
+    "description": "Simple everyday bracelet finished with subtle charm pieces.",
+    "tags": [
+      "bracelet",
+      "everyday"
+    ]
+  },
+  {
+    "id": "bracelet_12",
+    "slug": "layered-crystal-bead-bracelet",
+    "name": "Layered Crystal Bead Bracelet",
+    "collection": "bracelets",
+    "price": 599,
+    "image": "/images/web/bracelets-12.jpeg",
+    "description": "Layered crystal bead look that pairs with western outfits.",
+    "tags": [
+      "bracelet",
+      "crystal"
+    ]
+  },
+  {
+    "id": "bracelet_13",
+    "slug": "festival-color-beaded-bracelet",
+    "name": "Festival Color Beaded Bracelet",
+    "collection": "bracelets",
+    "price": 529,
+    "image": "/images/web/bracelets-13.jpeg",
+    "description": "Bright color bracelet designed for festive gifting.",
+    "tags": [
+      "bracelet",
+      "festive"
     ]
   }
 ]
