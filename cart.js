@@ -84,7 +84,7 @@ function openCheckoutPage() {
     if (existing) existing.remove();
 
     var total = getTotalPrice();
-    var shipping = 70;
+    var shipping = 120;
     var grandTotal = total + shipping;
 
     // Build order summary items
@@ -154,7 +154,7 @@ function openCheckoutPage() {
         '<section class="ck-section" id="stepShipping" style="opacity: 0.4; pointer-events: none;">' +
           '<h3>Shipping method</h3>' +
           '<div class="ck-shipping-options">' +
-            '<label class="ck-shipping-option selected"><input type="radio" name="shipping" value="standard" checked><div><strong>Standard</strong><span>10 to 12 business days • Delivery all over India</span></div><span class="ck-ship-price">₹70.00</span></label>' +
+            '<label class="ck-shipping-option selected"><input type="radio" name="shipping" value="standard" checked><div><strong>Standard</strong><span>10 to 12 business days • Delivery all over India</span></div><span class="ck-ship-price">₹120.00</span></label>' +
           '</div>' +
           '<button class="ck-pay-now-btn" id="ckShippingBtn" style="padding: 12px; margin-top: 15px;">Continue to Payment</button>' +
         '</section>' +

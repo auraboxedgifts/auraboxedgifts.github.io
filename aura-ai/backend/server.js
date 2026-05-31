@@ -264,7 +264,7 @@ function calculateCart(items) {
             lineTotal
         });
     }
-    const shipping = lines.length ? 70 : 0;
+    const shipping = lines.length ? 120 : 0;
     const discount = 0;
     const tax = 0;
     const grandTotal = subtotal + shipping + tax - discount;
@@ -827,12 +827,29 @@ app.post('/api/admin/publish', requireAdmin, (req, res) => {
                 return jsonOk(res, { message: 'No changes to publish', pushed: false });
             }
             execSync(`git commit -m "${commitMsg}"`, { cwd: repoRoot, timeout: 15000 });
-            execSync('git push origin main', { cwd: repoRoot, timeout: 30000 });
+            
+            let pushCmd = 'git push origin main';
+            if (process.env.GITHUB_TOKEN) {
+                try {
+                    const remoteUrl = execSync('git remote get-url origin', { cwd: repoRoot }).toString().trim();
+                    if (remoteUrl.startsWith('https://')) {
+                        const authUrl = remoteUrl.replace('https://', `https://${process.env.GITHUB_TOKEN}@`);
+                        pushCmd = `git push "${authUrl}" main`;
+                    }
+                } catch (remoteErr) {
+                    console.error('[Admin] Failed to rewrite remote URL for GITHUB_TOKEN:', remoteErr.message);
+                }
+            }
+            execSync(pushCmd, { cwd: repoRoot, timeout: 30000 });
             console.log(`[Admin] Published changes: ${commitMsg}`);
             return jsonOk(res, { message: 'Published successfully', pushed: true, commit: commitMsg });
         } catch (gitErr) {
             console.error('[Admin] Git publish error:', gitErr.message);
-            return jsonErr(res, 500, `Git publish failed: ${gitErr.message.slice(0, 200)}`);
+            let errMsg = gitErr.message;
+            if (errMsg.includes('could not read Username') || errMsg.includes('Authentication failed')) {
+                errMsg = 'Git authentication credentials are not set on the server. Please add GITHUB_TOKEN=your_token to your aura-ai/backend/.env file or configure SSH keys on the server.';
+            }
+            return jsonErr(res, 500, `Git publish failed: ${errMsg.slice(0, 300)}`);
         }
     } catch (err) {
         return jsonErr(res, 500, err.message);

@@ -8,23 +8,103 @@
 
   function saveCart() {
     localStorage.setItem('aura_cart_v2', JSON.stringify(cart));
+    broadcastCartUpdate();
+  }
+
+  function broadcastCartUpdate() {
+    document.querySelectorAll('iframe').forEach((iframe) => {
+      try {
+        iframe.contentWindow.postMessage({
+          type: 'cartUpdated',
+          cart: cart
+        }, '*');
+      } catch (e) {}
+    });
+  }
+
+  function updateQtyById(productId, delta) {
+    const idx = cart.findIndex(c => c.productId === productId);
+    if (idx >= 0) {
+      cart[idx].qty = (cart[idx].qty || 1) + delta;
+      if (cart[idx].qty <= 0) {
+        cart.splice(idx, 1);
+      }
+    } else if (delta > 0) {
+      cart.push({ productId, qty: delta });
+    }
+    saveCart();
+    updateBadge();
+    const overlay = document.getElementById('cartPageOverlay');
+    if (overlay && overlay.classList.contains('active')) {
+      renderCartPage();
+    }
   }
 
   let toastTimer = null;
-  function showCartToast(message) {
+  function showCartToastForProduct(productId) {
     let toast = document.getElementById('auraCartToast');
     if (!toast) {
       toast = document.createElement('div');
       toast.id = 'auraCartToast';
       toast.className = 'aura-cart-toast';
-      toast.addEventListener('click', function () { openCartPage(); });
+      toast.addEventListener('click', function (e) {
+        if (!e.target.closest('.toast-qty-btn') && !e.target.closest('.aura-cart-toast-view')) {
+          openCartPage();
+        }
+      });
       document.body.appendChild(toast);
     }
-    const count = itemCount();
-    toast.innerHTML = `<i class="fas fa-circle-check"></i><span>${message}</span><span class="aura-cart-toast-count">${count} in cart</span><span class="aura-cart-toast-view">View</span>`;
+    const itemInCart = cart.find(c => c.productId === productId);
+    if (!itemInCart || itemInCart.qty <= 0) {
+      toast.classList.remove('show');
+      return;
+    }
+    let productName = 'Item';
+    if (catalogCache) {
+      const p = catalogCache.find(x => x.id === productId);
+      if (p) productName = p.name;
+    }
+    toast.innerHTML = `
+      <div class="aura-cart-toast-body">
+        <div class="aura-cart-toast-title"><i class="fas fa-circle-check"></i> Added to your cart</div>
+        <div class="aura-cart-toast-row">
+          <span class="aura-cart-toast-name" title="${productName}">${productName}</span>
+          <div class="aura-cart-toast-control">
+            <button class="toast-qty-btn minus" data-id="${productId}">-</button>
+            <span class="toast-qty-val">${itemInCart.qty}</span>
+            <button class="toast-qty-btn plus" data-id="${productId}">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="aura-cart-toast-actions">
+        <span class="aura-cart-toast-view">View</span>
+      </div>
+    `;
+
+    const minusBtn = toast.querySelector('.toast-qty-btn.minus');
+    const plusBtn = toast.querySelector('.toast-qty-btn.plus');
+    const viewBtn = toast.querySelector('.aura-cart-toast-view');
+
+    minusBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      updateQtyById(productId, -1);
+      showCartToastForProduct(productId);
+    });
+
+    plusBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      updateQtyById(productId, 1);
+      showCartToastForProduct(productId);
+    });
+
+    viewBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      openCartPage();
+    });
+
     toast.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 2600);
+    toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 6000);
   }
 
   function itemCount() {
@@ -148,7 +228,7 @@
       addsSinceOpen = 0;
       await openCartPage();
     } else {
-      showCartToast('Added to your cart');
+      showCartToastForProduct(productId);
     }
   }
 
@@ -167,6 +247,9 @@
   window.addEventListener('message', function (e) {
     if (e.data && e.data.type === 'addToCart') addToCart(e.data);
     if (e.data && e.data.type === 'openCart') openCartPage();
+    if (e.data && e.data.type === 'updateQtyById') {
+      updateQtyById(e.data.productId, e.data.delta);
+    }
   });
 
   window.addEventListener('popstate', function () {
@@ -188,7 +271,7 @@
     updateBadge();
   });
 
-  window.AuraCart = { addToCart, addToCartById, openCartPage, closeCartPage, updateQty, getItems: () => cart.slice() };
+  window.AuraCart = { addToCart, addToCartById, openCartPage, closeCartPage, updateQty, updateQtyById, getItems: () => cart.slice() };
   window.addToCart = addToCart;
   window.openCartPage = openCartPage;
 })();
