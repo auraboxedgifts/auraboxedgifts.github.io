@@ -41,20 +41,6 @@
       "price": 1499
     },
     {
-      "id": "hamper_virat_kohli",
-      "title": "Customised Virat Kohli Fangirl Hamper",
-      "subtitle": "Personalised",
-      "image": "/images/hampers/virat-kohli-fangirl.jpeg",
-      "price": 1799
-    },
-    {
-      "id": "hamper_mens_birthday",
-      "title": "Customised Men's Birthday Hamper",
-      "subtitle": "Personalised",
-      "image": "/images/hampers/mens-birthday.jpeg",
-      "price": 1999
-    },
-    {
       "id": "hamper_mothers_day",
       "title": "Customised Mother's Day Hamper",
       "subtitle": "Personalised",
@@ -67,6 +53,20 @@
       "subtitle": "Customised",
       "image": "/images/hampers/wedding-bride.jpeg",
       "price": 2299
+    },
+    {
+      "id": "hamper_virat_kohli",
+      "title": "Customised Virat Kohli Fangirl Hamper",
+      "subtitle": "Personalised",
+      "image": "/images/hampers/virat-kohli-fangirl.jpeg",
+      "price": 1799
+    },
+    {
+      "id": "hamper_mens_birthday",
+      "title": "Customised Men's Birthday Hamper",
+      "subtitle": "Personalised",
+      "image": "/images/hampers/mens-birthday.jpeg",
+      "price": 1999
     },
     {
       "id": "hamper_babygirl_1st_birthday",

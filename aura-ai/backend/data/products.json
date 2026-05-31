@@ -719,6 +719,19 @@
     ]
   },
   {
+    "id": "bracelet_5",
+    "slug": "silver-motif-beaded-bracelet",
+    "name": "Silver Motif Beaded Bracelet",
+    "collection": "bracelets",
+    "price": 599,
+    "image": "/images/web/bracelets-5.jpeg",
+    "description": "Minimal silver motifs with crystal and color beads.",
+    "tags": [
+      "bracelet",
+      "silver"
+    ]
+  },
+  {
     "id": "bracelet_2",
     "slug": "rainbow-charm-beaded-bracelet-set",
     "name": "Rainbow Charm Beaded Bracelet Set",
@@ -743,19 +756,6 @@
     "tags": [
       "bracelet",
       "floral"
-    ]
-  },
-  {
-    "id": "bracelet_5",
-    "slug": "silver-motif-beaded-bracelet",
-    "name": "Silver Motif Beaded Bracelet",
-    "collection": "bracelets",
-    "price": 599,
-    "image": "/images/web/bracelets-5.jpeg",
-    "description": "Minimal silver motifs with crystal and color beads.",
-    "tags": [
-      "bracelet",
-      "silver"
     ]
   },
   {
