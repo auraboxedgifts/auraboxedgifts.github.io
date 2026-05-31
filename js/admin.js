@@ -338,36 +338,76 @@
             <input type="text" id="aapSearch" placeholder="Search products by name, description, tag…" value="${escapeHtml(state.search)}">
           </div>
           <select id="aapCollectionFilter" class="aap-select">${collectionOptions}</select>
-          <button class="aap-btn-secondary" id="aapRegenerate" title="Force-rebuild collection pages"><i class="fas fa-bolt"></i> Republish pages</button>
           <button class="aap-btn-primary" id="aapNewProduct"><i class="fas fa-plus"></i> New Product</button>
         </div>
-        ${state.activeCollection !== 'all' ? `<p class="aap-hint"><i class="fas fa-grip-vertical"></i> Drag any card to reorder products in <strong>${escapeHtml(state.collections.find(c => c.slug === state.activeCollection)?.name || state.activeCollection)}</strong>.</p>` : '<p class="aap-hint"><i class="fas fa-info-circle"></i> Pick a single collection above to enable drag-to-reorder.</p>'}
       </div>`;
 
-    let grid = '';
+    let body = '';
     if (!products.length) {
-      grid = `<div class="aap-empty">
+      body = `<div class="aap-empty">
         <i class="far fa-folder-open"></i>
         <h3>No products match your filters</h3>
         <p>Try a different collection or clear the search box.</p>
         <button class="aap-btn-primary" id="aapEmptyAdd"><i class="fas fa-plus"></i> Add a new product</button>
       </div>`;
+    } else if (state.activeCollection !== 'all') {
+      // Single collection — flat grid with drag reorder
+      body = `<p class="aap-hint"><i class="fas fa-grip-vertical"></i> Drag any card to reorder products in <strong>${escapeHtml(state.collections.find(c => c.slug === state.activeCollection)?.name || state.activeCollection)}</strong>.</p>
+        <div class="aap-grid" id="aapProductGrid">
+          ${products.map(productCard).join('')}
+        </div>`;
     } else {
-      grid = `<div class="aap-grid" id="aapProductGrid">
-        ${products.map(productCard).join('')}
-      </div>`;
+      // All collections — accordion view
+      const grouped = {};
+      products.forEach((p) => {
+        const key = p.collection || '_uncategorized';
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(p);
+      });
+      const sections = collections
+        .filter((c) => grouped[c.slug] && grouped[c.slug].length)
+        .map((c) => {
+          const items = grouped[c.slug] || [];
+          const expanded = state._expandedSections && state._expandedSections[c.slug];
+          return `
+            <div class="aap-accordion" data-section="${escapeHtml(c.slug)}">
+              <div class="aap-accordion-header${expanded ? ' expanded' : ''}">
+                <div class="aap-accordion-left">
+                  <i class="fas fa-chevron-right aap-accordion-arrow"></i>
+                  <h3>${escapeHtml(c.name)}</h3>
+                  <span class="aap-accordion-count">${items.length} product${items.length !== 1 ? 's' : ''}</span>
+                </div>
+                <button class="aap-btn-secondary aap-accordion-filter" data-filter-slug="${escapeHtml(c.slug)}"><i class="fas fa-eye"></i> Manage</button>
+              </div>
+              <div class="aap-accordion-body${expanded ? ' expanded' : ''}">
+                <div class="aap-grid">${items.map(productCard).join('')}</div>
+              </div>
+            </div>`;
+        }).join('');
+      // Check for uncategorized products
+      const uncategorized = grouped['_uncategorized'] || [];
+      const uncatSection = uncategorized.length ? `
+        <div class="aap-accordion" data-section="_uncategorized">
+          <div class="aap-accordion-header">
+            <div class="aap-accordion-left">
+              <i class="fas fa-chevron-right aap-accordion-arrow"></i>
+              <h3>Uncategorized</h3>
+              <span class="aap-accordion-count">${uncategorized.length} product${uncategorized.length !== 1 ? 's' : ''}</span>
+            </div>
+          </div>
+          <div class="aap-accordion-body">
+            <div class="aap-grid">${uncategorized.map(productCard).join('')}</div>
+          </div>
+        </div>` : '';
+      body = sections + uncatSection;
+      if (!body) body = `<div class="aap-empty"><i class="far fa-folder-open"></i><h3>No products yet</h3></div>`;
     }
 
-    content.innerHTML = stat + toolbar + grid;
+    content.innerHTML = stat + toolbar + body;
 
     content.querySelector('#aapSearch').addEventListener('input', function (e) {
       state.search = e.target.value;
-      const items = content.querySelectorAll('.aap-card');
-      const visible = getFilteredProducts();
-      const visibleIds = new Set(visible.map((p) => p.id));
-      items.forEach((card) => {
-        card.style.display = visibleIds.has(card.dataset.id) ? '' : 'none';
-      });
+      renderProductsView();
     });
     content.querySelector('#aapCollectionFilter').addEventListener('change', function (e) {
       state.activeCollection = e.target.value;
@@ -378,7 +418,28 @@
     });
     const emptyAdd = content.querySelector('#aapEmptyAdd');
     if (emptyAdd) emptyAdd.addEventListener('click', function () { openProductForm(null); });
-    content.querySelector('#aapRegenerate').addEventListener('click', regeneratePages);
+
+    // Accordion expand/collapse
+    if (!state._expandedSections) state._expandedSections = {};
+    content.querySelectorAll('.aap-accordion-header').forEach((header) => {
+      header.addEventListener('click', function (e) {
+        if (e.target.closest('.aap-accordion-filter')) return;
+        const section = this.closest('.aap-accordion');
+        const slug = section.dataset.section;
+        const body = section.querySelector('.aap-accordion-body');
+        const isExpanded = this.classList.contains('expanded');
+        this.classList.toggle('expanded', !isExpanded);
+        body.classList.toggle('expanded', !isExpanded);
+        state._expandedSections[slug] = !isExpanded;
+      });
+    });
+    content.querySelectorAll('.aap-accordion-filter').forEach((btn) => {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        state.activeCollection = this.dataset.filterSlug;
+        renderView();
+      });
+    });
 
     bindProductCardEvents(content);
     if (state.activeCollection !== 'all') {
@@ -432,12 +493,21 @@
       card.setAttribute('draggable', 'true');
       card.addEventListener('dragstart', function (e) {
         card.classList.add('dragging');
+        grid.classList.add('drag-active');
         e.dataTransfer.effectAllowed = 'move';
         try { e.dataTransfer.setData('text/plain', card.dataset.id); } catch (err) {}
       });
       card.addEventListener('dragend', function () {
         card.classList.remove('dragging');
+        grid.classList.remove('drag-active');
+        grid.querySelectorAll('.aap-card.drag-over').forEach((c) => c.classList.remove('drag-over'));
         commitReorder(grid);
+      });
+      card.addEventListener('dragenter', function () {
+        if (!card.classList.contains('dragging')) card.classList.add('drag-over');
+      });
+      card.addEventListener('dragleave', function () {
+        card.classList.remove('drag-over');
       });
 
       // Touch drag support for mobile
@@ -448,18 +518,24 @@
         touchStartY = e.touches[0].clientY;
         touchStartX = e.touches[0].clientX;
         card.classList.add('dragging');
+        grid.classList.add('drag-active');
         card.style.zIndex = '1000';
       }, { passive: true });
       handle.addEventListener('touchmove', function (e) {
         e.preventDefault();
         const touch = e.touches[0];
+        // Clear old drag-over highlights
+        grid.querySelectorAll('.aap-card.drag-over').forEach((c) => c.classList.remove('drag-over'));
         const after = getDragAfterElement(grid, touch.clientX, touch.clientY);
+        if (after) after.classList.add('drag-over');
         if (after == null) grid.appendChild(card);
         else grid.insertBefore(card, after);
       }, { passive: false });
       handle.addEventListener('touchend', function () {
         card.classList.remove('dragging');
+        grid.classList.remove('drag-active');
         card.style.zIndex = '';
+        grid.querySelectorAll('.aap-card.drag-over').forEach((c) => c.classList.remove('drag-over'));
         commitReorder(grid);
       });
     });
@@ -468,6 +544,9 @@
       const dragging = grid.querySelector('.aap-card.dragging');
       if (!dragging) return;
       const after = getDragAfterElement(grid, e.clientX, e.clientY);
+      // Highlight the card we're hovering over
+      grid.querySelectorAll('.aap-card.drag-over').forEach((c) => c.classList.remove('drag-over'));
+      if (after) after.classList.add('drag-over');
       if (after == null) {
         grid.appendChild(dragging);
       } else {
@@ -839,36 +918,72 @@
   }
 
   function confirmDeleteCollection(coll, productCount) {
+    const productsInColl = state.products.filter((p) => p.collection === coll.slug);
+    const productListHtml = productsInColl.length
+      ? `<div class="aap-delete-products-list" style="max-height:200px;overflow-y:auto;margin:10px 0;">
+           ${productsInColl.map((p) => `
+             <label class="aap-delete-product-item" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background 0.15s;">
+               <input type="checkbox" class="aap-del-check" value="${escapeHtml(p.id)}" checked>
+               <img src="${escapeHtml(resolveImage(p.image))}" alt="" style="width:36px;height:36px;border-radius:6px;object-fit:cover;">
+               <div style="flex:1;min-width:0;">
+                 <span style="font-weight:500;font-size:0.85rem;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(p.name)}</span>
+                 <span style="font-size:0.75rem;color:#888;">₹${Number(p.price).toLocaleString('en-IN')}</span>
+               </div>
+             </label>`).join('')}
+         </div>` : '';
+
     const warn = productCount > 0
-      ? `<div style="margin-bottom:16px;">
-           <div style="background:#fff3e0;border:1px solid #f9a825;border-radius:8px;padding:14px;margin-bottom:14px;">
-             <p style="color:#e65100;font-weight:600;margin-bottom:6px;"><i class="fas fa-exclamation-triangle"></i> This section contains <strong>${productCount}</strong> product${productCount === 1 ? '' : 's'}</p>
-             <p style="color:#6d4c00;font-size:0.85rem;">Choose what to do with them below.</p>
-           </div>
-         </div>`
+      ? `<div style="background:#fff3e0;border:1px solid #f9a825;border-radius:8px;padding:14px;margin-bottom:14px;">
+           <p style="color:#e65100;font-weight:600;margin-bottom:6px;"><i class="fas fa-exclamation-triangle"></i> This section contains <strong>${productCount}</strong> product${productCount === 1 ? '' : 's'}</p>
+           <p style="color:#6d4c00;font-size:0.85rem;">Select which products to delete, or choose an action below.</p>
+         </div>${productListHtml}`
       : `<p style="margin-bottom:14px;">This section has no products. Safe to delete.</p>`;
+
     openModal({
-      title: `Delete "${coll.name}" section?`,
+      title: `Manage "${coll.name}" section`,
       html: warn,
+      wide: productCount > 0,
       actions: productCount > 0 ? [
         { label: 'Cancel', kind: 'secondary', onClick: closeModal },
         {
-          label: 'Delete section only', kind: 'secondary', onClick: async function (btn) {
-            btn.disabled = true; btn.textContent = 'Deleting…';
+          label: 'Clear section (keep section, delete products)', kind: 'secondary', onClick: async function (btn) {
+            btn.disabled = true; btn.textContent = 'Clearing…';
             try {
-              await adminFetch(`/api/admin/collections/${encodeURIComponent(coll.slug)}`, { method: 'DELETE' });
-              state.collections = state.collections.filter((c) => c.slug !== coll.slug);
-              toast('Section deleted (products kept)', 'success');
+              // Delete all products in this collection one by one
+              for (const p of productsInColl) {
+                await adminFetch(`/api/admin/products/${encodeURIComponent(p.id)}`, { method: 'DELETE' });
+              }
+              state.products = state.products.filter((p) => p.collection !== coll.slug);
+              toast(`Cleared ${productsInColl.length} products from ${coll.name}`, 'success');
               closeModal();
               renderView();
             } catch (err) {
-              toast(`Delete failed: ${err.message}`, 'error');
-              btn.disabled = false; btn.textContent = 'Delete section only';
+              toast(`Failed: ${err.message}`, 'error');
+              btn.disabled = false; btn.textContent = 'Clear section (keep section, delete products)';
             }
           }
         },
         {
-          label: `Delete section & all ${productCount} products`, kind: 'danger', onClick: async function (btn) {
+          label: 'Delete selected products', kind: 'primary', onClick: async function (btn) {
+            const checked = Array.from(document.querySelectorAll('.aap-del-check:checked')).map((cb) => cb.value);
+            if (!checked.length) return toast('Select at least one product.', 'error');
+            btn.disabled = true; btn.textContent = `Deleting ${checked.length}…`;
+            try {
+              for (const id of checked) {
+                await adminFetch(`/api/admin/products/${encodeURIComponent(id)}`, { method: 'DELETE' });
+              }
+              state.products = state.products.filter((p) => !checked.includes(p.id));
+              toast(`Deleted ${checked.length} product${checked.length !== 1 ? 's' : ''}`, 'success');
+              closeModal();
+              renderView();
+            } catch (err) {
+              toast(`Failed: ${err.message}`, 'error');
+              btn.disabled = false; btn.textContent = 'Delete selected products';
+            }
+          }
+        },
+        {
+          label: 'Delete entire section', kind: 'danger', onClick: async function (btn) {
             btn.disabled = true; btn.textContent = 'Deleting…';
             try {
               await adminFetch(`/api/admin/collections/${encodeURIComponent(coll.slug)}?force=1`, { method: 'DELETE' });
@@ -879,7 +994,7 @@
               renderView();
             } catch (err) {
               toast(`Delete failed: ${err.message}`, 'error');
-              btn.disabled = false; btn.textContent = `Delete section & all ${productCount} products`;
+              btn.disabled = false; btn.textContent = 'Delete entire section';
             }
           }
         }

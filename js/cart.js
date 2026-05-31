@@ -34,6 +34,11 @@
   function updateBadge() {
     document.querySelectorAll('#navCartBadge, .nav-cart-badge').forEach(function (b) {
       b.textContent = itemCount();
+      // Bounce animation
+      b.classList.remove('bounce');
+      void b.offsetWidth;
+      b.classList.add('bounce');
+      setTimeout(function () { b.classList.remove('bounce'); }, 600);
     });
   }
 

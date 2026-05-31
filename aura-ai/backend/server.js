@@ -815,6 +815,11 @@ app.post('/api/admin/publish', requireAdmin, (req, res) => {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
         const commitMsg = `admin: publish changes ${timestamp}`;
         try {
+            // Ensure git identity is configured
+            try { execSync('git config user.email', { cwd: repoRoot, timeout: 3000 }); } catch (_) {
+                execSync('git config user.email "admin@auraboxedgifts.in"', { cwd: repoRoot, timeout: 3000 });
+                execSync('git config user.name "Aura Admin"', { cwd: repoRoot, timeout: 3000 });
+            }
             execSync('git add -A', { cwd: repoRoot, timeout: 15000 });
             // Check if there are changes to commit
             const status = execSync('git status --porcelain', { cwd: repoRoot, timeout: 5000 }).toString().trim();

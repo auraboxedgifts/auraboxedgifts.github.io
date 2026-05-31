@@ -2523,3 +2523,143 @@ textarea.aap-input { resize: vertical; min-height: 70px; line-height: 1.5; }
   .aap-history-card { flex-direction: column; align-items: stretch; }
   .aap-history-actions { justify-content: flex-end; }
 }
+
+/* ─── Product Accordion ─── */
+.aap-accordion {
+  border: 1px solid rgba(183, 110, 121, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  transition: box-shadow 0.25s ease;
+}
+.aap-accordion:hover {
+  box-shadow: 0 2px 12px rgba(183, 110, 121, 0.08);
+}
+.aap-accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  user-select: none;
+}
+.aap-accordion-header:hover {
+  background: rgba(183, 110, 121, 0.04);
+}
+.aap-accordion-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.aap-accordion-left h3 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-dark);
+  margin: 0;
+}
+.aap-accordion-arrow {
+  color: var(--rose-gold);
+  font-size: 0.75rem;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.aap-accordion-header.expanded .aap-accordion-arrow {
+  transform: rotate(90deg);
+}
+.aap-accordion-count {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  background: rgba(183, 110, 121, 0.08);
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.aap-accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
+  padding: 0 16px;
+  background: rgba(183, 110, 121, 0.02);
+}
+.aap-accordion-body.expanded {
+  max-height: 2000px;
+  padding: 16px;
+}
+
+/* ─── Improved Drag & Drop ─── */
+.aap-card.dragging {
+  opacity: 0.35;
+  transform: scale(0.92);
+  box-shadow: 0 12px 40px rgba(183, 110, 121, 0.3);
+  z-index: 100;
+}
+.aap-grid.drag-active .aap-card:not(.dragging) {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.aap-card.drag-over {
+  transform: scale(1.02);
+  box-shadow: 0 0 0 3px var(--rose-gold), 0 6px 20px rgba(183, 110, 121, 0.2);
+  border-radius: 14px;
+}
+
+/* ─── Cart Badge Bounce ─── */
+@keyframes cartBadgeBounce {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.5); }
+  50% { transform: scale(0.85); }
+  70% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+.nav-cart-badge.bounce {
+  animation: cartBadgeBounce 0.5s ease;
+}
+
+/* ─── Add to Cart Button → Qty Selector ─── */
+.btn-add-cart.added {
+  background: var(--text-dark);
+  color: var(--white);
+  pointer-events: none;
+}
+.btn-qty-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+  border: 1px solid var(--text-dark);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: auto;
+}
+.btn-qty-control button {
+  background: transparent;
+  border: none;
+  color: var(--text-dark);
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex: 0 0 auto;
+}
+.btn-qty-control button:hover {
+  background: rgba(0,0,0,0.06);
+}
+.btn-qty-control span {
+  flex: 1;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 10px 0;
+}
+
+/* ─── Delete Product Item in Modal ─── */
+.aap-delete-product-item:hover {
+  background: rgba(183, 110, 121, 0.06);
+}
+.aap-delete-product-item input[type="checkbox"] {
+  accent-color: var(--rose-gold);
+  width: 16px;
+  height: 16px;
+}
