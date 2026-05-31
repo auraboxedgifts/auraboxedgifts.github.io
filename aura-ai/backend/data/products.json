@@ -823,5 +823,15 @@
       "bracelet",
       "festive"
     ]
+  },
+  {
+    "id": "prod_1780226828385_b8a8c0",
+    "slug": "black-pearl-droplet",
+    "name": "Black pearl droplet",
+    "collection": "bracelets",
+    "price": 0,
+    "image": "https://aura.devshubh.me/images/web/1000030910-mptp2mg1b81d9b.png",
+    "description": "",
+    "tags": []
   }
 ]
