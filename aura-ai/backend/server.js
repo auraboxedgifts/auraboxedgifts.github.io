@@ -4,6 +4,7 @@ const cors = require('cors');
 const nodemailer = require('nodemailer');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
@@ -327,6 +328,30 @@ async function sendCustomerOrderEmail(customer, order) {
     });
 }
 
+async function sendWhatsAppNotification(message) {
+    const phone = process.env.CALLMEBOT_PHONE;
+    const apiKey = process.env.CALLMEBOT_API_KEY;
+    if (!phone || !apiKey) {
+        console.log('[WhatsApp] Skipping — CALLMEBOT_PHONE or CALLMEBOT_API_KEY not set.');
+        return { success: false, error: 'WhatsApp credentials not configured.' };
+    }
+    const encoded = encodeURIComponent(message);
+    const url = `https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encoded}&apikey=${apiKey}`;
+    return new Promise((resolve) => {
+        https.get(url, (resp) => {
+            let body = '';
+            resp.on('data', (chunk) => { body += chunk; });
+            resp.on('end', () => {
+                console.log(`[WhatsApp] Sent notification (status ${resp.statusCode})`);
+                resolve({ success: resp.statusCode >= 200 && resp.statusCode < 300 });
+            });
+        }).on('error', (err) => {
+            console.error('[WhatsApp] Notification error:', err.message);
+            resolve({ success: false, error: err.message });
+        });
+    });
+}
+
 // OTP store
 const otpStore = new Map();
 
@@ -586,6 +611,20 @@ app.delete('/api/admin/collections/:slug', requireAdmin, (req, res) => {
     }
     regenerateCollectionPages();
     return jsonOk(res, { deleted: true, productsRemoved: Boolean(req.query.force) });
+});
+
+app.post('/api/admin/collections/reorder', requireAdmin, (req, res) => {
+    const { order } = req.body;
+    if (!Array.isArray(order)) return jsonErr(res, 400, 'order must be an array of slugs');
+    const collections = readJson(COLLECTIONS_FILE, []);
+    const bySlug = Object.fromEntries(collections.map((c) => [c.slug, c]));
+    const reordered = order.map((slug) => bySlug[slug]).filter(Boolean);
+    // Append any collections not mentioned in the order array
+    const mentioned = new Set(order);
+    collections.forEach((c) => { if (!mentioned.has(c.slug)) reordered.push(c); });
+    writeJson(COLLECTIONS_FILE, reordered);
+    regenerateCollectionPages();
+    return jsonOk(res, reordered);
 });
 
 app.post('/api/admin/regenerate-pages', requireAdmin, (req, res) => {
@@ -1183,6 +1222,21 @@ app.post('/api/verify-payment', async (req, res) => {
             'Razorpay Order'
         );
         await sendCustomerOrderEmail(customer, order);
+
+        // WhatsApp notification to the client
+        const itemLines = cart.lines.map((l) => `• ${l.name} x${l.qty}: ₹${l.lineTotal}`).join('\n');
+        const waMessage = `🎁 *New Order Received*\n\n` +
+            `*Order ID:* ${order.id}\n` +
+            `*Customer:* ${customer?.name || '-'}\n` +
+            `*Phone:* ${customer?.phone || '-'}\n` +
+            `*Email:* ${customer?.email || '-'}\n\n` +
+            `*Items:*\n${itemLines}\n\n` +
+            `*Total Paid:* ₹${cart.grandTotal}\n\n` +
+            `*Shipping Address:*\n${customer?.address || '-'}\n\n` +
+            `Please check the admin panel for full details.`;
+        sendWhatsAppNotification(waMessage).catch((err) => {
+            console.error('[WhatsApp] Failed to send order notification:', err);
+        });
 
         return jsonOk(res, { order });
     } catch (err) {

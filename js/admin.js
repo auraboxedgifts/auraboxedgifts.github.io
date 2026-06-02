@@ -556,7 +556,7 @@
   }
 
   function getDragAfterElement(container, x, y) {
-    const draggables = [...container.querySelectorAll('.aap-card:not(.dragging)')];
+    const draggables = [...container.querySelectorAll('.aap-card:not(.dragging), .aap-hp-card:not(.dragging)')];
     let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
     draggables.forEach((child) => {
       const box = child.getBoundingClientRect();
@@ -1189,6 +1189,13 @@
     const content = document.getElementById('aapContent');
     const slides = (state.site.hero && state.site.hero.slides) || [];
     const hampers = state.site.hampers || [];
+    const collections = state.collections || [];
+
+    // Product counts per collection for badges
+    const counts = state.products.reduce((acc, p) => {
+      acc[p.collection] = (acc[p.collection] || 0) + 1;
+      return acc;
+    }, {});
 
     const heroCards = slides.map((s) => `
       <article class="aap-hp-card" data-id="${escapeHtml(s.id)}" draggable="true">
@@ -1202,6 +1209,23 @@
             <button class="aap-btn-secondary" data-hero-edit="${escapeHtml(s.id)}"><i class="fas fa-pen"></i></button>
             <button class="aap-btn-ghost danger" data-hero-delete="${escapeHtml(s.id)}"><i class="fas fa-trash"></i></button>
           </div>
+        </div>
+      </article>`).join('');
+
+    const collCards = collections.map((c) => `
+      <article class="aap-hp-card" data-id="${escapeHtml(c.slug)}" draggable="true">
+        <div class="aap-hp-media">
+          <div class="aap-coll-thumb" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:linear-gradient(135deg,#f8e8ec 0%,#e8d0d5 100%);color:var(--rose-gold,#b76e79);">
+            <div style="text-align:center;">
+              <i class="fas fa-layer-group" style="font-size:2rem;margin-bottom:6px;"></i>
+              <p style="font-size:0.82rem;font-weight:600;margin:0;">${escapeHtml(c.name)}</p>
+            </div>
+          </div>
+          <div class="aap-drag-handle" title="Drag to reorder"><i class="fas fa-grip-vertical"></i></div>
+        </div>
+        <div class="aap-hp-body">
+          <p class="aap-hp-caption">${escapeHtml(c.name)}</p>
+          <p class="aap-hp-price">${counts[c.slug] || 0} product${(counts[c.slug] || 0) === 1 ? '' : 's'}</p>
         </div>
       </article>`).join('');
 
@@ -1237,6 +1261,16 @@
       <div class="aap-section-block">
         <div class="aap-block-head">
           <div>
+            <h3><i class="fas fa-layer-group"></i> Collections Order</h3>
+            <p class="aap-hint" style="margin:4px 0 0;">Drag to reorder how collection cards appear on the homepage. Add new collections from the Collections tab.</p>
+          </div>
+        </div>
+        <div class="aap-hp-grid" id="aapCollGrid">${collCards || '<div class="aap-empty"><i class="far fa-folder"></i><h3>No collections yet</h3><p>Create collections from the Collections tab to see them here.</p></div>'}</div>
+      </div>
+
+      <div class="aap-section-block">
+        <div class="aap-block-head">
+          <div>
             <h3><i class="fas fa-gift"></i> Trending Hampers</h3>
             <p class="aap-hint" style="margin:4px 0 0;">Showcase hampers on the homepage. Drag to reorder.</p>
           </div>
@@ -1265,6 +1299,7 @@
     }));
 
     enableHomepageDrag(content.querySelector('#aapHeroGrid'), 'hero');
+    enableHomepageDrag(content.querySelector('#aapCollGrid'), 'collections');
     enableHomepageDrag(content.querySelector('#aapHamperGrid'), 'hampers');
   }
 
@@ -1289,10 +1324,14 @@
 
   async function commitHomepageReorder(grid, kind) {
     const order = Array.from(grid.querySelectorAll('.aap-hp-card')).map((c) => c.dataset.id);
-    const endpoint = kind === 'hero' ? '/api/admin/hero/reorder' : '/api/admin/hampers/reorder';
+    let endpoint;
+    if (kind === 'hero') endpoint = '/api/admin/hero/reorder';
+    else if (kind === 'collections') endpoint = '/api/admin/collections/reorder';
+    else endpoint = '/api/admin/hampers/reorder';
     try {
       const res = await adminFetch(endpoint, { method: 'POST', body: JSON.stringify({ order }) });
       if (kind === 'hero') state.site.hero.slides = res.data || state.site.hero.slides;
+      else if (kind === 'collections') state.collections = res.data || state.collections;
       else state.site.hampers = res.data || state.site.hampers;
       toast('Order saved', 'success');
     } catch (err) {
