@@ -289,4 +289,83 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       renderHampers(FALLBACK_HAMPERS);
     }
+
+    // Dynamic collections hydration
+    initCollectionsGrid();
 });
+
+function initCollectionsGrid() {
+  const gridEl = document.getElementById('collectionsGrid');
+  const footerListEl = document.getElementById('footerCollectionsList');
+  if (!gridEl && !footerListEl) return;
+
+  const FALLBACK_COLLECTIONS = [
+    { slug: 'bracelets', name: 'Bracelets' },
+    { slug: 'pendants', name: 'Pendants' },
+    { slug: 'earrings', name: 'Earrings' },
+    { slug: 'jhumkas', name: 'Jhumkas' },
+    { slug: 'scrunchies', name: 'Scrunchies' },
+    { slug: 'claws', name: 'Claws' },
+    { slug: 'hairbows', name: 'Hair Bows' },
+    { slug: 'rings', name: 'Rings' },
+    { slug: 'keychains', name: 'Keychains' },
+    { slug: 'makeup', name: 'Makeup / Chocolates' },
+    { slug: 'luxury-hampers', name: 'Luxury Hampers' },
+    { slug: 'affordable-hampers', name: 'Affordable Hampers' }
+  ];
+
+  const COLLECTION_IMAGES = {
+    bracelets: 'images/web/bracelets-1.jpeg',
+    pendants: 'images/web/pendents-1.jpeg',
+    earrings: 'images/web/earings-1.jpeg',
+    jhumkas: 'images/web/earings-3.jpeg',
+    scrunchies: 'images/web/scrunchies-1.jpeg',
+    claws: 'images/web/hairclaws-1.jpeg',
+    hairbows: 'images/web/aligator-hairpins-1.jpeg',
+    rings: 'images/web/jwellery-case-1.jpeg',
+    keychains: 'images/web/mini-bags-1.jpeg',
+    makeup: 'images/web/lip-gloss-2.jpeg',
+    'luxury-hampers': 'images/web/eyeshadow-palette-1.jpeg',
+    'affordable-hampers': 'images/web/highlighter-1.jpeg'
+  };
+
+  const resolve = (src) => (window.AuraApi && window.AuraApi.resolveAssetPath ? window.AuraApi.resolveAssetPath(src) : src);
+  const esc = (str) => String(str == null ? '' : str).replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  function render(list) {
+    if (gridEl) {
+      gridEl.innerHTML = list.map((c) => {
+        const imgUrl = COLLECTION_IMAGES[c.slug] || `images/web/${c.slug}-1.jpeg`;
+        return `
+          <a href="collections/${esc(c.slug)}.html" class="collection-card reveal">
+            <img src="${esc(resolve(imgUrl))}" alt="${esc(c.name)} Collection">
+            <div class="collection-card-overlay">
+              <h3 class="collection-card-name">${esc(c.name)}</h3>
+              <span class="collection-card-cta">View Collection →</span>
+            </div>
+          </a>`;
+      }).join('');
+    }
+
+    if (footerListEl) {
+      footerListEl.innerHTML = list.slice(0, 6).map((c) => {
+        return `<li><a href="collections/${esc(c.slug)}.html">${esc(c.name)}</a></li>`;
+      }).join('');
+    }
+
+    if (typeof revealObserver !== 'undefined' && gridEl) {
+      gridEl.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
+    }
+  }
+
+  if (window.AuraApi && window.AuraApi.apiFetch) {
+    window.AuraApi.apiFetch('/api/collections')
+      .then((resp) => {
+        const list = (resp.data && resp.data.length) ? resp.data : FALLBACK_COLLECTIONS;
+        render(list);
+      })
+      .catch(() => render(FALLBACK_COLLECTIONS));
+  } else {
+    render(FALLBACK_COLLECTIONS);
+  }
+}

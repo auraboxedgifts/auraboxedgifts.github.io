@@ -573,7 +573,7 @@ button { cursor: pointer; border: none; font-family: inherit; }
 .aura-cart-toast {
   position: fixed;
   right: 24px;
-  top: 24px;
+  top: 90px;
   bottom: auto;
   left: auto;
   z-index: 10080;

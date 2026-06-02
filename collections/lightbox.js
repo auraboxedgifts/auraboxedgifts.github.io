@@ -217,11 +217,16 @@
     updateLocalBadgeCount(cart);
   }
 
+  var lastBadgeCount = -1;
   function updateLocalBadgeCount(cart) {
     var count = cart.reduce(function(s, i) { return s + (i.qty || 1); }, 0);
     document.querySelectorAll('#navCartBadge, .nav-cart-badge').forEach(function(b) {
       b.textContent = count;
     });
+    if (lastBadgeCount !== -1 && lastBadgeCount !== count) {
+      bounceBadge();
+    }
+    lastBadgeCount = count;
   }
 
   function sendQtyUpdate(product, productId, delta) {

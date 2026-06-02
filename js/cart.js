@@ -38,34 +38,47 @@
     if (overlay && overlay.classList.contains('active')) {
       renderCartPage();
     }
+    showCartToastForProduct(productId);
   }
 
   let toastTimer = null;
-  function showCartToastForProduct(productId) {
+  async function showCartToastForProduct(productId) {
     let toast = document.getElementById('auraCartToast');
     if (!toast) {
       toast = document.createElement('div');
       toast.id = 'auraCartToast';
       toast.className = 'aura-cart-toast';
       toast.addEventListener('click', function (e) {
-        if (!e.target.closest('.toast-qty-btn') && !e.target.closest('.aura-cart-toast-view')) {
+        if (!e.target.closest('.toast-qty-btn')) {
           openCartPage();
         }
       });
       document.body.appendChild(toast);
     }
+
+    const products = await ensureCatalog();
+
     const itemInCart = cart.find(c => c.productId === productId);
     if (!itemInCart || itemInCart.qty <= 0) {
       toast.classList.remove('show');
       return;
     }
     let productName = 'Item';
-    if (catalogCache) {
-      const p = catalogCache.find(x => x.id === productId);
+    if (products) {
+      const p = products.find(x => x.id === productId);
       if (p) productName = p.name;
     }
+    if (productName === 'Item') {
+      try {
+        const siteRes = await AuraApi.apiFetch('/api/site');
+        const hampers = (siteRes.data && siteRes.data.hampers) || [];
+        const h = hampers.find(x => x.id === productId);
+        if (h) productName = h.title;
+      } catch (err) {}
+    }
+
     toast.innerHTML = `
-      <div class="aura-cart-toast-body">
+      <div class="aura-cart-toast-body" style="width: 100%;">
         <div class="aura-cart-toast-title"><i class="fas fa-circle-check"></i> Added to your cart</div>
         <div class="aura-cart-toast-row">
           <span class="aura-cart-toast-name" title="${productName}">${productName}</span>
@@ -76,30 +89,19 @@
           </div>
         </div>
       </div>
-      <div class="aura-cart-toast-actions">
-        <span class="aura-cart-toast-view">View</span>
-      </div>
     `;
 
     const minusBtn = toast.querySelector('.toast-qty-btn.minus');
     const plusBtn = toast.querySelector('.toast-qty-btn.plus');
-    const viewBtn = toast.querySelector('.aura-cart-toast-view');
 
     minusBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       updateQtyById(productId, -1);
-      showCartToastForProduct(productId);
     });
 
     plusBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       updateQtyById(productId, 1);
-      showCartToastForProduct(productId);
-    });
-
-    viewBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      openCartPage();
     });
 
     toast.classList.add('show');

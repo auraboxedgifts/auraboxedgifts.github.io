@@ -654,11 +654,12 @@ function closeCollectionOverlay(skipHistory) {
 document.addEventListener('DOMContentLoaded', () => {
     // Only intercept if we are on the main page (not inside the iframe itself)
     if (window === window.parent) {
-        document.querySelectorAll('a[href^="collections/"]').forEach(link => {
-            link.addEventListener('click', function(e) {
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a[href^="collections/"]');
+            if (link) {
                 e.preventDefault();
-                openCollectionOverlay(this.getAttribute('href'));
-            });
+                openCollectionOverlay(link.getAttribute('href'));
+            }
         });
     } else {
         // If we are inside the iframe, hide the AI widget as the parent already has it running
