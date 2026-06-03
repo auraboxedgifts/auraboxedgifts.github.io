@@ -25,6 +25,16 @@
     "description": "Strong-grip claw clips with floral and premium finishes."
   },
   {
+    "slug": "jhumkas",
+    "name": "jhumkas",
+    "description": ""
+  },
+  {
+    "slug": "affordable-hampers",
+    "name": "Affordable Hampers",
+    "description": "Budget-friendly curated combos with high gifting value."
+  },
+  {
     "slug": "hairbows",
     "name": "Hair Bows",
     "description": "Cute bow clips for playful and elegant hair styling."
@@ -50,13 +60,8 @@
     "description": "Premium curated gift combinations for special occasions."
   },
   {
-    "slug": "affordable-hampers",
-    "name": "Affordable Hampers",
-    "description": "Budget-friendly curated combos with high gifting value."
-  },
-  {
-    "slug": "jhumkas",
-    "name": "jhumkas",
+    "slug": "testing",
+    "name": "spiderman testing",
     "description": ""
   }
 ]

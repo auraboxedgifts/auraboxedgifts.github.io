@@ -853,5 +853,15 @@
     "image": "https://aura.devshubh.me/images/web/whatsapp-image-2026-04-30-at-11-06-34-pm-mpwo669f57ac64.jpeg",
     "description": "",
     "tags": []
+  },
+  {
+    "id": "prod_1780487937144_526c3f",
+    "slug": "test-2",
+    "name": "test 2",
+    "collection": "testing",
+    "price": 0,
+    "image": "https://aura.devshubh.me/images/web/whatsapp-image-2026-04-30-at-11-06-34-pm-mpy0jinh024be5.jpeg",
+    "description": "",
+    "tags": []
   }
 ]
