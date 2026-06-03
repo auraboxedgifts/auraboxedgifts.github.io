@@ -217,13 +217,13 @@
     updateLocalBadgeCount(cart);
   }
 
-  var lastBadgeCount = -1;
+  var lastBadgeCount = 0;
   function updateLocalBadgeCount(cart) {
     var count = cart.reduce(function(s, i) { return s + (i.qty || 1); }, 0);
     document.querySelectorAll('#navCartBadge, .nav-cart-badge').forEach(function(b) {
       b.textContent = count;
     });
-    if (lastBadgeCount !== -1 && lastBadgeCount !== count) {
+    if (lastBadgeCount !== count) {
       bounceBadge();
     }
     lastBadgeCount = count;
@@ -236,6 +236,17 @@
         productId: productId,
         delta: delta
       }, '*');
+      // Immediately update badge count + bounce in the iframe without waiting
+      // for the parent → cartUpdated roundtrip
+      var cart = getCartItems();
+      var existing = cart.find(function(c) { return c.productId === productId; });
+      if (existing) {
+        existing.qty = (existing.qty || 1) + delta;
+        if (existing.qty <= 0) cart = cart.filter(function(c) { return c.productId !== productId; });
+      } else if (delta > 0) {
+        cart.push({ productId: productId, qty: delta });
+      }
+      updateLocalBadgeCount(cart);
     } else {
       updateLocalQty(productId, delta);
     }

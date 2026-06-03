@@ -632,9 +632,30 @@ function openCollectionOverlay(url) {
     // Only add ../ if it's not already there, depending on context
     var iframe = document.getElementById('collection-iframe');
     // Load from backend so newly created pages work immediately (before publishing to GitHub Pages)
+    // Falls back to relative path (GitHub Pages) if backend doesn't serve it
     var resolvedUrl = url;
+    var fallbackUrl = url;
     if (window.AuraApi && window.AuraApi.API_BASE) {
         resolvedUrl = window.AuraApi.API_BASE + '/' + url.replace(/^\/+/, '');
+    }
+    var loadAttempted = false;
+    function onIframeLoad() {
+        try {
+            // Cross-origin iframes won't allow reading contentDocument — that's OK,
+            // it means the backend served the page successfully.
+            var doc = iframe.contentDocument || iframe.contentWindow.document;
+            // If same-origin and the page title contains '404' or body is very small, fall back
+            if (doc && !loadAttempted && (doc.title.indexOf('404') !== -1 || (doc.body && doc.body.textContent.trim().length < 50))) {
+                loadAttempted = true;
+                iframe.src = fallbackUrl;
+            }
+        } catch (e) {
+            // Cross-origin — page loaded from backend, all good
+        }
+        iframe.removeEventListener('load', onIframeLoad);
+    }
+    if (resolvedUrl !== fallbackUrl) {
+        iframe.addEventListener('load', onIframeLoad);
     }
     iframe.src = resolvedUrl;
     overlay.style.display = 'block';

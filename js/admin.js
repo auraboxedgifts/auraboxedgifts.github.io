@@ -1322,17 +1322,30 @@
   function enableHomepageDrag(grid, kind) {
     if (!grid) return;
     grid.querySelectorAll('.aap-hp-card').forEach((card) => {
-      card.addEventListener('dragstart', function () { card.classList.add('dragging'); });
+      card.addEventListener('dragstart', function () {
+        card.classList.add('dragging');
+        grid.classList.add('drag-active');
+      });
       card.addEventListener('dragend', function () {
         card.classList.remove('dragging');
+        grid.classList.remove('drag-active');
+        grid.querySelectorAll('.aap-hp-card.drag-over').forEach((c) => c.classList.remove('drag-over'));
         commitHomepageReorder(grid, kind);
+      });
+      card.addEventListener('dragenter', function () {
+        if (!card.classList.contains('dragging')) card.classList.add('drag-over');
+      });
+      card.addEventListener('dragleave', function () {
+        card.classList.remove('drag-over');
       });
     });
     grid.addEventListener('dragover', function (e) {
       e.preventDefault();
       const dragging = grid.querySelector('.aap-hp-card.dragging');
       if (!dragging) return;
+      grid.querySelectorAll('.aap-hp-card.drag-over').forEach((c) => c.classList.remove('drag-over'));
       const after = getDragAfterElement(grid, e.clientX, e.clientY);
+      if (after) after.classList.add('drag-over');
       if (after == null) grid.appendChild(dragging);
       else grid.insertBefore(dragging, after);
     });
