@@ -1,5 +1,11 @@
 [
   {
+    "slug": "testing-the-test",
+    "name": "testing",
+    "description": "",
+    "image": "https://aura.devshubh.me/images/web/whatsapp-image-2026-04-30-at-11-06-34-pm-mpy1hqn4ca64fd.jpeg"
+  },
+  {
     "slug": "bracelets",
     "name": "Bracelets",
     "description": "Handmade beaded and charm bracelets curated for gifting."
@@ -58,11 +64,5 @@
     "slug": "luxury-hampers",
     "name": "Luxury Hampers",
     "description": "Premium curated gift combinations for special occasions."
-  },
-  {
-    "slug": "testing-the-test",
-    "name": "testing",
-    "description": "",
-    "image": "https://aura.devshubh.me/images/web/whatsapp-image-2026-04-30-at-11-06-34-pm-mpy1hqn4ca64fd.jpeg"
   }
 ]
