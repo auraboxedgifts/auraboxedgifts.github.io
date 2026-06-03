@@ -1226,11 +1226,19 @@
         </div>
       </article>`).join('');
 
-    const collCards = collections.map((c) => `
+    // Build a map: slug → first product image for fallback thumbnails
+    const firstImg = {};
+    state.products.forEach((p) => {
+      if (!firstImg[p.collection] && p.image) firstImg[p.collection] = p.image;
+    });
+
+    const collCards = collections.map((c) => {
+      const coverSrc = c.image || firstImg[c.slug] || '';
+      return `
       <article class="aap-hp-card" data-id="${escapeHtml(c.slug)}" draggable="true">
         <div class="aap-hp-media">
-          ${c.image
-            ? `<img src="${escapeHtml(resolveImage(c.image))}" alt="${escapeHtml(c.name)}" loading="lazy">`
+          ${coverSrc
+            ? `<img src="${escapeHtml(resolveImage(coverSrc))}" alt="${escapeHtml(c.name)}" loading="lazy">`
             : `<div class="aap-coll-thumb" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:linear-gradient(135deg,#f8e8ec 0%,#e8d0d5 100%);color:var(--rose-gold,#b76e79);">
                 <div style="text-align:center;">
                   <i class="fas fa-layer-group" style="font-size:2rem;margin-bottom:6px;"></i>
@@ -1243,7 +1251,8 @@
           <p class="aap-hp-caption">${escapeHtml(c.name)}</p>
           <p class="aap-hp-price">${counts[c.slug] || 0} product${(counts[c.slug] || 0) === 1 ? '' : 's'}</p>
         </div>
-      </article>`).join('');
+      </article>`;
+    }).join('');
 
     const hamperCards = hampers.map((h) => `
       <article class="aap-hp-card" data-id="${escapeHtml(h.id)}" draggable="true">

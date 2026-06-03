@@ -252,6 +252,18 @@
     if (e.data && e.data.type === 'updateQtyById') {
       updateQtyById(e.data.productId, e.data.delta);
     }
+    // Cross-origin iframe requests current cart state on init
+    if (e.data && e.data.type === 'requestCart') {
+      document.querySelectorAll('iframe').forEach(function (iframe) {
+        try {
+          iframe.contentWindow.postMessage({ type: 'cartUpdated', cart: cart }, '*');
+        } catch (err) {}
+      });
+    }
+    // Cross-origin iframe requests parent badge bounce
+    if (e.data && e.data.type === 'bounceBadge') {
+      updateBadge();
+    }
   });
 
   window.addEventListener('popstate', function () {

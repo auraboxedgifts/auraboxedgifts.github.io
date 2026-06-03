@@ -2409,8 +2409,8 @@ textarea.aap-input { resize: vertical; min-height: 70px; line-height: 1.5; }
 }
 .aap-hp-card:hover { box-shadow: 0 10px 22px rgba(120, 80, 60, 0.1); border-color: rgba(183, 110, 121, 0.35); }
 .aap-hp-card.dragging { opacity: 0.35; transform: scale(0.92); box-shadow: 0 12px 40px rgba(183, 110, 121, 0.3); z-index: 100; cursor: grabbing; }
-.aap-hp-card.drag-over { transform: scale(1.03); box-shadow: 0 0 0 3px var(--rose-gold), 0 6px 20px rgba(183, 110, 121, 0.2); }
-.aap-hp-grid.drag-active .aap-hp-card:not(.dragging) { transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+.aap-hp-card.drag-over { transform: scale(1.05); box-shadow: 0 0 0 4px #22c55e, 0 8px 24px rgba(34, 197, 94, 0.35); border-color: #22c55e; }
+.aap-hp-grid.drag-active .aap-hp-card:not(.dragging) { transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, border-color 0.2s ease; }
 .aap-hp-media {
   position: relative;
   aspect-ratio: 16 / 9;

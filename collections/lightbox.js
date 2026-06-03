@@ -4,6 +4,9 @@
   let currentIndex = 0;
   let lightbox, lbImg, lbCounter, lbProductName, lbProductPrice;
   let touchStartX = 0;
+  // In-memory cart mirror — avoids cross-origin localStorage issues when
+  // the collection page is served from a different origin than the parent.
+  var localCart = [];
 
   function init() {
     // Create lightbox DOM
@@ -82,6 +85,8 @@
         var productId = card.dataset.id;
         if (product) {
           sendQtyUpdate(product, productId, 1);
+          // Immediately replace button with qty control (don't wait for parent roundtrip)
+          replaceWithQtyControl(btn, card, product, productId, 1);
         }
       });
     });
@@ -101,7 +106,8 @@
         else prev();
       }
       if (e.data.type === 'cartUpdated') {
-        updateAllQtyButtons(e.data.cart);
+        localCart = e.data.cart || [];
+        updateAllQtyButtons(localCart);
       }
     });
   }
@@ -176,10 +182,16 @@
 
   // ─── Cart Qty Control Helpers ───
   function getCartItems() {
+    // Prefer in-memory cart (synced from parent), fall back to localStorage
+    if (localCart.length > 0) return localCart.slice();
     try { return JSON.parse(localStorage.getItem('aura_cart_v2') || '[]'); } catch(e) { return []; }
   }
 
   function initCartQtyButtons() {
+    // Ask parent for current cart state (handles cross-origin localStorage)
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'requestCart' }, '*');
+    }
     updateAllQtyButtons(getCartItems());
   }
 
@@ -236,17 +248,15 @@
         productId: productId,
         delta: delta
       }, '*');
-      // Immediately update badge count + bounce in the iframe without waiting
-      // for the parent → cartUpdated roundtrip
-      var cart = getCartItems();
-      var existing = cart.find(function(c) { return c.productId === productId; });
+      // Immediately update in-memory cart + badge (don't wait for parent roundtrip)
+      var existing = localCart.find(function(c) { return c.productId === productId; });
       if (existing) {
         existing.qty = (existing.qty || 1) + delta;
-        if (existing.qty <= 0) cart = cart.filter(function(c) { return c.productId !== productId; });
+        if (existing.qty <= 0) localCart = localCart.filter(function(c) { return c.productId !== productId; });
       } else if (delta > 0) {
-        cart.push({ productId: productId, qty: delta });
+        localCart.push({ productId: productId, qty: delta });
       }
-      updateLocalBadgeCount(cart);
+      updateLocalBadgeCount(localCart);
     } else {
       updateLocalQty(productId, delta);
     }
@@ -287,22 +297,15 @@
 
   function bounceBadge() {
     // Bounce badge in this document
-    document.querySelectorAll('.nav-cart-badge').forEach(function(badge) {
+    document.querySelectorAll('.nav-cart-badge, #navCartBadge').forEach(function(badge) {
       badge.classList.remove('bounce');
       void badge.offsetWidth;
       badge.classList.add('bounce');
       setTimeout(function() { badge.classList.remove('bounce'); }, 600);
     });
-    // Also try to bounce badge in parent window if in iframe
+    // Ask parent to bounce its badge via postMessage (cross-origin safe)
     if (window.parent !== window) {
-      try {
-        window.parent.document.querySelectorAll('.nav-cart-badge').forEach(function(badge) {
-          badge.classList.remove('bounce');
-          void badge.offsetWidth;
-          badge.classList.add('bounce');
-          setTimeout(function() { badge.classList.remove('bounce'); }, 600);
-        });
-      } catch (err) {}
+      window.parent.postMessage({ type: 'bounceBadge' }, '*');
     }
   }
 
