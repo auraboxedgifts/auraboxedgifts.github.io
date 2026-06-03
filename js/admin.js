@@ -865,6 +865,18 @@
     const isEdit = Boolean(coll);
     const html = `
       <form class="aap-form">
+        <label class="aap-label">Cover image</label>
+        <div class="aap-uploader" id="aapUploader">
+          <div class="aap-uploader-preview" id="aapPreview">
+            ${coll?.image ? `<img src="${escapeHtml(resolveImage(coll.image))}" alt="">` : `<div class="aap-uploader-placeholder"><i class="fas fa-image"></i><p>Drag &amp; drop or click to upload</p><span>JPG, PNG, WEBP up to 8&nbsp;MB</span></div>`}
+          </div>
+          <input type="file" id="aapImageFile" accept="image/*" hidden>
+          <div class="aap-uploader-actions">
+            <button type="button" class="aap-btn-secondary" id="aapPickImage"><i class="fas fa-upload"></i> Choose file</button>
+            <input type="text" id="aapImageUrl" class="aap-input" placeholder="or paste image URL/path" value="${escapeHtml(coll?.image || '')}">
+          </div>
+          <p class="aap-uploader-hint" id="aapUploadStatus"></p>
+        </div>
         <label class="aap-label">Display name</label>
         <input class="aap-input" id="aapCollName" type="text" placeholder="e.g. Hair Bows" value="${escapeHtml(coll?.name || '')}" required>
         <label class="aap-label">URL slug ${isEdit ? '<span class="aap-label-sub">(cannot be changed)</span>' : '<span class="aap-label-sub">(auto from name)</span>'}</label>
@@ -884,13 +896,14 @@
             const name = document.getElementById('aapCollName').value.trim();
             const slug = document.getElementById('aapCollSlug').value.trim();
             const description = document.getElementById('aapCollDesc').value.trim();
+            const image = document.getElementById('aapImageUrl').value.trim();
             if (!name) return toast('Please enter a name.', 'error');
             btn.disabled = true; btn.textContent = isEdit ? 'Saving…' : 'Creating…';
             try {
               if (isEdit) {
                 const res = await adminFetch(`/api/admin/collections/${encodeURIComponent(coll.slug)}`, {
                   method: 'PUT',
-                  body: JSON.stringify({ name, description })
+                  body: JSON.stringify({ name, description, image })
                 });
                 const updated = res.data;
                 const idx = state.collections.findIndex((c) => c.slug === coll.slug);
@@ -899,7 +912,7 @@
               } else {
                 const res = await adminFetch('/api/admin/collections', {
                   method: 'POST',
-                  body: JSON.stringify({ name, slug, description })
+                  body: JSON.stringify({ name, slug, description, image })
                 });
                 if (res.data) state.collections.push(res.data);
                 toast('Collection created', 'success');
@@ -915,6 +928,7 @@
         }
       ]
     });
+    setTimeout(bindUploader, 0);
   }
 
   function confirmDeleteCollection(coll, productCount) {
@@ -1215,12 +1229,14 @@
     const collCards = collections.map((c) => `
       <article class="aap-hp-card" data-id="${escapeHtml(c.slug)}" draggable="true">
         <div class="aap-hp-media">
-          <div class="aap-coll-thumb" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:linear-gradient(135deg,#f8e8ec 0%,#e8d0d5 100%);color:var(--rose-gold,#b76e79);">
-            <div style="text-align:center;">
-              <i class="fas fa-layer-group" style="font-size:2rem;margin-bottom:6px;"></i>
-              <p style="font-size:0.82rem;font-weight:600;margin:0;">${escapeHtml(c.name)}</p>
-            </div>
-          </div>
+          ${c.image
+            ? `<img src="${escapeHtml(resolveImage(c.image))}" alt="${escapeHtml(c.name)}" loading="lazy">`
+            : `<div class="aap-coll-thumb" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:linear-gradient(135deg,#f8e8ec 0%,#e8d0d5 100%);color:var(--rose-gold,#b76e79);">
+                <div style="text-align:center;">
+                  <i class="fas fa-layer-group" style="font-size:2rem;margin-bottom:6px;"></i>
+                  <p style="font-size:0.82rem;font-weight:600;margin:0;">${escapeHtml(c.name)}</p>
+                </div>
+              </div>`}
           <div class="aap-drag-handle" title="Drag to reorder"><i class="fas fa-grip-vertical"></i></div>
         </div>
         <div class="aap-hp-body">

@@ -335,7 +335,7 @@ function initCollectionsGrid() {
   function render(list) {
     if (gridEl) {
       gridEl.innerHTML = list.map((c) => {
-        const imgUrl = COLLECTION_IMAGES[c.slug] || `images/web/${c.slug}-1.jpeg`;
+        const imgUrl = c.image || COLLECTION_IMAGES[c.slug] || `images/web/${c.slug}-1.jpeg`;
         return `
           <a href="collections/${esc(c.slug)}.html" class="collection-card reveal">
             <img src="${esc(resolve(imgUrl))}" alt="${esc(c.name)} Collection">

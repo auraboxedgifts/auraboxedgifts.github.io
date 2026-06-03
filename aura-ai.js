@@ -631,7 +631,12 @@ function openCollectionOverlay(url) {
     }
     // Only add ../ if it's not already there, depending on context
     var iframe = document.getElementById('collection-iframe');
-    iframe.src = url;
+    // Load from backend so newly created pages work immediately (before publishing to GitHub Pages)
+    var resolvedUrl = url;
+    if (window.AuraApi && window.AuraApi.API_BASE) {
+        resolvedUrl = window.AuraApi.API_BASE + '/' + url.replace(/^\/+/, '');
+    }
+    iframe.src = resolvedUrl;
     overlay.style.display = 'block';
     document.body.style.overflow = 'hidden'; // prevent background scrolling
     var slug = (url.split('/').pop() || '').replace('.html', '');

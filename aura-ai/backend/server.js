@@ -167,6 +167,10 @@ app.use((req, res, next) => {
 });
 
 app.use('/images', express.static(IMAGES_DIR, { maxAge: '7d' }));
+app.use('/collections', express.static(path.join(ROOT_DIR, 'collections'), { maxAge: '1h' }));
+// Serve the repo root for static assets (style.css, js/, etc.) so collection pages loaded
+// from the backend can resolve their relative paths (../style.css, ../js/api.js, etc.)
+app.use(express.static(ROOT_DIR, { maxAge: '1h', index: false }));
 
 function readJson(filePath, fallback) {
     try {
@@ -572,7 +576,8 @@ app.post('/api/admin/collections', requireAdmin, (req, res) => {
     const collection = {
         slug,
         name,
-        description: String(req.body?.description || '')
+        description: String(req.body?.description || ''),
+        image: String(req.body?.image || '')
     };
     collections.push(collection);
     writeJson(COLLECTIONS_FILE, collections);
@@ -590,6 +595,9 @@ app.put('/api/admin/collections/:slug', requireAdmin, (req, res) => {
     }
     if (typeof req.body?.description === 'string') {
         next.description = req.body.description;
+    }
+    if (typeof req.body?.image === 'string') {
+        next.image = req.body.image;
     }
     collections[idx] = next;
     writeJson(COLLECTIONS_FILE, collections);
