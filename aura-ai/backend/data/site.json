@@ -3,23 +3,23 @@
     "slides": [
       {
         "id": "hero_1",
-        "image": "/images/web/auraboxedgifts.png",
+        "image": "https://aura.devshubh.me/images/web/1000067094-mpz08fgoe92fb3.png",
         "alt": "Aura Boxed Gifts - Curated Gift Hampers"
       },
       {
         "id": "hero_2",
-        "image": "/images/web/pendents-1.jpeg",
-        "alt": "Elegant Pendants Collection"
+        "image": "https://aura.devshubh.me/images/web/1000063234-mpz0944cf3c403.jpg",
+        "alt": "Mom-to-be Hamper Gift"
       },
       {
         "id": "hero_3",
-        "image": "/images/web/bracelets-2.jpeg",
-        "alt": "Beautiful Bracelets"
+        "image": "https://aura.devshubh.me/images/web/1000048990-mpz0as74472c77.webp",
+        "alt": "Wedding Hamper Gift"
       },
       {
         "id": "hero_1780547765965_b1580a",
-        "image": "https://aura.devshubh.me/images/web/1000067094-mpz05qeg8ce75b.png",
-        "alt": "Banner"
+        "image": "https://aura.devshubh.me/images/web/1000056187-mpz0xkdh41e1d0.png",
+        "alt": "Men's gift hamper"
       }
     ]
   },
