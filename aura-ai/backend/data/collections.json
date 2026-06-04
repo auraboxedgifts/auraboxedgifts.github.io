@@ -45,5 +45,11 @@
     "name": "Makeup items",
     "description": "Lip oils, glosses, palettes, and skincare add-ons.",
     "image": ""
+  },
+  {
+    "slug": "other-gift-items",
+    "name": "Other gift items and Chocolates",
+    "description": "",
+    "image": ""
   }
 ]
