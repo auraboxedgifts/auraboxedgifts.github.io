@@ -25,11 +25,6 @@
     "description": "Strong-grip claw clips with floral and premium finishes."
   },
   {
-    "slug": "affordable-hampers",
-    "name": "Affordable Hampers",
-    "description": "Budget-friendly curated combos with high gifting value."
-  },
-  {
     "slug": "hairbows",
     "name": "Hair Bows",
     "description": "Cute bow clips for playful and elegant hair styling."
@@ -47,12 +42,8 @@
   },
   {
     "slug": "makeup",
-    "name": "Makeup",
-    "description": "Lip oils, glosses, palettes, and skincare add-ons."
-  },
-  {
-    "slug": "luxury-hampers",
-    "name": "Luxury Hampers",
-    "description": "Premium curated gift combinations for special occasions."
+    "name": "Makeup items",
+    "description": "Lip oils, glosses, palettes, and skincare add-ons.",
+    "image": ""
   }
 ]
