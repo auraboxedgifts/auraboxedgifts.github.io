@@ -26,45 +26,45 @@
   "hampers": [
     {
       "id": "hamper_mom_to_be",
-      "title": "Mom-to-be Hamper Gift",
+      "title": "Birthday hamper",
       "subtitle": "",
-      "image": "/images/hampers/mom-to-be.jpeg",
-      "price": 3800
-    },
-    {
-      "id": "hamper_wedding_gift",
-      "title": "Wedding Hamper Gift",
-      "subtitle": "",
-      "image": "/images/hampers/wedding-gift.jpeg",
-      "price": 2699
-    },
-    {
-      "id": "hamper_birthday",
-      "title": "Customised Birthday Hamper",
-      "subtitle": "",
-      "image": "/images/hampers/birthday-customised.jpeg",
+      "image": "https://aura.devshubh.me/images/web/inbound8603746722936798695-mpzcbwe59c1ab6.png",
       "price": 1599
     },
     {
-      "id": "hamper_mothers_day",
-      "title": "Customised Mother's Day Hamper",
-      "subtitle": "",
-      "image": "/images/hampers/mothers-day.jpeg",
-      "price": 5999
-    },
-    {
-      "id": "hamper_wedding_bride",
+      "id": "hamper_wedding_gift",
       "title": "Wedding Hamper for Bride",
       "subtitle": "",
-      "image": "/images/hampers/wedding-bride.jpeg",
+      "image": "https://aura.devshubh.me/images/web/inbound2313379694683726455-mpzcdifm70f346.jpg",
       "price": 1899
     },
     {
-      "id": "hamper_virat_kohli",
-      "title": "Customised Virat Kohli Fangirl Hamper",
+      "id": "hamper_birthday",
+      "title": "Makeup lover Hamper Gift",
       "subtitle": "",
-      "image": "/images/hampers/virat-kohli-fangirl.jpeg",
-      "price": 1999
+      "image": "https://aura.devshubh.me/images/web/1000065232-mpzcit3o726f4e.png",
+      "price": 2399
+    },
+    {
+      "id": "hamper_mothers_day",
+      "title": "Customised Virat Kohli fangirl Hamper",
+      "subtitle": "",
+      "image": "https://aura.devshubh.me/images/web/1000063190-mpzcle25d48c87.png",
+      "price": 2599
+    },
+    {
+      "id": "hamper_wedding_bride",
+      "title": "1st Birthday Hamper for Babygirl",
+      "subtitle": "",
+      "image": "https://aura.devshubh.me/images/web/1000034899-mpzcorou7ee0db.jpg",
+      "price": 2699
+    },
+    {
+      "id": "hamper_virat_kohli",
+      "title": "Customised Wedding Hamper Gift",
+      "subtitle": "Customised",
+      "image": "https://aura.devshubh.me/images/web/1000063192-mpzct06va848bd.png",
+      "price": 2799
     },
     {
       "id": "hamper_mens_birthday",
@@ -75,17 +75,24 @@
     },
     {
       "id": "hamper_babygirl_1st_birthday",
-      "title": "1st Birthday Hamper Gift for Babygirl",
-      "subtitle": "",
-      "image": "/images/hampers/babygirl-1st-birthday.jpeg",
-      "price": 2599
+      "title": "Mom-to-be Hamper Gift",
+      "subtitle": "Personalised",
+      "image": "https://aura.devshubh.me/images/web/1000063234-mpzcw72j1d1f9b.jpg",
+      "price": 3899
     },
     {
       "id": "hamper_1780236081879_d85a22",
-      "title": "Customised Hamper Gift",
-      "subtitle": "Customised",
-      "image": "https://aura.devshubh.me/images/web/1000065232-mptukgif45159b.png",
-      "price": 2299
+      "title": "Customised Mother's day Hamper",
+      "subtitle": "",
+      "image": "https://aura.devshubh.me/images/web/1000063236-mpzcya6j4060ec.jpg",
+      "price": 5999
+    },
+    {
+      "id": "hamper_1780569506359_a98000",
+      "title": "Ocean theme Birthday Hamper",
+      "subtitle": "",
+      "image": "https://aura.devshubh.me/images/web/1000067336-mpzd3cruaa53d7.png",
+      "price": 4399
     }
   ]
 }
