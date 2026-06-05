@@ -819,5 +819,35 @@
     "image": "https://aura.devshubh.me/images/web/1000067642-mq094kz4e415c6.png",
     "description": "",
     "tags": []
+  },
+  {
+    "id": "prod_1780623604762_3c7c60",
+    "slug": "projection-camera-keychain-pink",
+    "name": "Projection Camera Keychain- Pink",
+    "collection": "keychains",
+    "price": 90,
+    "image": "https://aura.devshubh.me/images/web/1000067645-mq09b1hlb20d91.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1780623869348_8e22ae",
+    "slug": "projection-camera-keychain-green",
+    "name": "Projection Camera Keychain- Green",
+    "collection": "keychains",
+    "price": 90,
+    "image": "https://aura.devshubh.me/images/web/1000067648-mq09gs5rae6191.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1780623914046_634f6f",
+    "slug": "projection-camera-keychain-blue",
+    "name": "Projection Camera Keychain- Blue",
+    "collection": "bracelets",
+    "price": 90,
+    "image": "https://aura.devshubh.me/images/web/1000067649-mq09hog0af8fc9.png",
+    "description": "",
+    "tags": []
   }
 ]
