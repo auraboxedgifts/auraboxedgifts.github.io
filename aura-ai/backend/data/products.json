@@ -472,32 +472,6 @@
     ]
   },
   {
-    "id": "key_1",
-    "slug": "mini-bag-keychain-pastel",
-    "name": "Mini Bag Keychain - Pastel",
-    "collection": "keychains",
-    "price": 299,
-    "image": "/images/web/mini-bags-1.jpeg",
-    "description": "Mini bag keychain for tote, keys, or gifting.",
-    "tags": [
-      "keychain",
-      "mini-bag"
-    ]
-  },
-  {
-    "id": "key_2",
-    "slug": "mini-bag-keychain-classic",
-    "name": "Mini Bag Keychain - Classic",
-    "collection": "keychains",
-    "price": 299,
-    "image": "/images/web/mini-bags-2.jpeg",
-    "description": "Compact mini bag charm with premium hardware.",
-    "tags": [
-      "keychain",
-      "mini-bag"
-    ]
-  },
-  {
     "id": "pend_1",
     "slug": "butterfly-pendant-necklace",
     "name": "Butterfly Pendant Necklace",
@@ -814,6 +788,16 @@
     "price": 60,
     "image": "https://aura.devshubh.me/images/web/1000056186-mpz2fsl5c6d962.png",
     "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1780622784126_e565fd",
+    "slug": "kitty-cartoon-character-small-keychain",
+    "name": "kitty Cartoon Character Small Keychain",
+    "collection": "keychains",
+    "price": 35,
+    "image": "https://aura.devshubh.me/images/web/1000067641-mq08k71378c38d.png",
+    "description": "Pink kitty cute cartoon keychain",
     "tags": []
   }
 ]
