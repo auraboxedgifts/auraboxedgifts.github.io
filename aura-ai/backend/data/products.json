@@ -135,11 +135,11 @@
   {
     "id": "makeup_eye_1",
     "slug": "nude-eyeshadow-palette",
-    "name": "Nude Eyeshadow Palette",
+    "name": "Eyeshadow Palette (anyone one)",
     "collection": "makeup",
-    "price": 799,
+    "price": 125,
     "image": "/images/web/eyeshadow-palette-1.jpeg",
-    "description": "Versatile nude shades for soft and glam looks.",
+    "description": "A cute and compact eyeshadow palette featuring beautiful matte and shimmer shades. Easy to blend, highly pigmented, and perfect for creating everyday to party-ready eye looks.",
     "tags": [
       "makeup",
       "eyeshadow"
@@ -147,42 +147,26 @@
   },
   {
     "id": "makeup_eye_2",
-    "slug": "shimmer-eyeshadow-palette",
-    "name": "Shimmer Eyeshadow Palette",
+    "slug": "shimmery-highlighter",
+    "name": "Subtle Highlighter (any one)",
     "collection": "makeup",
-    "price": 849,
-    "image": "/images/web/eyeshadow-palette-2.jpeg",
-    "description": "Shimmer-rich shades for festive and party makeup.",
+    "price": 125,
+    "image": "https://aura.devshubh.me/images/web/1000041062-mq4rjt1ub644d9.jpg",
+    "description": "Shimmer-rich shades for festive and party makeup",
     "tags": [
-      "makeup",
-      "eyeshadow",
-      "shimmer"
+      "shimmery"
     ]
   },
   {
     "id": "skincare_1",
     "slug": "hydrating-face-mask-sheet",
-    "name": "Hydrating Face Mask Sheet",
+    "name": "Sadoer Face Mask Sheet (any one)",
     "collection": "makeup",
-    "price": 199,
-    "image": "/images/web/facemask-sheets-1.jpeg",
+    "price": 65,
+    "image": "https://aura.devshubh.me/images/web/1000041079-mq4rtfnf920116.jpg",
     "description": "Hydrating sheet mask for a quick glow boost.",
     "tags": [
-      "skincare",
-      "mask"
-    ]
-  },
-  {
-    "id": "skincare_2",
-    "slug": "brightening-face-mask-sheet",
-    "name": "Brightening Face Mask Sheet",
-    "collection": "makeup",
-    "price": 199,
-    "image": "/images/web/facemask-sheets-2.jpeg",
-    "description": "Brightening sheet mask for refreshed skin.",
-    "tags": [
-      "skincare",
-      "mask"
+      "skincare"
     ]
   },
   {
@@ -290,19 +274,6 @@
     ]
   },
   {
-    "id": "makeup_high_1",
-    "slug": "radiance-highlighter",
-    "name": "Radiance Highlighter",
-    "collection": "makeup",
-    "price": 649,
-    "image": "/images/web/highlighter-1.jpeg",
-    "description": "Buildable glow highlighter for soft radiance.",
-    "tags": [
-      "makeup",
-      "highlighter"
-    ]
-  },
-  {
     "id": "ring_1",
     "slug": "jewellery-case-compact-rose",
     "name": "Jewellery Case Compact Rose",
@@ -369,64 +340,25 @@
   },
   {
     "id": "gloss_1",
-    "slug": "glossy-lip-gloss-peach",
-    "name": "Glossy Lip Gloss - Peach",
+    "slug": "glossy-lipstick",
+    "name": "Mini Lipstick (any one)",
     "collection": "makeup",
-    "price": 349,
-    "image": "/images/web/lip-gloss-1.jpeg",
-    "description": "Hydrating peach lip gloss with non-sticky shine.",
+    "price": 55,
+    "image": "https://aura.devshubh.me/images/web/1000041074-mq4rwtcnda5589.jpg",
+    "description": "Featuring beautiful nude, pink, and rosy shades- these lipsticks deliver rich color, a smooth velvety finish and travel friendly.",
     "tags": [
       "makeup",
-      "lip-gloss"
-    ]
-  },
-  {
-    "id": "gloss_2",
-    "slug": "glossy-lip-gloss-rose",
-    "name": "Glossy Lip Gloss - Rose",
-    "collection": "makeup",
-    "price": 349,
-    "image": "/images/web/lip-gloss-2.jpeg",
-    "description": "Rose tint lip gloss for everyday glow.",
-    "tags": [
-      "makeup",
-      "lip-gloss"
-    ]
-  },
-  {
-    "id": "gloss_3",
-    "slug": "glossy-lip-gloss-clear",
-    "name": "Glossy Lip Gloss - Clear",
-    "collection": "makeup",
-    "price": 299,
-    "image": "/images/web/lip-gloss-3.jpeg",
-    "description": "Clear gloss topper with smooth shine.",
-    "tags": [
-      "makeup",
-      "lip-gloss"
-    ]
-  },
-  {
-    "id": "lipoil_1",
-    "slug": "nourishing-lip-oil-berry",
-    "name": "Nourishing Lip Oil - Berry",
-    "collection": "makeup",
-    "price": 399,
-    "image": "/images/web/lip-oil-tint-1.jpeg",
-    "description": "Light berry tint with hydrating lip oil formula.",
-    "tags": [
-      "makeup",
-      "lip-oil"
+      "lipstick"
     ]
   },
   {
     "id": "lipoil_2",
     "slug": "nourishing-lip-oil-coral",
-    "name": "Nourishing Lip Oil - Coral",
+    "name": "Heart Shape Lip Oil tint (any one)",
     "collection": "makeup",
-    "price": 399,
+    "price": 60,
     "image": "/images/web/lip-oil-tint-2.jpeg",
-    "description": "Coral tint lip oil with glossy finish.",
+    "description": "Nourishing Coral lip oil tint with glossy finish.",
     "tags": [
       "makeup",
       "lip-oil"
@@ -435,37 +367,11 @@
   {
     "id": "lipoil_3",
     "slug": "nourishing-lip-oil-rose",
-    "name": "Nourishing Lip Oil - Rose",
+    "name": "Kawaii Cute Robot Lip oil tint (any one)",
     "collection": "makeup",
-    "price": 399,
-    "image": "/images/web/lip-oil-tint-3.jpeg",
+    "price": 65,
+    "image": "https://aura.devshubh.me/images/web/1000068513-mq4sab2a243e03.png",
     "description": "Soft rose tint with smooth lip conditioning.",
-    "tags": [
-      "makeup",
-      "lip-oil"
-    ]
-  },
-  {
-    "id": "lipoil_4",
-    "slug": "nourishing-lip-oil-mocha",
-    "name": "Nourishing Lip Oil - Mocha",
-    "collection": "makeup",
-    "price": 429,
-    "image": "/images/web/lip-oil-tint-4.jpeg",
-    "description": "Mocha tint lip oil for deeper tone looks.",
-    "tags": [
-      "makeup",
-      "lip-oil"
-    ]
-  },
-  {
-    "id": "lipoil_5",
-    "slug": "nourishing-lip-oil-cherry",
-    "name": "Nourishing Lip Oil - Cherry",
-    "collection": "makeup",
-    "price": 429,
-    "image": "/images/web/lip-oil-tint-5.jpeg",
-    "description": "Cherry tinted lip oil with juicy shine.",
     "tags": [
       "makeup",
       "lip-oil"
