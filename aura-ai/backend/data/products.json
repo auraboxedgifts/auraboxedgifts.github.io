@@ -855,5 +855,15 @@
     "image": "https://aura.devshubh.me/images/web/1000067721-mq0cg0jq82d9ab.png",
     "description": "",
     "tags": []
+  },
+  {
+    "id": "prod_1780897767939_901ade",
+    "slug": "mini-beauty-blender",
+    "name": "Mini Beauty Blender",
+    "collection": "makeup",
+    "price": 15,
+    "image": "https://aura.devshubh.me/images/web/1000042287-mq4sh6fd1766cc.jpg",
+    "description": "Soft, lightweight, and easy to use, these sponges help blend foundation, concealer, and cream products seamlessly for a smooth, natural look.",
+    "tags": []
   }
 ]
