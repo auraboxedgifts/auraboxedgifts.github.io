@@ -418,11 +418,11 @@
   },
   {
     "id": "scr_1",
-    "slug": "silk-scrunchie-blush",
-    "name": "Silk Scrunchie - Blush",
+    "slug": "silk-scrunchie-golden",
+    "name": "Silk Scrunchie - Golden",
     "collection": "scrunchies",
-    "price": 199,
-    "image": "https://aura.devshubh.me/images/web/1000068905-mq6jqv1fec836f.png",
+    "price": 20,
+    "image": "https://aura.devshubh.me/images/web/1000068918-mq6kdoko1714c9.png",
     "description": "Soft silk scrunchie gentle on hair strands.",
     "tags": [
       "scrunchie",
@@ -432,9 +432,9 @@
   {
     "id": "scr_2",
     "slug": "silk-scrunchie-lilac",
-    "name": "Silk Scrunchie - Lilac",
+    "name": "Tulip Silk Scrunchie - Lilac",
     "collection": "scrunchies",
-    "price": 199,
+    "price": 25,
     "image": "/images/web/scrunchies-2.jpeg",
     "description": "Lilac silk scrunchie with smooth hold.",
     "tags": [
@@ -444,28 +444,28 @@
   },
   {
     "id": "scr_3",
-    "slug": "organza-scrunchie-cream",
-    "name": "Organza Scrunchie - Cream",
+    "slug": "silk-scrunchie-pink",
+    "name": "Silk Scrunchie - Light Pink",
     "collection": "scrunchies",
-    "price": 229,
-    "image": "/images/web/scrunchies-3.jpeg",
+    "price": 20,
+    "image": "https://aura.devshubh.me/images/web/1000068920-mq6ki8o838d4e9.png",
     "description": "Light organza texture with soft volume.",
     "tags": [
       "scrunchie",
-      "organza"
+      "silk"
     ]
   },
   {
     "id": "scr_4",
-    "slug": "organza-scrunchie-rose",
-    "name": "Organza Scrunchie - Rose",
+    "slug": "silky-scrunchie-rose",
+    "name": "Silky Scrunchie - Candy Pink",
     "collection": "scrunchies",
-    "price": 229,
-    "image": "/images/web/scrunchies-4.jpeg",
-    "description": "Rose-toned organza scrunchie for festive styling.",
+    "price": 20,
+    "image": "https://aura.devshubh.me/images/web/1000068922-mq6kophb0e968b.png",
+    "description": "Rose-toned silky scrunchie for festive styling.",
     "tags": [
-      "scrunchie",
-      "organza"
+      "Scrunchy",
+      "silky"
     ]
   },
   {
