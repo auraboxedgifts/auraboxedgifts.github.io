@@ -17,7 +17,8 @@
   {
     "slug": "scrunchies",
     "name": "Scrunchies",
-    "description": "Soft silk and organza scrunchies that are hair-friendly."
+    "description": "Soft silk and organza scrunchies that are hair-friendly.",
+    "image": "https://aura.devshubh.me/images/web/1000068905-mq6jryutcf3134.png"
   },
   {
     "slug": "claws",
@@ -45,7 +46,7 @@
     "slug": "makeup",
     "name": "Makeup items",
     "description": "Lip oils, glosses, palettes, and skincare add-ons.",
-    "image": ""
+    "image": "https://aura.devshubh.me/images/web/1000041057-mq4sl1pkc32113.jpg"
   },
   {
     "slug": "other-gift-items",

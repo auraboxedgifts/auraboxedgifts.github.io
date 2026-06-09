@@ -422,7 +422,7 @@
     "name": "Silk Scrunchie - Blush",
     "collection": "scrunchies",
     "price": 199,
-    "image": "/images/web/scrunchies-1.jpeg",
+    "image": "https://aura.devshubh.me/images/web/1000068905-mq6jqv1fec836f.png",
     "description": "Soft silk scrunchie gentle on hair strands.",
     "tags": [
       "scrunchie",
@@ -469,32 +469,6 @@
     ]
   },
   {
-    "id": "bracelet_5",
-    "slug": "silver-motif-beaded-bracelet",
-    "name": "Silver Motif Beaded Bracelet",
-    "collection": "bracelets",
-    "price": 599,
-    "image": "/images/web/bracelets-5.jpeg",
-    "description": "Minimal silver motifs with crystal and color beads.",
-    "tags": [
-      "bracelet",
-      "silver"
-    ]
-  },
-  {
-    "id": "bracelet_3",
-    "slug": "crystal-link-charm-bracelet",
-    "name": "Crystal Link Charm Bracelet",
-    "collection": "bracelets",
-    "price": 549,
-    "image": "/images/web/bracelets-3.jpeg",
-    "description": "Clear crystal links with playful charm details.",
-    "tags": [
-      "bracelet",
-      "crystal"
-    ]
-  },
-  {
     "id": "bracelet_2",
     "slug": "rainbow-charm-beaded-bracelet-set",
     "name": "Rainbow Charm Beaded Bracelet Set",
@@ -506,111 +480,6 @@
       "bracelet",
       "beaded",
       "charm"
-    ]
-  },
-  {
-    "id": "bracelet_4",
-    "slug": "floral-charm-bead-bracelet",
-    "name": "Floral Charm Bead Bracelet",
-    "collection": "bracelets",
-    "price": 499,
-    "image": "/images/web/bracelets-4.jpeg",
-    "description": "Hand-strung bracelet with flower-inspired charm accents.",
-    "tags": [
-      "bracelet",
-      "floral"
-    ]
-  },
-  {
-    "id": "bracelet_6",
-    "slug": "candy-tone-stretch-bracelet",
-    "name": "Candy Tone Stretch Bracelet",
-    "collection": "bracelets",
-    "price": 399,
-    "image": "/images/web/bracelets-6.jpeg",
-    "description": "Lightweight stretch bracelet in bright candy shades.",
-    "tags": [
-      "bracelet",
-      "colorful"
-    ]
-  },
-  {
-    "id": "bracelet_7",
-    "slug": "ocean-blue-bead-bracelet",
-    "name": "Ocean Blue Bead Bracelet",
-    "collection": "bracelets",
-    "price": 449,
-    "image": "/images/web/bracelets-7.jpeg",
-    "description": "Blue palette bracelet with clear spacer crystals.",
-    "tags": [
-      "bracelet",
-      "blue"
-    ]
-  },
-  {
-    "id": "bracelet_8",
-    "slug": "multi-charms-friendship-bracelet",
-    "name": "Multi-Charms Friendship Bracelet",
-    "collection": "bracelets",
-    "price": 649,
-    "image": "/images/web/bracelets-8.jpeg",
-    "description": "Fun friendship-style bracelet with mixed dangling charms.",
-    "tags": [
-      "bracelet",
-      "friendship",
-      "charm"
-    ]
-  },
-  {
-    "id": "bracelet_9",
-    "slug": "pastel-gloss-bead-bracelet",
-    "name": "Pastel Gloss Bead Bracelet",
-    "collection": "bracelets",
-    "price": 429,
-    "image": "/images/web/bracelets-9.jpeg",
-    "description": "Pastel and crystal combination bracelet for gifting.",
-    "tags": [
-      "bracelet",
-      "pastel"
-    ]
-  },
-  {
-    "id": "bracelet_10",
-    "slug": "sparkle-bead-wrap-bracelet",
-    "name": "Sparkle Bead Wrap Bracelet",
-    "collection": "bracelets",
-    "price": 499,
-    "image": "/images/web/bracelets-10.jpeg",
-    "description": "Shimmering bead layout with festive styling.",
-    "tags": [
-      "bracelet",
-      "sparkle"
-    ]
-  },
-  {
-    "id": "bracelet_11",
-    "slug": "everyday-charm-bracelet",
-    "name": "Everyday Charm Bracelet",
-    "collection": "bracelets",
-    "price": 349,
-    "image": "/images/web/bracelets-11.jpeg",
-    "description": "Simple everyday bracelet finished with subtle charm pieces.",
-    "tags": [
-      "bracelet",
-      "everyday"
-    ]
-  },
-  {
-    "id": "bracelet_12",
-    "slug": "layered-crystal-bead-bracelet",
-    "name": "Layered Crystal Bead Bracelet",
-    "collection": "bracelets",
-    "price": 599,
-    "image": "/images/web/bracelets-12.jpeg",
-    "description": "Layered crystal bead look that pairs with western outfits.",
-    "tags": [
-      "bracelet",
-      "crystal"
     ]
   },
   {
@@ -627,46 +496,6 @@
     ]
   },
   {
-    "id": "prod_1780226828385_b8a8c0",
-    "slug": "black-pearl-droplet",
-    "name": "Black pearl droplet",
-    "collection": "bracelets",
-    "price": 0,
-    "image": "https://aura.devshubh.me/images/web/1000030910-mptp2mg1b81d9b.png",
-    "description": "",
-    "tags": []
-  },
-  {
-    "id": "prod_1780236223003_837336",
-    "slug": "heart-shape-earring-set",
-    "name": "Heart shape earring set",
-    "collection": "bracelets",
-    "price": 0,
-    "image": "https://aura.devshubh.me/images/web/1000030887-mptuoa2q6b8f18.png",
-    "description": "",
-    "tags": []
-  },
-  {
-    "id": "prod_1780406688570_e9cf51",
-    "slug": "jhumkas-testing",
-    "name": "jhumkas testing",
-    "collection": "bracelets",
-    "price": 0,
-    "image": "https://aura.devshubh.me/images/web/whatsapp-image-2026-04-30-at-11-06-34-pm-mpwo669f57ac64.jpeg",
-    "description": "",
-    "tags": []
-  },
-  {
-    "id": "prod_1780489558258_92e2b0",
-    "slug": "testing-2",
-    "name": "testing 2",
-    "collection": "bracelets",
-    "price": 0,
-    "image": "https://aura.devshubh.me/images/web/whatsapp-image-2026-04-30-at-11-06-34-pm-mpy1idm61aa2da.jpeg",
-    "description": "",
-    "tags": []
-  },
-  {
     "id": "prod_1780494650178_7c9ece",
     "slug": "jhumka",
     "name": "Jhumka",
@@ -677,52 +506,12 @@
     "tags": []
   },
   {
-    "id": "prod_1780551482910_17009c",
-    "slug": "hamper-box-with-warm-lights",
-    "name": "Hamper box with Warm lights",
-    "collection": "bracelets",
-    "price": 60,
-    "image": "https://aura.devshubh.me/images/web/1000051836-mpz2cq1eefcab1.jpg",
-    "description": "",
-    "tags": []
-  },
-  {
     "id": "prod_1780551595382_42408d",
     "slug": "hamper-box-with-warm-lights-1",
     "name": "Hamper box with Warm lights",
     "collection": "add-ons",
     "price": 60,
     "image": "https://aura.devshubh.me/images/web/1000056186-mpz2fsl5c6d962.png",
-    "description": "",
-    "tags": []
-  },
-  {
-    "id": "prod_1780623914046_634f6f",
-    "slug": "projection-camera-keychain-blue",
-    "name": "Projection Camera Keychain- Blue",
-    "collection": "bracelets",
-    "price": 90,
-    "image": "https://aura.devshubh.me/images/web/1000067649-mq09hog0af8fc9.png",
-    "description": "",
-    "tags": []
-  },
-  {
-    "id": "prod_1780623979956_cf033f",
-    "slug": "projection-camera-keychain-blue-1",
-    "name": "Projection Camera Keychain- Blue",
-    "collection": "bracelets",
-    "price": 90,
-    "image": "https://aura.devshubh.me/images/web/1000067649-mq09j8o6cd9ef0.png",
-    "description": "",
-    "tags": []
-  },
-  {
-    "id": "prod_1780624170383_0c7c79",
-    "slug": "projection-camera-keychain-blue-2",
-    "name": "Projection Camera Keychain- Blue",
-    "collection": "bracelets",
-    "price": 90,
-    "image": "https://aura.devshubh.me/images/web/1000067649-mq09ndk7b7272a.png",
     "description": "",
     "tags": []
   },
@@ -823,16 +612,6 @@
     "collection": "keychains",
     "price": 80,
     "image": "https://aura.devshubh.me/images/web/1000067663-mq0av2zxf2e690.png",
-    "description": "",
-    "tags": []
-  },
-  {
-    "id": "prod_1780628101555_e6f67a",
-    "slug": "hello-kitty-shiny-keychain",
-    "name": "Hello Kitty Shiny Keychain",
-    "collection": "bracelets",
-    "price": 80,
-    "image": "https://aura.devshubh.me/images/web/1000067665-mq0bzjvs3bca3e.png",
     "description": "",
     "tags": []
   },
