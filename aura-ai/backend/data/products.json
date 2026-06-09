@@ -2,10 +2,10 @@
   {
     "id": "hairbow_1",
     "slug": "pastel-ribbon-hair-bow-clip",
-    "name": "Pastel Ribbon Hair Bow Clip",
+    "name": "Hair Bow Clip- Candy Pink",
     "collection": "hairbows",
-    "price": 249,
-    "image": "/images/web/aligator-hairpins-1.jpeg",
+    "price": 20,
+    "image": "https://aura.devshubh.me/images/web/1000068933-mq6lj448536d26.png",
     "description": "Soft-toned alligator clip bow for everyday styling.",
     "tags": [
       "bow",
@@ -16,9 +16,9 @@
   {
     "id": "hairbow_2",
     "slug": "classic-ribbon-hair-bow-clip",
-    "name": "Classic Ribbon Hair Bow Clip",
+    "name": "Hair Bow Clip- Dusky Pink",
     "collection": "hairbows",
-    "price": 249,
+    "price": 20,
     "image": "/images/web/aligator-hairpins-2.jpeg",
     "description": "Neat bow clip with a secure alligator grip.",
     "tags": [
@@ -421,7 +421,7 @@
     "slug": "silk-scrunchie-golden",
     "name": "Silk Scrunchie - Golden",
     "collection": "scrunchies",
-    "price": 20,
+    "price": 25,
     "image": "https://aura.devshubh.me/images/web/1000068918-mq6kdoko1714c9.png",
     "description": "Soft silk scrunchie gentle on hair strands.",
     "tags": [
@@ -434,7 +434,7 @@
     "slug": "silk-scrunchie-lilac",
     "name": "Tulip Silk Scrunchie - Lilac",
     "collection": "scrunchies",
-    "price": 25,
+    "price": 30,
     "image": "/images/web/scrunchies-2.jpeg",
     "description": "Lilac silk scrunchie with smooth hold.",
     "tags": [
@@ -447,7 +447,7 @@
     "slug": "silk-scrunchie-pink",
     "name": "Silk Scrunchie - Light Pink",
     "collection": "scrunchies",
-    "price": 20,
+    "price": 25,
     "image": "https://aura.devshubh.me/images/web/1000068920-mq6ki8o838d4e9.png",
     "description": "Light organza texture with soft volume.",
     "tags": [
@@ -460,7 +460,7 @@
     "slug": "silky-scrunchie-rose",
     "name": "Silky Scrunchie - Candy Pink",
     "collection": "scrunchies",
-    "price": 20,
+    "price": 25,
     "image": "https://aura.devshubh.me/images/web/1000068922-mq6kophb0e968b.png",
     "description": "Rose-toned silky scrunchie for festive styling.",
     "tags": [
@@ -643,6 +643,38 @@
     "price": 15,
     "image": "https://aura.devshubh.me/images/web/1000042287-mq4sh6fd1766cc.jpg",
     "description": "Soft, lightweight, and easy to use, these sponges help blend foundation, concealer, and cream products seamlessly for a smooth, natural look.",
+    "tags": []
+  },
+  {
+    "id": "prod_1781005917361_86d266",
+    "slug": "scrunchy",
+    "name": "Silk Scrunchie - Dusty Rose",
+    "collection": "scrunchies",
+    "price": 25,
+    "image": "https://aura.devshubh.me/images/web/1000068924-mq6kvuyf3bcc2e.png",
+    "description": "Silky Scrunchie for cute hair accessory collection",
+    "tags": [
+      "Silky-scrunchie"
+    ]
+  },
+  {
+    "id": "prod_1781006086928_ccebb3",
+    "slug": "silk-scrunchie-lavender",
+    "name": "Silk Scrunchie - Lavender",
+    "collection": "scrunchies",
+    "price": 25,
+    "image": "https://aura.devshubh.me/images/web/1000068927-mq6l0uyf00370b.png",
+    "description": "Lavender-scrunchie",
+    "tags": []
+  },
+  {
+    "id": "prod_1781006429243_5523bd",
+    "slug": "silk-scrunchie-blue",
+    "name": "Silk Scrunchie - Blue",
+    "collection": "scrunchies",
+    "price": 25,
+    "image": "https://aura.devshubh.me/images/web/1000068929-mq6l81p25f4d90.png",
+    "description": "Blue silk Scrunchy",
     "tags": []
   }
 ]
