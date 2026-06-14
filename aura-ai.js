@@ -292,6 +292,18 @@ function handleAuraBackendMessage(message) {
             } else if (typeof openCartPage === 'function') openCartPage();
             break;
         }
+        case 'view_hamper':
+            closeCollectionOverlay(); // Ensure we are on the main page
+            setTimeout(() => {
+                const el = document.getElementById('trending-hampers');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                if (window.AuraHampers) {
+                    let opened = false;
+                    if (message.hamperId) opened = window.AuraHampers.openById(message.hamperId);
+                    if (!opened && typeof message.index === 'number') window.AuraHampers.openByIndex(message.index);
+                }
+            }, 350);
+            break;
         case 'scroll_to_section':
             closeCollectionOverlay(); // Ensure we are on the main page
             setTimeout(() => {

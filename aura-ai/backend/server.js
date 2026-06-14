@@ -72,13 +72,23 @@ const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
 const COLLECTIONS_FILE = path.join(DATA_DIR, 'collections.json');
 const SITE_FILE = path.join(DATA_DIR, 'site.json');
 
+const DEFAULT_ABOUT = {
+    label: 'Our Story',
+    title: 'Crafted with Love, Delivered with Care',
+    image: '/images/web/auraboxedgifts.png',
+    body: 'Aura Boxed Gifts is a custom gift hamper business that focuses on creating beautifully curated, personalized gift boxes for different occasions.\n\n💝 What we do:\n• Create customized hamper boxes (you can choose items, theme, colors)\n• Design aesthetic packaging with lights, shredded paper, ribbons, etc.\n• Offer occasion-based gifting like Birthdays, Mother\'s Day, Weddings, Anniversaries, and Corporate gifts.\n\nWe provide pan-India delivery and take orders via our website or Instagram DMs! 🎁',
+    ctaText: 'Visit Our Store',
+    ctaLink: 'https://www.instagram.com/aura_boxedgifts?utm_source=qr&igsh=MTYwbTYzNjJ6anUwdA=='
+};
+
 const DEFAULT_SITE = {
     hero: {
         slides: [
             { id: 'hero_1', image: '/images/web/auraboxedgifts.png', alt: 'Aura Boxed Gifts' }
         ]
     },
-    hampers: []
+    hampers: [],
+    about: { ...DEFAULT_ABOUT }
 };
 
 const ROOT_DIR = path.resolve(__dirname, '../..');
@@ -232,6 +242,7 @@ function getSite() {
     const site = readJson(SITE_FILE, DEFAULT_SITE);
     if (!site.hero || !Array.isArray(site.hero.slides)) site.hero = { slides: [] };
     if (!Array.isArray(site.hampers)) site.hampers = [];
+    site.about = { ...DEFAULT_ABOUT, ...(site.about || {}) };
     return site;
 }
 
@@ -749,6 +760,160 @@ app.post('/api/admin/hampers/reorder', requireAdmin, (req, res) => {
     site.hampers = [...reordered, ...tail];
     saveSite(site);
     return jsonOk(res, site.hampers);
+});
+
+// About section (homepage "Our Story")
+app.put('/api/admin/about', requireAdmin, (req, res) => {
+    const site = getSite();
+    const about = { ...DEFAULT_ABOUT, ...(site.about || {}) };
+    const fields = ['label', 'title', 'body', 'image', 'ctaText', 'ctaLink'];
+    for (const key of fields) {
+        if (typeof req.body?.[key] === 'string') about[key] = req.body[key];
+    }
+    site.about = about;
+    saveSite(site);
+    return jsonOk(res, about);
+});
+
+// ─── Admin: Integrations & testing tools ───
+function maskValue(value) {
+    const v = String(value || '');
+    if (!v) return '';
+    if (v.length <= 4) return '••••';
+    return `${v.slice(0, 2)}••••${v.slice(-2)}`;
+}
+
+app.get('/api/admin/integrations', requireAdmin, (req, res) => {
+    return jsonOk(res, {
+        email: {
+            configured: Boolean(process.env.EMAIL_USER && process.env.EMAIL_APP_PASSWORD),
+            sender: maskValue(process.env.EMAIL_USER),
+            recipient: maskValue(process.env.RECIPIENT_EMAIL)
+        },
+        whatsapp: {
+            configured: Boolean(process.env.CALLMEBOT_PHONE && process.env.CALLMEBOT_API_KEY),
+            phone: maskValue(process.env.CALLMEBOT_PHONE)
+        },
+        razorpay: {
+            configured: Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET)
+        },
+        maps: {
+            configured: Boolean(process.env.GOOGLE_MAPS_API_KEY)
+        }
+    });
+});
+
+app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
+    const to = String(req.body?.to || process.env.RECIPIENT_EMAIL || '').trim();
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
+        return jsonErr(res, 400, 'Email is not configured. Set EMAIL_USER and EMAIL_APP_PASSWORD on the server.');
+    }
+    if (!to) return jsonErr(res, 400, 'No recipient. Provide an address or set RECIPIENT_EMAIL on the server.');
+    try {
+        const info = await emailTransporter.sendMail({
+            from: `"Aura Boxed Gifts" <${process.env.EMAIL_USER}>`,
+            to,
+            subject: 'Aura test email ✅',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color:#b76e79;">Your email setup works! 🎉</h2>
+                    <p>This is a test message sent from the Aura admin panel.</p>
+                    <p>If you can read this, order confirmation emails will be delivered correctly.</p>
+                    <p style="color:#888;font-size:12px;">Sent: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
+                </div>`
+        });
+        return jsonOk(res, { sentTo: to, messageId: info.messageId });
+    } catch (err) {
+        return jsonErr(res, 500, `Email failed: ${err.message}`);
+    }
+});
+
+app.post('/api/admin/test-whatsapp', requireAdmin, async (req, res) => {
+    if (!process.env.CALLMEBOT_PHONE || !process.env.CALLMEBOT_API_KEY) {
+        return jsonErr(res, 400, 'WhatsApp is not configured. Set CALLMEBOT_PHONE and CALLMEBOT_API_KEY on the server.');
+    }
+    const result = await sendWhatsAppNotification(
+        `✅ *Aura test message*\n\nYour WhatsApp order alerts are working. You will receive a message like this whenever a new order comes in.\n\nSent: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`
+    );
+    if (!result.success) return jsonErr(res, 500, `WhatsApp failed: ${result.error || 'Unknown error'}`);
+    return jsonOk(res, { sent: true });
+});
+
+// Create a ₹1 test order that runs the full order flow (record + emails + WhatsApp)
+app.post('/api/admin/test-order', requireAdmin, async (req, res) => {
+    const body = req.body || {};
+    const amount = Math.max(1, Number(body.amount) || 1);
+    const customer = {
+        name: String(body.name || 'Test Customer').trim(),
+        email: String(body.email || process.env.RECIPIENT_EMAIL || '').trim(),
+        phone: String(body.phone || '').trim(),
+        address: String(body.address || 'Test address, India').trim(),
+        city: String(body.city || '').trim(),
+        state: String(body.state || '').trim(),
+        pincode: String(body.pincode || '').trim()
+    };
+    const cart = {
+        lines: [{
+            productId: 'test_item',
+            name: String(body.itemName || 'Test Order Item'),
+            image: '',
+            qty: 1,
+            unitPrice: amount,
+            lineTotal: amount
+        }],
+        subtotal: amount,
+        shipping: 0,
+        discount: 0,
+        tax: 0,
+        grandTotal: amount,
+        currency: 'INR'
+    };
+
+    const orders = readJson(ORDERS_FILE, []);
+    const order = {
+        id: `test_${Date.now()}`,
+        userEmail: customer.email,
+        customer,
+        cart,
+        paymentStatus: 'paid',
+        status: 'confirmed',
+        isTest: true,
+        createdAt: new Date().toISOString()
+    };
+    orders.unshift(order);
+    writeJson(ORDERS_FILE, orders);
+
+    const results = { order: order.id, adminEmail: null, customerEmail: null, whatsapp: null };
+
+    const lineHtml = cart.lines.map((l) => `- ${l.name} x${l.qty}: ₹${l.lineTotal}`).join('<br>');
+    try {
+        const r = await sendEmailNotification(
+            `🧪 TEST ORDER (not a real purchase).<br><strong>Order:</strong> ${order.id}<br><br>${lineHtml}<br><br>Total: ₹${cart.grandTotal}`,
+            `${customer.name} (${customer.email})`,
+            'Order Request'
+        );
+        results.adminEmail = r.success ? 'sent' : (r.error || 'failed');
+    } catch (err) { results.adminEmail = err.message; }
+
+    try {
+        await sendCustomerOrderEmail(customer, order);
+        results.customerEmail = customer.email ? 'sent' : 'skipped (no email)';
+    } catch (err) { results.customerEmail = err.message; }
+
+    const waMessage = `🧪 *TEST ORDER* (not real)\n\n` +
+        `*Order ID:* ${order.id}\n` +
+        `*Customer:* ${customer.name || '-'}\n` +
+        `*Phone:* ${customer.phone || '-'}\n` +
+        `*Email:* ${customer.email || '-'}\n\n` +
+        `*Items:*\n• ${cart.lines[0].name} x1: ₹${cart.grandTotal}\n\n` +
+        `*Total:* ₹${cart.grandTotal}\n\n` +
+        `*Address:*\n${customer.address || '-'}`;
+    try {
+        const r = await sendWhatsAppNotification(waMessage);
+        results.whatsapp = r.success ? 'sent' : (r.error || 'not configured');
+    } catch (err) { results.whatsapp = err.message; }
+
+    return jsonOk(res, results);
 });
 
 // ─── Snapshot / Rollback System ───
@@ -1309,6 +1474,7 @@ const TOOL_DEDUPE_MS = {
     calculate_cart_total: 5000,
     browse_collection: 12000,
     show_hampers: 12000,
+    view_hamper: 4000,
     navigate_home: 6000,
     scroll_to_section: 6000,
     view_product: 4000,
@@ -1478,12 +1644,46 @@ wss.on('connection', (clientWs, request) => {
                                     clientWs.send(JSON.stringify({ type: 'navigate_home' }));
                                     clientWs.send(JSON.stringify({ type: 'scroll_to_section', section: 'hampers' }));
                                     const hampers = getSite().hampers || [];
-                                    const note = hampers.map((h, i) => `${i + 1}. ${h.title}`).join('\n');
+                                    const note = hampers
+                                        .map((h, i) => `${i + 1}. ${h.title}${Number(h.price) > 0 ? ` (₹${h.price})` : ''}`)
+                                        .join('\n');
                                     response = {
                                         result: 'Showing trending hampers',
                                         count: hampers.length,
                                         hampers: note || 'No hampers configured'
                                     };
+                                } else if (fc.name === 'view_hamper') {
+                                    const hampers = getSite().hampers || [];
+                                    const needle = normalizeProductName(args.hamperName || '');
+                                    let idx = -1;
+                                    if (args.hamperId) idx = hampers.findIndex((h) => h.id === args.hamperId);
+                                    if (idx === -1 && needle) {
+                                        idx = hampers.findIndex((h) => {
+                                            const t = normalizeProductName(h.title);
+                                            return t === needle || t.includes(needle) || needle.includes(t);
+                                        });
+                                    }
+                                    if (idx === -1) {
+                                        response = {
+                                            result: `Could not find a hamper matching "${args.hamperName || args.hamperId || ''}". Available: ${hampers.map((h) => h.title).join(', ') || 'none'}`
+                                        };
+                                    } else {
+                                        const h = hampers[idx];
+                                        clientWs.send(JSON.stringify({
+                                            type: 'view_hamper',
+                                            hamperId: h.id,
+                                            index: idx,
+                                            title: h.title,
+                                            price: Number(h.price) || 0
+                                        }));
+                                        response = {
+                                            result: `Opened ${h.title}${Number(h.price) > 0 ? ` priced at ₹${h.price}` : ''}. It is fully customisable — theme, colours and items can be changed.`,
+                                            hamperId: h.id,
+                                            title: h.title,
+                                            price: Number(h.price) || 0,
+                                            subtitle: h.subtitle || ''
+                                        };
+                                    }
                                 } else if (fc.name === 'request_custom_hamper') {
                                     const details = [
                                         args.occasion ? `Occasion: ${args.occasion}` : '',

@@ -41,7 +41,18 @@ const toolDeclarations = [
     },
     {
         name: 'show_hampers',
-        description: 'Show the Trending Hampers showcase on the homepage. Use when the user asks about gift hampers, customised hampers, gift boxes, or wants ideas for occasions like birthdays, weddings, baby showers, or mother\'s day.'
+        description: 'Show the whole Trending Hampers showcase on the homepage. Use when the user asks generally about gift hampers, or wants to browse/see ideas for occasions. The tool response lists every hamper with its price — use those real names and prices. To open ONE specific hamper, use view_hamper instead.'
+    },
+    {
+        name: 'view_hamper',
+        description: 'Open a single specific hamper in a large preview (lightbox) with its image, title and price. Use this when the user names or asks to see a particular hamper (e.g. "show me the wedding hamper", "open the birthday one"). Pass the hamperName the user said; pass hamperId too if you got it from a previous show_hampers response.',
+        parameters: {
+            type: 'object',
+            properties: {
+                hamperName: { type: 'string', description: 'The hamper name or close description the user mentioned' },
+                hamperId: { type: 'string', description: 'Exact hamper id if known from a prior tool response' }
+            }
+        }
     },
     {
         name: 'request_custom_hamper',
