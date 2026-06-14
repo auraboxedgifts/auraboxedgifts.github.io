@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aura Boxed Gifts - Luxury Gift Hampers</title>
+  <meta name="description" content="Luxury Gift hamper box">
+  <link rel="stylesheet" href="collection.css">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="icon" type="image/jpeg" href="../images/logo.jpeg">
+</head>
+<body>
+  <nav class="col-nav">
+    <a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html';} return false;" class="col-nav-back"><i class="fas fa-arrow-left"></i> Back</a>
+    <a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html';} return false;" class="col-nav-logo"><img src="../images/logo.jpeg" alt="Aura Boxed Gifts"></a>
+    <div class="col-nav-links">
+      <a href="#" id="navCartIcon" aria-label="Cart" style="position: relative; margin-right: 15px;">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="nav-cart-badge" id="navCartBadge">0</span>
+      </a>
+      <a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html';} return false;" class="nav-text-link">Home</a>
+      <a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html#collections';} return false;" class="nav-text-link">Collections</a>
+      <a href="https://www.instagram.com/aura_boxedgifts" target="_blank"><i class="fab fa-instagram"></i></a>
+    </div>
+  </nav>
+
+  <section class="col-hero">
+    <p class="col-hero-label">Collection</p>
+    <h1 class="col-hero-title">Luxury Gift Hampers</h1>
+    <p class="col-hero-desc">Luxury Gift hamper box</p>
+    <div class="col-hero-divider"></div>
+    <p class="col-breadcrumb"><a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html';} return false;">Home</a> / <a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html#collections';} return false;">Collections</a> / Luxury Gift Hampers</p>
+  </section>
+
+  <section class="col-gallery">
+    <div class="col-grid" data-collection="luxury-gift-hampers">
+
+      <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-medium);">
+        <h3 style="font-family:'Playfair Display',serif;margin-bottom:8px;">No products yet</h3>
+        <p>New arrivals coming soon — check back in a bit!</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="col-cta">
+    <h2 class="col-cta-title">Love what you see?</h2>
+    <p class="col-cta-text">DM us on Instagram to customize your final hamper and gifting card.</p>
+    <a href="https://www.instagram.com/aura_boxedgifts" target="_blank" class="col-btn-ig"><i class="fab fa-instagram"></i> Order on Instagram</a>
+  </section>
+
+  <footer class="col-footer">
+    <p>&copy; 2026 Aura Boxed Gifts. All rights reserved.</p>
+  </footer>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/cart.js"></script>
+  <script src="../js/checkout.js"></script>
+  <script src="../js/admin.js"></script>
+  <script src="../js/lightbox.js"></script>
+</body>
+</html>

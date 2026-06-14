@@ -188,7 +188,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    let currentHampers = [];
+
     function renderHampers(hampers) {
+      currentHampers = hampers || [];
       if (!hampers.length) { hampersContainer.innerHTML = ''; return; }
       hampersContainer.innerHTML = hampers.map((h, idx) => `
         <article class="hamper-card" style="animation-delay: ${idx * 0.08}s" data-index="${idx}">
@@ -279,6 +282,23 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.style.overflow = '';
     }
 
+    // Exposed so Aura AI can open a specific hamper by id or index.
+    window.AuraHampers = {
+      list: () => currentHampers.slice(),
+      openByIndex: (i) => {
+        if (!currentHampers.length) return false;
+        const idx = Math.max(0, Math.min(currentHampers.length - 1, Number(i) || 0));
+        openHamperLightbox(currentHampers, idx);
+        return true;
+      },
+      openById: (id) => {
+        const idx = currentHampers.findIndex((h) => h.id === id);
+        if (idx === -1) return false;
+        openHamperLightbox(currentHampers, idx);
+        return true;
+      }
+    };
+
     if (window.AuraApi && window.AuraApi.apiFetch) {
       window.AuraApi.apiFetch('/api/hampers')
         .then((resp) => {
@@ -292,6 +312,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Dynamic collections hydration
     initCollectionsGrid();
+});
+
+// ─── ABOUT / OUR STORY (editable via admin) ───
+document.addEventListener('DOMContentLoaded', () => {
+  const titleEl = document.getElementById('aboutTitle');
+  if (!titleEl || !(window.AuraApi && window.AuraApi.apiFetch)) return;
+
+  const esc = (str) => String(str == null ? '' : str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // Turn admin plain text into safe HTML: blank lines -> paragraphs, single newlines -> <br>.
+  function bodyToHtml(text) {
+    return String(text || '')
+      .split(/\n\s*\n/)
+      .map((block) => `<p>${esc(block).replace(/\n/g, '<br>')}</p>`)
+      .join('');
+  }
+
+  window.AuraApi.apiFetch('/api/site')
+    .then((resp) => {
+      const about = resp.data && resp.data.about;
+      if (!about) return;
+      const labelEl = document.getElementById('aboutLabel');
+      const bodyEl = document.getElementById('aboutBody');
+      const imgEl = document.getElementById('aboutImage');
+      const ctaEl = document.getElementById('aboutCta');
+      if (labelEl && about.label) labelEl.textContent = about.label;
+      if (about.title) titleEl.textContent = about.title;
+      if (bodyEl && about.body) bodyEl.innerHTML = bodyToHtml(about.body);
+      if (imgEl && about.image) {
+        imgEl.src = window.AuraApi.resolveAssetPath(about.image);
+      }
+      if (ctaEl) {
+        if (about.ctaText) ctaEl.textContent = about.ctaText;
+        if (about.ctaLink) ctaEl.href = about.ctaLink;
+      }
+    })
+    .catch(() => {});
 });
 
 function initCollectionsGrid() {

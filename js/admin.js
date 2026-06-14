@@ -107,6 +107,7 @@
             <button class="aap-nav-item active" data-view="products"><i class="fas fa-box-open"></i><span>Products</span></button>
             <button class="aap-nav-item" data-view="collections"><i class="fas fa-layer-group"></i><span>Collections</span></button>
             <button class="aap-nav-item" data-view="homepage"><i class="fas fa-house"></i><span>Homepage</span></button>
+            <button class="aap-nav-item" data-view="tools"><i class="fas fa-flask"></i><span>Testing &amp; Setup</span></button>
             <button class="aap-nav-item" data-view="history"><i class="fas fa-clock-rotate-left"></i><span>History</span></button>
             <button class="aap-nav-item" data-view="help"><i class="fas fa-question-circle"></i><span>Quick Help</span></button>
           </nav>
@@ -288,6 +289,10 @@
       title.textContent = 'Homepage';
       sub.textContent = 'Manage your hero banner images and the Trending Hampers showcase.';
       renderHomepageView();
+    } else if (state.view === 'tools') {
+      title.textContent = 'Testing & Setup';
+      sub.textContent = 'Send test orders, test email & WhatsApp alerts, and check your integrations.';
+      renderToolsView();
     } else if (state.view === 'history') {
       title.textContent = 'History';
       sub.textContent = 'View past snapshots and roll back to any previous state.';
@@ -1193,7 +1198,19 @@
         </div>
         <div class="aap-help-card">
           <h3><i class="fas fa-layer-group"></i> Collections</h3>
-          <p>Collections appear as categories on your shop. Create, rename, or delete them from the Collections tab.</p>
+          <p>Collections appear as categories on your shop. Create, rename, or delete them from the Collections tab. Deleting a collection can also remove its products (you choose).</p>
+        </div>
+        <div class="aap-help-card">
+          <h3><i class="fas fa-feather"></i> Editing "Our Story"</h3>
+          <p>Open the <strong>Homepage</strong> tab and click <strong>Edit About</strong> to change the story text, photo and button shown in the About section.</p>
+        </div>
+        <div class="aap-help-card">
+          <h3><i class="fas fa-flask"></i> Testing & Setup</h3>
+          <p>Use the <strong>Testing &amp; Setup</strong> tab to send yourself a test email or WhatsApp, and to place a ₹1 test order to preview the full ordering experience.</p>
+        </div>
+        <div class="aap-help-card">
+          <h3><i class="fas fa-rocket"></i> Publishing</h3>
+          <p>Changes save instantly to your store. Click <strong>Apply &amp; Publish</strong> (top right) to also push them to the public GitHub Pages site.</p>
         </div>
       </div>`;
   }
@@ -1271,7 +1288,31 @@
         </div>
       </article>`).join('');
 
+    const about = state.site.about || {};
+    const aboutBodyPreview = escapeHtml((about.body || '').split(/\n\s*\n/)[0] || '').slice(0, 140);
+
     content.innerHTML = `
+      <div class="aap-section-block">
+        <div class="aap-block-head">
+          <div>
+            <h3><i class="fas fa-feather"></i> About / Our Story</h3>
+            <p class="aap-hint" style="margin:4px 0 0;">The "Our Story" section on your homepage. Edit the text, image and button here.</p>
+          </div>
+          <button class="aap-btn-primary" id="aapEditAbout"><i class="fas fa-pen"></i> Edit About</button>
+        </div>
+        <div class="aap-hp-grid">
+          <article class="aap-hp-card" style="cursor:default;">
+            <div class="aap-hp-media">
+              ${about.image ? `<img src="${escapeHtml(resolveImage(about.image))}" alt="About image" loading="lazy">` : `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#f1e6df;color:#b76e79;"><i class="fas fa-image" style="font-size:2rem;"></i></div>`}
+            </div>
+            <div class="aap-hp-body">
+              <p class="aap-hp-caption">${escapeHtml(about.title || 'Our Story')}</p>
+              <p class="aap-hp-price" style="color:#8a7;">${aboutBodyPreview || 'No text yet'}…</p>
+            </div>
+          </article>
+        </div>
+      </div>
+
       <div class="aap-section-block">
         <div class="aap-block-head">
           <div>
@@ -1304,6 +1345,7 @@
         <div class="aap-hp-grid hampers" id="aapHamperGrid">${hamperCards || '<div class="aap-empty"><i class="far fa-image"></i><h3>No hampers yet</h3><p>Add your first hamper showcase.</p></div>'}</div>
       </div>`;
 
+    content.querySelector('#aapEditAbout').addEventListener('click', () => openAboutForm());
     content.querySelector('#aapAddHero').addEventListener('click', () => openHeroForm(null));
     content.querySelector('#aapAddHamper').addEventListener('click', () => openHamperForm(null));
 
@@ -1518,6 +1560,207 @@
             }
           } }
       ]
+    });
+  }
+
+  function openAboutForm() {
+    const about = state.site.about || {};
+    const html = `
+      <form class="aap-form">
+        <div class="aap-form-grid">
+          <div class="aap-form-image">
+            <label class="aap-label">About image</label>
+            <div class="aap-uploader" id="aapUploader">
+              <div class="aap-uploader-preview" id="aapPreview">
+                ${about.image ? `<img src="${escapeHtml(resolveImage(about.image))}" alt="">` : `<div class="aap-uploader-placeholder"><i class="fas fa-image"></i><p>Drag &amp; drop or click to upload</p><span>JPG, PNG, WEBP up to 8&nbsp;MB</span></div>`}
+              </div>
+              <input type="file" id="aapImageFile" accept="image/*" hidden>
+              <div class="aap-uploader-actions">
+                <button type="button" class="aap-btn-secondary" id="aapPickImage"><i class="fas fa-upload"></i> Choose file</button>
+                <input type="text" id="aapImageUrl" class="aap-input" placeholder="or paste image URL/path" value="${escapeHtml(about.image || '')}">
+              </div>
+              <p class="aap-uploader-hint" id="aapUploadStatus"></p>
+            </div>
+          </div>
+          <div class="aap-form-fields">
+            <label class="aap-label">Small label <span class="aap-label-sub">(above the title)</span></label>
+            <input class="aap-input" id="aapAboutLabel" type="text" placeholder="Our Story" value="${escapeHtml(about.label || '')}">
+
+            <label class="aap-label">Heading</label>
+            <input class="aap-input" id="aapAboutTitle" type="text" placeholder="Crafted with Love, Delivered with Care" value="${escapeHtml(about.title || '')}">
+
+            <label class="aap-label">Body text <span class="aap-label-sub">(leave a blank line between paragraphs)</span></label>
+            <textarea class="aap-input" id="aapAboutBody" rows="8" placeholder="Tell your story…">${escapeHtml(about.body || '')}</textarea>
+
+            <div class="aap-form-row">
+              <div>
+                <label class="aap-label">Button text</label>
+                <input class="aap-input" id="aapAboutCtaText" type="text" placeholder="Visit Our Store" value="${escapeHtml(about.ctaText || '')}">
+              </div>
+              <div>
+                <label class="aap-label">Button link</label>
+                <input class="aap-input" id="aapAboutCtaLink" type="text" placeholder="https://instagram.com/…" value="${escapeHtml(about.ctaLink || '')}">
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>`;
+    openModal({
+      title: 'Edit About / Our Story',
+      html,
+      wide: true,
+      actions: [
+        { label: 'Cancel', kind: 'secondary', onClick: closeModal },
+        {
+          label: 'Save changes', kind: 'primary', onClick: async function (btn) {
+            const payload = {
+              label: document.getElementById('aapAboutLabel').value.trim(),
+              title: document.getElementById('aapAboutTitle').value.trim(),
+              body: document.getElementById('aapAboutBody').value,
+              image: document.getElementById('aapImageUrl').value.trim(),
+              ctaText: document.getElementById('aapAboutCtaText').value.trim(),
+              ctaLink: document.getElementById('aapAboutCtaLink').value.trim()
+            };
+            if (!payload.title) return toast('Please add a heading.', 'error');
+            btn.disabled = true; btn.textContent = 'Saving…';
+            try {
+              const res = await adminFetch('/api/admin/about', { method: 'PUT', body: JSON.stringify(payload) });
+              state.site.about = res.data || payload;
+              toast('About section updated', 'success');
+              closeModal();
+              renderView();
+            } catch (err) {
+              toast(`Save failed: ${err.message}`, 'error');
+              btn.disabled = false; btn.textContent = 'Save changes';
+            }
+          }
+        }
+      ]
+    });
+    setTimeout(bindUploader, 0);
+  }
+
+  // ─── Testing & Setup tools ───
+  async function renderToolsView() {
+    const content = document.getElementById('aapContent');
+    content.innerHTML = renderLoadingState();
+    let status = null;
+    try {
+      const res = await adminFetch('/api/admin/integrations');
+      status = res.data;
+    } catch (err) {
+      content.innerHTML = `<div class="aap-empty">Failed to load integration status: ${escapeHtml(err.message)}</div>`;
+      return;
+    }
+
+    const dot = (ok) => `<span class="aap-status-dot ${ok ? 'on' : 'off'}"></span>${ok ? 'Configured' : 'Not configured'}`;
+
+    content.innerHTML = `
+      <div class="aap-tools-grid">
+        <div class="aap-tool-card">
+          <h3><i class="fas fa-envelope"></i> Email alerts</h3>
+          <p class="aap-tool-status">${dot(status.email.configured)}</p>
+          <p class="aap-hint">Order confirmations to customers and alerts to you. Recipient: <strong>${escapeHtml(status.email.recipient || '—')}</strong></p>
+          <div class="aap-tool-row">
+            <input class="aap-input" id="aapTestEmailTo" type="email" placeholder="Send test to (optional)">
+            <button class="aap-btn-primary" id="aapTestEmail"><i class="fas fa-paper-plane"></i> Send test email</button>
+          </div>
+        </div>
+
+        <div class="aap-tool-card">
+          <h3><i class="fab fa-whatsapp"></i> WhatsApp alerts</h3>
+          <p class="aap-tool-status">${dot(status.whatsapp.configured)}</p>
+          <p class="aap-hint">Instant WhatsApp message to you (${escapeHtml(status.whatsapp.phone || '—')}) on every new order.</p>
+          <div class="aap-tool-row">
+            <button class="aap-btn-primary" id="aapTestWhatsapp"><i class="fas fa-paper-plane"></i> Send test WhatsApp</button>
+          </div>
+        </div>
+
+        <div class="aap-tool-card">
+          <h3><i class="fas fa-credit-card"></i> Payments (Razorpay)</h3>
+          <p class="aap-tool-status">${dot(status.razorpay.configured)}</p>
+          <p class="aap-hint">Required to accept real online payments at checkout.</p>
+        </div>
+
+        <div class="aap-tool-card">
+          <h3><i class="fas fa-map-location-dot"></i> Address autocomplete</h3>
+          <p class="aap-tool-status">${dot(status.maps.configured)}</p>
+          <p class="aap-hint">Google Maps Places for faster address entry at checkout.</p>
+        </div>
+      </div>
+
+      <div class="aap-section-block">
+        <div class="aap-block-head">
+          <div>
+            <h3><i class="fas fa-vial"></i> Place a test order (₹1)</h3>
+            <p class="aap-hint" style="margin:4px 0 0;">Creates a real order record for ₹1 and fires the same email + WhatsApp alerts a customer order would, so you can see exactly what happens. Marked as a test.</p>
+          </div>
+        </div>
+        <form class="aap-form" id="aapTestOrderForm">
+          <div class="aap-form-row">
+            <div><label class="aap-label">Customer name</label><input class="aap-input" id="aapToName" type="text" placeholder="Test Customer"></div>
+            <div><label class="aap-label">Phone</label><input class="aap-input" id="aapToPhone" type="text" placeholder="9876543210"></div>
+          </div>
+          <div class="aap-form-row">
+            <div><label class="aap-label">Email <span class="aap-label-sub">(gets the confirmation)</span></label><input class="aap-input" id="aapToEmail" type="email" placeholder="you@example.com"></div>
+            <div><label class="aap-label">Item name</label><input class="aap-input" id="aapToItem" type="text" placeholder="Test Order Item" value="Test Order Item"></div>
+          </div>
+          <label class="aap-label">Shipping address</label>
+          <textarea class="aap-input" id="aapToAddress" rows="2" placeholder="123 Test Lane, City, State - 000000"></textarea>
+          <div style="margin-top:14px;">
+            <button type="button" class="aap-btn-primary" id="aapPlaceTestOrder"><i class="fas fa-rocket"></i> Place ₹1 test order</button>
+          </div>
+        </form>
+        <div id="aapTestOrderResult"></div>
+      </div>`;
+
+    content.querySelector('#aapTestEmail').addEventListener('click', async function () {
+      const to = content.querySelector('#aapTestEmailTo').value.trim();
+      this.disabled = true; const orig = this.innerHTML; this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending…';
+      try {
+        const res = await adminFetch('/api/admin/test-email', { method: 'POST', body: JSON.stringify({ to }) });
+        toast(`Test email sent to ${res.data.sentTo}`, 'success');
+      } catch (err) { toast(err.message, 'error'); }
+      this.disabled = false; this.innerHTML = orig;
+    });
+
+    content.querySelector('#aapTestWhatsapp').addEventListener('click', async function () {
+      this.disabled = true; const orig = this.innerHTML; this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending…';
+      try {
+        await adminFetch('/api/admin/test-whatsapp', { method: 'POST' });
+        toast('Test WhatsApp message sent', 'success');
+      } catch (err) { toast(err.message, 'error'); }
+      this.disabled = false; this.innerHTML = orig;
+    });
+
+    content.querySelector('#aapPlaceTestOrder').addEventListener('click', async function () {
+      const payload = {
+        name: content.querySelector('#aapToName').value.trim(),
+        phone: content.querySelector('#aapToPhone').value.trim(),
+        email: content.querySelector('#aapToEmail').value.trim(),
+        itemName: content.querySelector('#aapToItem').value.trim(),
+        address: content.querySelector('#aapToAddress').value.trim()
+      };
+      this.disabled = true; const orig = this.innerHTML; this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Placing…';
+      const resultEl = content.querySelector('#aapTestOrderResult');
+      try {
+        const res = await adminFetch('/api/admin/test-order', { method: 'POST', body: JSON.stringify(payload) });
+        const d = res.data;
+        resultEl.innerHTML = `
+          <div class="aap-tool-result">
+            <p><i class="fas fa-check-circle" style="color:#3ba35a;"></i> Test order <strong>${escapeHtml(d.order)}</strong> created.</p>
+            <ul>
+              <li>Admin email: <strong>${escapeHtml(String(d.adminEmail))}</strong></li>
+              <li>Customer email: <strong>${escapeHtml(String(d.customerEmail))}</strong></li>
+              <li>WhatsApp: <strong>${escapeHtml(String(d.whatsapp))}</strong></li>
+            </ul>
+          </div>`;
+        toast('Test order placed', 'success');
+      } catch (err) {
+        toast(err.message, 'error');
+        resultEl.innerHTML = `<div class="aap-tool-result error"><i class="fas fa-times-circle"></i> ${escapeHtml(err.message)}</div>`;
+      }
+      this.disabled = false; this.innerHTML = orig;
     });
   }
 
