@@ -19,7 +19,7 @@
     "name": "Hair Bow Clip- Dusky Pink",
     "collection": "hairbows",
     "price": 20,
-    "image": "/images/web/aligator-hairpins-2.jpeg",
+    "image": "https://aura.devshubh.me/images/web/1000068935-mq6lmnih48ee33.png",
     "description": "Neat bow clip with a secure alligator grip.",
     "tags": [
       "bow",
@@ -675,6 +675,36 @@
     "price": 25,
     "image": "https://aura.devshubh.me/images/web/1000068929-mq6l81p25f4d90.png",
     "description": "Blue silk Scrunchy",
+    "tags": []
+  },
+  {
+    "id": "prod_1781007403976_bc9427",
+    "slug": "hair-bow-clip-blue",
+    "name": "Hair Bow Clip- Blue",
+    "collection": "hairbows",
+    "price": 20,
+    "image": "https://aura.devshubh.me/images/web/1000068939-mq6lsx5f296f44.png",
+    "description": "Pastel colours Hairbows for cute hairstyles",
+    "tags": []
+  },
+  {
+    "id": "prod_1781007504865_efee6d",
+    "slug": "hair-bow-clip-light-pink",
+    "name": "Hair Bow Clip- Light Pink",
+    "collection": "hairbows",
+    "price": 20,
+    "image": "https://aura.devshubh.me/images/web/1000068940-mq6luwsz407f04.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781007674609_284752",
+    "slug": "hair-bow-clip-lavender",
+    "name": "Hair Bow Clip- Lavender",
+    "collection": "hairbows",
+    "price": 20,
+    "image": "https://aura.devshubh.me/images/web/1000068942-mq6lz2uj396786.png",
+    "description": "",
     "tags": []
   }
 ]

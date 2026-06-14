@@ -29,7 +29,8 @@
   {
     "slug": "hairbows",
     "name": "Hair Bows",
-    "description": "Cute bow clips for playful and elegant hair styling."
+    "description": "Cute bow clips for playful and elegant hair styling.",
+    "image": "https://aura.devshubh.me/images/web/1000068944-mq6m3gn44c6832.png"
   },
   {
     "slug": "rings",
@@ -60,5 +61,11 @@
     "name": "Add ons",
     "description": "",
     "image": "https://aura.devshubh.me/images/web/1000062732-mpz2a1nq60bd51.jpg"
+  },
+  {
+    "slug": "hair-alligator-pin",
+    "name": "Hair Alligator Pin",
+    "description": "",
+    "image": ""
   }
 ]
