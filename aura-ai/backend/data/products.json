@@ -170,110 +170,6 @@
     ]
   },
   {
-    "id": "claw_1",
-    "slug": "floral-hair-claw-clip",
-    "name": "Floral Hair Claw Clip",
-    "collection": "claws",
-    "price": 279,
-    "image": "/images/web/hairclaws-1.jpeg",
-    "description": "Strong grip floral claw clip for medium to thick hair.",
-    "tags": [
-      "hairclaw",
-      "floral"
-    ]
-  },
-  {
-    "id": "claw_2",
-    "slug": "butterfly-hair-claw-clip",
-    "name": "Butterfly Hair Claw Clip",
-    "collection": "claws",
-    "price": 299,
-    "image": "/images/web/hairclaws-2.jpeg",
-    "description": "Butterfly-inspired claw clip with secure hold.",
-    "tags": [
-      "hairclaw",
-      "butterfly"
-    ]
-  },
-  {
-    "id": "claw_3",
-    "slug": "pearl-accent-hair-claw",
-    "name": "Pearl Accent Hair Claw",
-    "collection": "claws",
-    "price": 329,
-    "image": "/images/web/hairclaws-3.jpeg",
-    "description": "Pearl-accent claw clip with elevated finish.",
-    "tags": [
-      "hairclaw",
-      "pearl"
-    ]
-  },
-  {
-    "id": "claw_4",
-    "slug": "pastel-hair-claw-clip",
-    "name": "Pastel Hair Claw Clip",
-    "collection": "claws",
-    "price": 259,
-    "image": "/images/web/hairclaws-4.jpeg",
-    "description": "Pastel-tone clip for casual everyday hairstyles.",
-    "tags": [
-      "hairclaw",
-      "pastel"
-    ]
-  },
-  {
-    "id": "claw_5",
-    "slug": "marble-finish-hair-claw",
-    "name": "Marble Finish Hair Claw",
-    "collection": "claws",
-    "price": 299,
-    "image": "/images/web/hairclaws-5.jpeg",
-    "description": "Marble-texture claw clip with premium look.",
-    "tags": [
-      "hairclaw",
-      "marble"
-    ]
-  },
-  {
-    "id": "claw_6",
-    "slug": "translucent-hair-claw-clip",
-    "name": "Translucent Hair Claw Clip",
-    "collection": "claws",
-    "price": 259,
-    "image": "/images/web/hairclaws-6.jpeg",
-    "description": "Translucent claw clip that pairs with any outfit.",
-    "tags": [
-      "hairclaw",
-      "minimal"
-    ]
-  },
-  {
-    "id": "claw_7",
-    "slug": "gold-accent-hair-claw",
-    "name": "Gold Accent Hair Claw",
-    "collection": "claws",
-    "price": 349,
-    "image": "/images/web/hairclaws-7.jpeg",
-    "description": "Gold-detail clip with strong all-day hold.",
-    "tags": [
-      "hairclaw",
-      "gold"
-    ]
-  },
-  {
-    "id": "claw_8",
-    "slug": "rose-petal-hair-claw",
-    "name": "Rose Petal Hair Claw",
-    "collection": "claws",
-    "price": 329,
-    "image": "/images/web/hairclaws-8.jpeg",
-    "description": "Rose-shaped claw clip designed for gifting.",
-    "tags": [
-      "hairclaw",
-      "rose"
-    ]
-  },
-  {
     "id": "ring_1",
     "slug": "jewellery-case-compact-rose",
     "name": "Jewellery Case Compact Rose",
@@ -704,6 +600,396 @@
     "collection": "hairbows",
     "price": 20,
     "image": "https://aura.devshubh.me/images/web/1000068942-mq6lz2uj396786.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781529023585_a1eff6",
+    "slug": "mini-butterfly-shape-dual-colour-hairclaw",
+    "name": "Mini Butterfly shape dual colour Hairclaw",
+    "collection": "claws",
+    "price": 15,
+    "image": "https://aura.devshubh.me/images/web/1000069270-mqf8cw130a7f33.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781529113361_0f5313",
+    "slug": "mini-navy-blue-flowery-hairclaw",
+    "name": "Mini Navy blue flowery Hairclaw",
+    "collection": "claws",
+    "price": 15,
+    "image": "https://aura.devshubh.me/images/web/1000069263-mqf8epcx626b67.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781529201943_deaf68",
+    "slug": "dual-shade-hairclaw",
+    "name": "Mini Bluey Dual shade normal Hairclaw",
+    "collection": "claws",
+    "price": 15,
+    "image": "https://aura.devshubh.me/images/web/1000069268-mqf8gy6yc1fe31.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781529257756_1b2056",
+    "slug": "butterfly-shape-pastel-dual-colour-hairclaw",
+    "name": "Mini Butterfly shape Pastel dual colour Hairclaw",
+    "collection": "claws",
+    "price": 15,
+    "image": "https://aura.devshubh.me/images/web/1000069266-mqf8hyzw10a034.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781529300065_7b17ce",
+    "slug": "candy-shade-flowery-hairclaw",
+    "name": "Mini Candy shade flowery Hairclaw",
+    "collection": "claws",
+    "price": 15,
+    "image": "https://aura.devshubh.me/images/web/1000069272-mqf8j99f557e97.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781529363553_2924f4",
+    "slug": "pastel-shade-dual-normal-hairclaw",
+    "name": "Mini Pinky shade dual normal Hairclaw",
+    "collection": "claws",
+    "price": 15,
+    "image": "https://aura.devshubh.me/images/web/1000069274-mqf8kmtg6fa39a.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781529410919_a9d5eb",
+    "slug": "black-flowery-hairclaw",
+    "name": "Mini Black flowery Hairclaw",
+    "collection": "claws",
+    "price": 15,
+    "image": "https://aura.devshubh.me/images/web/1000069276-mqf8lsq19d45fa.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781529449842_383e4b",
+    "slug": "browny-dual-shade-normal-hairclaw",
+    "name": "Mini Browny dual shade normal Hairclaw",
+    "collection": "claws",
+    "price": 15,
+    "image": "https://aura.devshubh.me/images/web/1000069279-mqf8mc4o665526.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781529736809_82131e",
+    "slug": "peach-flowery-hairclaw",
+    "name": "Peach flowery Hairclaw",
+    "collection": "claws",
+    "price": 20,
+    "image": "https://aura.devshubh.me/images/web/1000069533-mqf8rkeh8ea6a6.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781529817352_bc9a77",
+    "slug": "sea-green-flowery-hairclaw",
+    "name": "Sea Green flowery Hairclaw",
+    "collection": "claws",
+    "price": 20,
+    "image": "https://aura.devshubh.me/images/web/1000069531-mqf8uf38fbe018.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781529860355_94f40d",
+    "slug": "rose-pink-flowery-hairclaw",
+    "name": "Rose pink flowery Hairclaw",
+    "collection": "claws",
+    "price": 20,
+    "image": "https://aura.devshubh.me/images/web/1000069519-mqf8vemn310f50.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781529892625_562871",
+    "slug": "light-pink-flowery-hairclaw",
+    "name": "Light Pink flowery Hairclaw",
+    "collection": "claws",
+    "price": 20,
+    "image": "https://aura.devshubh.me/images/web/1000069517-mqf8w2an406fa1.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781529919330_69bf2b",
+    "slug": "yellow-flowery-hairclaw",
+    "name": "Yellow flowery Hairclaw",
+    "collection": "claws",
+    "price": 20,
+    "image": "https://aura.devshubh.me/images/web/1000069515-mqf8wo55cbfab2.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781530001069_decb73",
+    "slug": "lavender-flowery-hairclaw",
+    "name": "Lavender flowery Hairclaw",
+    "collection": "claws",
+    "price": 20,
+    "image": "https://aura.devshubh.me/images/web/1000069513-mqf8xasl7a192b.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781530098869_e74637",
+    "slug": "peach-bow-shape-hairclaw",
+    "name": "Peach Bow shaped Hairclaw",
+    "collection": "claws",
+    "price": 25,
+    "image": "https://aura.devshubh.me/images/web/1000069541-mqf901oae2c027.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781532688420_ad57dd",
+    "slug": "lavender-flowery-hairclaw-1",
+    "name": "Lavender Bow shaped Hairclaw",
+    "collection": "claws",
+    "price": 25,
+    "image": "https://aura.devshubh.me/images/web/1000069543-mqfajslb08384f.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781532718324_22a7fc",
+    "slug": "sea-green-flowery-hairclaw-1",
+    "name": "Sea Green Bow shaped Hairclaw",
+    "collection": "claws",
+    "price": 25,
+    "image": "https://aura.devshubh.me/images/web/1000069545-mqfaknagd13501.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781532851149_666131",
+    "slug": "red-bow-shaped-hairclaw",
+    "name": "Red Bow shaped Hairclaw",
+    "collection": "claws",
+    "price": 25,
+    "image": "https://aura.devshubh.me/images/web/1000069547-mqfan9e8adbb17.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781532883115_813307",
+    "slug": "white-bow-shaped-hairclaw",
+    "name": "White Bow shaped Hairclaw",
+    "collection": "claws",
+    "price": 25,
+    "image": "https://aura.devshubh.me/images/web/1000069549-mqfao0ad6c8722.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781532936109_588bf8",
+    "slug": "black-bow-shaped-hairclaw",
+    "name": "Black Bow shaped Hairclaw",
+    "collection": "claws",
+    "price": 25,
+    "image": "https://aura.devshubh.me/images/web/1000069551-mqfapbzl4d5b04.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781533070854_b88f92",
+    "slug": "brown-big-hairclaw",
+    "name": "Brown Big Hairclaw",
+    "collection": "claws",
+    "price": 30,
+    "image": "https://aura.devshubh.me/images/web/1000069553-mqfas4jzed4a29.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781533125271_bb5089",
+    "slug": "skin-colour-big-hairclaw",
+    "name": "Skin Colour Big Hairclaw",
+    "collection": "claws",
+    "price": 30,
+    "image": "https://aura.devshubh.me/images/web/1000069555-mqfat1ke4b9a8c.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781533223657_b97883",
+    "slug": "flowery-light-brown-big-hairclaw",
+    "name": "Flowery Light brown Big Hairclaw",
+    "collection": "claws",
+    "price": 30,
+    "image": "https://aura.devshubh.me/images/web/1000069557-mqfav7v1fdaeb2.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781533263674_328e84",
+    "slug": "browny-zigzag-big-hairclaw",
+    "name": "Browny Zigzag Big Hairclaw",
+    "collection": "claws",
+    "price": 30,
+    "image": "https://aura.devshubh.me/images/web/1000069559-mqfawad7b2fc26.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781533300416_4a2c4b",
+    "slug": "browny-big-normal-hairclaw",
+    "name": "Browny Big Normal Hairclaw",
+    "collection": "claws",
+    "price": 30,
+    "image": "https://aura.devshubh.me/images/web/1000069561-mqfawx4n4e56fb.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781533482660_858b78",
+    "slug": "peach-colour-bow-shaped-hairpin",
+    "name": "Peach Colour bow shaped Hairpin",
+    "collection": "hairbows",
+    "price": 20,
+    "image": "https://aura.devshubh.me/images/web/1000069992-mqfb000p3df9df.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781533512387_c45c75",
+    "slug": "blue-colour-bow-shaped-hairpin",
+    "name": "Blue colour Bow shaped Hairpin",
+    "collection": "hairbows",
+    "price": 20,
+    "image": "https://aura.devshubh.me/images/web/1000069994-mqfb1jn97b763d.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781533562172_08b7de",
+    "slug": "heart-shaped-hairpin",
+    "name": "Pink Heart shaped Hairpin set",
+    "collection": "hairbows",
+    "price": 30,
+    "image": "https://aura.devshubh.me/images/web/1000070023-mqfb2m3h67589a.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781533614246_ab585a",
+    "slug": "flowery-shaped-dual-colour-hairpin",
+    "name": "Flowery shaped Dual colour Hairpin set",
+    "collection": "hairbows",
+    "price": 30,
+    "image": "https://aura.devshubh.me/images/web/1000070025-mqfb3jlf81ee56.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781533714309_a89bfc",
+    "slug": "light-pink-heart-shaped-hairpin-set",
+    "name": "Light Pink Heart shaped Hairpin set",
+    "collection": "hairbows",
+    "price": 30,
+    "image": "https://aura.devshubh.me/images/web/1000070056-mqfb5onk53293b.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781533864197_67d2f1",
+    "slug": "blue-hairclaw-with-scrunchy-set",
+    "name": "Blue Hairclaw with scrunchy set",
+    "collection": "hairbows",
+    "price": 50,
+    "image": "https://aura.devshubh.me/images/web/1000070019-mqfb8wm541f6dd.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781533896429_0b015d",
+    "slug": "pink-hairclaw-with-scrunchy-set",
+    "name": "Pink Hairclaw with scrunchy set",
+    "collection": "hairbows",
+    "price": 50,
+    "image": "https://aura.devshubh.me/images/web/1000070021-mqfb9ua41d6b70.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781534750804_62b072",
+    "slug": "purple-shade-scented-candle",
+    "name": "Purple shade flowery Scented candle",
+    "collection": "hair-alligator-pin",
+    "price": 60,
+    "image": "https://aura.devshubh.me/images/web/1000070044-mqfbrs895d1905.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781534817300_ac61c5",
+    "slug": "violet-flowery-scented-candle",
+    "name": "Violet shade flowery Scented candle",
+    "collection": "hair-alligator-pin",
+    "price": 60,
+    "image": "https://aura.devshubh.me/images/web/1000070042-mqfbsrk085e2cd.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781534971180_ffe014",
+    "slug": "white-flowery-scented-candle",
+    "name": "White flowery Scented candle",
+    "collection": "hair-alligator-pin",
+    "price": 60,
+    "image": "https://aura.devshubh.me/images/web/1000070040-mqfbwi9ya097de.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781535003664_cf8ba7",
+    "slug": "yellow-flowery-scented-candle",
+    "name": "Yellow flowery Scented candle",
+    "collection": "hair-alligator-pin",
+    "price": 60,
+    "image": "https://aura.devshubh.me/images/web/1000070046-mqfbxmmt240946.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781535103722_a12b3f",
+    "slug": "rose-shape-scented-candle",
+    "name": "Rose Shape Scented candle",
+    "collection": "hair-alligator-pin",
+    "price": 70,
+    "image": "https://aura.devshubh.me/images/web/1000070038-mqfbystk9e8837.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781535262622_ff73c4",
+    "slug": "dark-red-lipstick",
+    "name": "Dark Red Lipstick",
+    "collection": "makeup",
+    "price": 60,
+    "image": "https://aura.devshubh.me/images/web/1000070034-mqfc2r6r9ab380.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781535287246_c7046f",
+    "slug": "light-red-lipstick",
+    "name": "Light Red Lipstick",
+    "collection": "makeup",
+    "price": 60,
+    "image": "https://aura.devshubh.me/images/web/1000070036-mqfc3qen428783.png",
     "description": "",
     "tags": []
   }
