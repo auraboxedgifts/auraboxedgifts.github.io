@@ -31,3 +31,9 @@ Thumbs.db
 # Runtime data files (created by the backend at runtime)
 aura-ai/backend/data/users.json
 aura-ai/backend/data/orders.json
+
+# Android build artifacts
+aura-orders-app/.gradle/
+aura-orders-app/**/build/
+aura-orders-app/local.properties
+aura-orders-app/.idea/

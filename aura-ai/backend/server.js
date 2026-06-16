@@ -343,6 +343,69 @@ async function sendCustomerOrderEmail(customer, order) {
     });
 }
 
+const ORDER_STATUS_LABELS = {
+    created: 'Order received',
+    confirmed: 'Order confirmed',
+    processing: 'Being prepared',
+    shipped: 'Shipped',
+    delivered: 'Delivered',
+    cancelled: 'Cancelled'
+};
+
+function resolveOrderCustomer(order) {
+    const c = order.customer || {};
+    return {
+        name: c.name || '',
+        email: c.email || order.userEmail || '',
+        phone: c.phone || '',
+        address: c.address || ''
+    };
+}
+
+async function sendCustomerStatusUpdateEmail(order, newStatus, previousStatus) {
+    if (!newStatus || newStatus === previousStatus) return;
+    const customer = resolveOrderCustomer(order);
+    if (!customer.email || !process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
+        console.log('[Email] Skipping status update — no customer email or mail credentials.');
+        return;
+    }
+    const statusLabel = ORDER_STATUS_LABELS[newStatus] || newStatus;
+    const lines = (order.cart?.lines || [])
+        .map((l) => `<li>${l.name} x${l.qty} - ₹${l.lineTotal}</li>`)
+        .join('');
+    const statusMessages = {
+        created: 'We have received your order and will update you soon.',
+        confirmed: 'Your order is confirmed and we are getting it ready for you.',
+        processing: 'Your gift hamper is being carefully prepared by our team.',
+        shipped: 'Great news — your order is on its way to you!',
+        delivered: 'Your order has been delivered. We hope you love it!',
+        cancelled: 'Your order has been cancelled. If you have questions, please reply to this email.'
+    };
+    const message = statusMessages[newStatus] || `Your order status is now: ${statusLabel}.`;
+    try {
+        await emailTransporter.sendMail({
+            from: `"Aura Boxed Gifts" <${process.env.EMAIL_USER}>`,
+            to: customer.email,
+            subject: `Aura Boxed Gifts — your order ${order.id} is ${statusLabel.toLowerCase()}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
+                    <h2>Hi ${customer.name || 'there'}!</h2>
+                    <p>${message}</p>
+                    <p><strong>Order ID:</strong> ${order.id}</p>
+                    <p><strong>Status:</strong> ${statusLabel}</p>
+                    ${lines ? `<ul>${lines}</ul>` : ''}
+                    <p><strong>Total:</strong> ₹${order.cart?.grandTotal ?? '-'}</p>
+                    ${customer.address ? `<p><strong>Shipping address:</strong> ${customer.address}</p>` : ''}
+                    <p>Thank you for shopping with Aura Boxed Gifts 💝</p>
+                </div>
+            `
+        });
+        console.log(`[Email] Status update sent to ${customer.email} for ${order.id} (${newStatus})`);
+    } catch (err) {
+        console.error('[Email] Status update failed:', err.message);
+    }
+}
+
 async function sendWhatsAppNotification(message) {
     const phone = process.env.CALLMEBOT_PHONE;
     const apiKey = process.env.CALLMEBOT_API_KEY;
@@ -1355,7 +1418,7 @@ app.get('/api/admin/orders/:id', requireAdmin, (req, res) => {
     return jsonOk(res, order);
 });
 
-app.patch('/api/admin/orders/:id', requireAdmin, (req, res) => {
+app.patch('/api/admin/orders/:id', requireAdmin, async (req, res) => {
     const orders = readJson(ORDERS_FILE, []);
     const idx = orders.findIndex((o) => o.id === req.params.id);
     if (idx === -1) return jsonErr(res, 404, 'Order not found');
@@ -1364,11 +1427,18 @@ app.patch('/api/admin/orders/:id', requireAdmin, (req, res) => {
     if (status && !allowed.includes(status)) {
         return jsonErr(res, 400, `Invalid status. Allowed: ${allowed.join(', ')}`);
     }
+    const previousStatus = orders[idx].status;
     if (status) orders[idx].status = status;
     if (req.body?.notes !== undefined) orders[idx].notes = String(req.body.notes || '');
     orders[idx].updatedAt = new Date().toISOString();
     writeJson(ORDERS_FILE, orders);
-    return jsonOk(res, orders[idx]);
+    const updated = orders[idx];
+    if (status && status !== previousStatus) {
+        sendCustomerStatusUpdateEmail(updated, status, previousStatus).catch((err) => {
+            console.error('[Email] Status update error:', err.message);
+        });
+    }
+    return jsonOk(res, updated);
 });
 
 app.post('/api/create-order', async (req, res) => {
