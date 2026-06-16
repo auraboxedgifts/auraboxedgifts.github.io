@@ -37,6 +37,18 @@ python3 -m http.server 8000
 - Frontend: `http://localhost:8000`
 - Backend health: `http://localhost:5013/health`
 
+## Android Orders App
+
+Admin app for the client to view customer orders on their phone.
+
+```bash
+cd aura-orders-app
+./gradlew assembleDebug
+adb install app/build/outputs/apk/debug/app-debug.apk
+```
+
+See `aura-orders-app/README.md` for details. Deploy updated backend (`/api/admin/orders` routes) to Oracle before using the app.
+
 ## Regenerate Collection Pages
 
 ```bash

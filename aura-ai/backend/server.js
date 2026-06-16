@@ -1338,6 +1338,39 @@ app.get('/api/orders', requireAuth, (req, res) => {
     return jsonOk(res, orders.filter((o) => o.userEmail === req.auth.email));
 });
 
+app.get('/api/admin/orders', requireAdmin, (req, res) => {
+    const orders = readJson(ORDERS_FILE, []);
+    const sorted = orders.slice().sort((a, b) => {
+        const ta = new Date(a.createdAt || 0).getTime();
+        const tb = new Date(b.createdAt || 0).getTime();
+        return tb - ta;
+    });
+    return jsonOk(res, sorted);
+});
+
+app.get('/api/admin/orders/:id', requireAdmin, (req, res) => {
+    const orders = readJson(ORDERS_FILE, []);
+    const order = orders.find((o) => o.id === req.params.id);
+    if (!order) return jsonErr(res, 404, 'Order not found');
+    return jsonOk(res, order);
+});
+
+app.patch('/api/admin/orders/:id', requireAdmin, (req, res) => {
+    const orders = readJson(ORDERS_FILE, []);
+    const idx = orders.findIndex((o) => o.id === req.params.id);
+    if (idx === -1) return jsonErr(res, 404, 'Order not found');
+    const allowed = ['created', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
+    const status = String(req.body?.status || '').trim();
+    if (status && !allowed.includes(status)) {
+        return jsonErr(res, 400, `Invalid status. Allowed: ${allowed.join(', ')}`);
+    }
+    if (status) orders[idx].status = status;
+    if (req.body?.notes !== undefined) orders[idx].notes = String(req.body.notes || '');
+    orders[idx].updatedAt = new Date().toISOString();
+    writeJson(ORDERS_FILE, orders);
+    return jsonOk(res, orders[idx]);
+});
+
 app.post('/api/create-order', async (req, res) => {
     if (!razorpayInstance) return jsonErr(res, 500, 'Razorpay keys not configured on server.');
     const fromItems = Array.isArray(req.body?.items) ? calculateCart(req.body.items).grandTotal : 0;
