@@ -367,10 +367,10 @@
   {
     "id": "bracelet_2",
     "slug": "rainbow-charm-beaded-bracelet-set",
-    "name": "Rainbow Charm Beaded Bracelet Set",
+    "name": "Red Yellow shade Charm Bracelet",
     "collection": "bracelets",
-    "price": 500,
-    "image": "/images/web/bracelets-2.jpeg",
+    "price": 60,
+    "image": "https://aura.devshubh.me/images/web/1000069996-mqfc684ice70f1.png",
     "description": "Color-pop beaded bracelets finished with silver charms.",
     "tags": [
       "bracelet",
@@ -381,10 +381,10 @@
   {
     "id": "bracelet_13",
     "slug": "festival-color-beaded-bracelet",
-    "name": "Festival Color Beaded Bracelet",
+    "name": "Multi-Color Charm Bracelet",
     "collection": "bracelets",
-    "price": 529,
-    "image": "/images/web/bracelets-13.jpeg",
+    "price": 60,
+    "image": "https://aura.devshubh.me/images/web/1000070002-mqfc79rfaa6337.png",
     "description": "Bright color bracelet designed for festive gifting.",
     "tags": [
       "bracelet",
@@ -990,6 +990,46 @@
     "collection": "makeup",
     "price": 60,
     "image": "https://aura.devshubh.me/images/web/1000070036-mqfc3qen428783.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781535524026_d769ba",
+    "slug": "pink-shade-charm-bracelet",
+    "name": "Pink shade Charm Bracelet",
+    "collection": "bracelets",
+    "price": 60,
+    "image": "https://aura.devshubh.me/images/web/1000070000-mqfc8oss9218ae.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781535564124_a1cf8f",
+    "slug": "blue-shade-charm-bracelet",
+    "name": "Blue-pink shade Charm Bracelet",
+    "collection": "bracelets",
+    "price": 60,
+    "image": "https://aura.devshubh.me/images/web/1000070004-mqfc9qz4f44ebb.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781535621765_13e487",
+    "slug": "white-colour-charm-bracelet",
+    "name": "White-colour Charm Bracelet",
+    "collection": "bracelets",
+    "price": 60,
+    "image": "https://aura.devshubh.me/images/web/1000070008-mqfcauf1903de5.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1781535640586_4d1c46",
+    "slug": "green-colour-charm-bracelet",
+    "name": "Green colour Charm Bracelet",
+    "collection": "bracelets",
+    "price": 60,
+    "image": "https://aura.devshubh.me/images/web/1000070006-mqfcbdq513dad3.png",
     "description": "",
     "tags": []
   }
