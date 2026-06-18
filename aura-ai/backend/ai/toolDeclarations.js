@@ -32,7 +32,7 @@ const toolDeclarations = [
     { name: 'navigate_home', description: 'Navigate back to home page.' },
     {
         name: 'scroll_to_section',
-        description: 'Scroll to specific section of the homepage.',
+        description: 'Scroll to a homepage section only. Do NOT use this to show or open a hamper preview — use view_hamper for that. Use scroll_to_section only for general navigation (e.g. "take me to contact", "scroll to gallery").',
         parameters: {
             type: 'object',
             properties: { section: { type: 'string', enum: ['home', 'hampers', 'collections', 'gallery', 'about', 'contact'] } },
@@ -41,16 +41,27 @@ const toolDeclarations = [
     },
     {
         name: 'show_hampers',
-        description: 'Show the whole Trending Hampers showcase on the homepage. Use when the user asks generally about gift hampers, or wants to browse/see ideas for occasions. The tool response lists every hamper with its price — use those real names and prices. To open ONE specific hamper, use view_hamper instead.'
+        description: 'Show the whole Trending Hampers grid on the homepage (scroll only — does NOT open a preview). Use when the user wants to browse all hampers generally. If they name or point to ONE hamper ("show me the wedding hamper", "open the third one", "that birthday box"), use view_hamper instead — or pass hamperName/hamperId/index/ordinal here and it will open that hamper preview.',
+        parameters: {
+            type: 'object',
+            properties: {
+                hamperName: { type: 'string', description: 'If the user named a specific hamper, pass it here to open that preview instead of only scrolling' },
+                hamperId: { type: 'string', description: 'Exact hamper id if known' },
+                index: { type: 'number', description: '1-based position in the hamper list (e.g. 3 for the third hamper)' },
+                ordinal: { type: 'string', enum: ['first', 'second', 'third', 'fourth', 'fifth', 'last'], description: 'Open hamper by position' }
+            }
+        }
     },
     {
         name: 'view_hamper',
-        description: 'Open a single specific hamper in a large preview (lightbox) with its image, title and price. Use this when the user names or asks to see a particular hamper (e.g. "show me the wedding hamper", "open the birthday one"). Pass the hamperName the user said; pass hamperId too if you got it from a previous show_hampers response.',
+        description: 'Open ONE specific hamper in a large preview (lightbox) with its image, title and price. REQUIRED whenever the user asks to see, show, or open a particular hamper by name or position ("show me the wedding hamper", "open the birthday one", "the third hamper", "that Virat Kohli box"). This is the ONLY tool that opens the hamper preview — show_hampers and scroll_to_section only scroll to the section.',
         parameters: {
             type: 'object',
             properties: {
                 hamperName: { type: 'string', description: 'The hamper name or close description the user mentioned' },
-                hamperId: { type: 'string', description: 'Exact hamper id if known from a prior tool response' }
+                hamperId: { type: 'string', description: 'Exact hamper id if known from a prior tool response' },
+                index: { type: 'number', description: '1-based position in the hamper list' },
+                ordinal: { type: 'string', enum: ['first', 'second', 'third', 'fourth', 'fifth', 'last'], description: 'Open hamper by position' }
             }
         }
     },

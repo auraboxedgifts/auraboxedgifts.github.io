@@ -1545,6 +1545,72 @@ function normalizeProductName(name) {
     return String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
+const HAMPER_ORDINALS = { first: 1, second: 2, third: 3, fourth: 4, fifth: 5 };
+
+function resolveHamperIndex(args) {
+    const hampers = getSite().hampers || [];
+    if (!hampers.length) return { idx: -1, hampers };
+
+    if (args.hamperId) {
+        const byId = hampers.findIndex((h) => h.id === args.hamperId);
+        if (byId !== -1) return { idx: byId, hampers };
+    }
+
+    let index = Number(args.index);
+    if (Number.isFinite(index) && index >= 1) {
+        return { idx: Math.min(hampers.length - 1, index - 1), hampers };
+    }
+    if (args.ordinal === 'last') {
+        return { idx: hampers.length - 1, hampers };
+    }
+    if (args.ordinal && HAMPER_ORDINALS[args.ordinal]) {
+        const idx = HAMPER_ORDINALS[args.ordinal] - 1;
+        if (idx < hampers.length) return { idx, hampers };
+    }
+
+    const needle = normalizeProductName(args.hamperName || '');
+    if (!needle) return { idx: -1, hampers };
+
+    const exact = hampers.findIndex((h) => normalizeProductName(h.title) === needle);
+    if (exact !== -1) return { idx: exact, hampers };
+
+    const substring = hampers.findIndex((h) => {
+        const t = normalizeProductName(h.title);
+        return t.includes(needle) || needle.includes(t);
+    });
+    if (substring !== -1) return { idx: substring, hampers };
+
+    const needleTokens = needle.split(' ').filter((w) => w.length > 2);
+    if (!needleTokens.length) return { idx: -1, hampers };
+
+    let bestIdx = -1;
+    let bestScore = 0;
+    hampers.forEach((h, i) => {
+        const titleTokens = normalizeProductName(h.title).split(' ').filter((w) => w.length > 2);
+        const score = needleTokens.filter((t) =>
+            titleTokens.some((tt) => tt.includes(t) || t.includes(tt))
+        ).length;
+        if (score > bestScore) {
+            bestScore = score;
+            bestIdx = i;
+        }
+    });
+    if (bestScore >= 1) return { idx: bestIdx, hampers };
+
+    return { idx: -1, hampers };
+}
+
+function sendViewHamperToClient(clientWs, h, idx) {
+    clientWs.send(JSON.stringify({ type: 'navigate_home' }));
+    clientWs.send(JSON.stringify({
+        type: 'view_hamper',
+        hamperId: h.id,
+        index: idx,
+        title: h.title,
+        price: Number(h.price) || 0
+    }));
+}
+
 function resolveProductId(args, lastViewedProduct) {
     if (args.productId) return args.productId;
     if (lastViewedProduct?.productId) return lastViewedProduct.productId;
@@ -1744,41 +1810,51 @@ wss.on('connection', (clientWs, request) => {
                                     response = { result: `Scrolled to ${args.section}` };
                                 } else if (fc.name === 'show_hampers') {
                                     activeCollection = null;
-                                    clientWs.send(JSON.stringify({ type: 'navigate_home' }));
-                                    clientWs.send(JSON.stringify({ type: 'scroll_to_section', section: 'hampers' }));
                                     const hampers = getSite().hampers || [];
-                                    const note = hampers
-                                        .map((h, i) => `${i + 1}. ${h.title}${Number(h.price) > 0 ? ` (₹${h.price})` : ''}`)
-                                        .join('\n');
-                                    response = {
-                                        result: 'Showing trending hampers',
-                                        count: hampers.length,
-                                        hampers: note || 'No hampers configured'
-                                    };
-                                } else if (fc.name === 'view_hamper') {
-                                    const hampers = getSite().hampers || [];
-                                    const needle = normalizeProductName(args.hamperName || '');
-                                    let idx = -1;
-                                    if (args.hamperId) idx = hampers.findIndex((h) => h.id === args.hamperId);
-                                    if (idx === -1 && needle) {
-                                        idx = hampers.findIndex((h) => {
-                                            const t = normalizeProductName(h.title);
-                                            return t === needle || t.includes(needle) || needle.includes(t);
-                                        });
+                                    const specific = args.hamperName || args.hamperId || args.index || args.ordinal;
+                                    if (specific) {
+                                        const { idx } = resolveHamperIndex(args);
+                                        if (idx !== -1) {
+                                            const h = hampers[idx];
+                                            sendViewHamperToClient(clientWs, h, idx);
+                                            response = {
+                                                result: `Opened ${h.title}${Number(h.price) > 0 ? ` priced at ₹${h.price}` : ''}. It is fully customisable — theme, colours and items can be changed.`,
+                                                hamperId: h.id,
+                                                title: h.title,
+                                                price: Number(h.price) || 0,
+                                                subtitle: h.subtitle || ''
+                                            };
+                                        } else {
+                                            clientWs.send(JSON.stringify({ type: 'navigate_home' }));
+                                            clientWs.send(JSON.stringify({ type: 'scroll_to_section', section: 'hampers' }));
+                                            response = {
+                                                result: `Could not find a hamper matching "${args.hamperName || args.hamperId || ''}". Showing all hampers instead. Available: ${hampers.map((h) => h.title).join(', ') || 'none'}`,
+                                                count: hampers.length,
+                                                hampers: hampers.map((h, i) => `${i + 1}. ${h.title}${Number(h.price) > 0 ? ` (₹${h.price})` : ''}`).join('\n') || 'No hampers configured'
+                                            };
+                                        }
+                                    } else {
+                                        clientWs.send(JSON.stringify({ type: 'navigate_home' }));
+                                        clientWs.send(JSON.stringify({ type: 'scroll_to_section', section: 'hampers' }));
+                                        const note = hampers
+                                            .map((h, i) => `${i + 1}. ${h.title}${Number(h.price) > 0 ? ` (₹${h.price})` : ''}`)
+                                            .join('\n');
+                                        response = {
+                                            result: 'Showing trending hampers',
+                                            count: hampers.length,
+                                            hampers: note || 'No hampers configured'
+                                        };
                                     }
+                                } else if (fc.name === 'view_hamper') {
+                                    const { idx, hampers } = resolveHamperIndex(args);
                                     if (idx === -1) {
                                         response = {
                                             result: `Could not find a hamper matching "${args.hamperName || args.hamperId || ''}". Available: ${hampers.map((h) => h.title).join(', ') || 'none'}`
                                         };
                                     } else {
+                                        activeCollection = null;
                                         const h = hampers[idx];
-                                        clientWs.send(JSON.stringify({
-                                            type: 'view_hamper',
-                                            hamperId: h.id,
-                                            index: idx,
-                                            title: h.title,
-                                            price: Number(h.price) || 0
-                                        }));
+                                        sendViewHamperToClient(clientWs, h, idx);
                                         response = {
                                             result: `Opened ${h.title}${Number(h.price) > 0 ? ` priced at ₹${h.price}` : ''}. It is fully customisable — theme, colours and items can be changed.`,
                                             hamperId: h.id,

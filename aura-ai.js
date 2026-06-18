@@ -216,6 +216,35 @@ async function connectToAuraBackend() {
     });
 }
 
+function openAuraHamperFromMessage(message, attempt) {
+    const maxAttempts = 25;
+    const retryMs = 200;
+    attempt = attempt || 0;
+
+    const el = document.getElementById('trending-hampers');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+
+    if (!window.AuraHampers) {
+        if (attempt < maxAttempts) setTimeout(() => openAuraHamperFromMessage(message, attempt + 1), retryMs);
+        return;
+    }
+
+    const list = window.AuraHampers.list();
+    if (!list.length) {
+        if (attempt < maxAttempts) setTimeout(() => openAuraHamperFromMessage(message, attempt + 1), retryMs);
+        return;
+    }
+
+    let opened = false;
+    if (message.hamperId) opened = window.AuraHampers.openById(message.hamperId);
+    if (!opened && message.title) opened = window.AuraHampers.openByTitle(message.title);
+    if (!opened && typeof message.index === 'number') opened = window.AuraHampers.openByIndex(message.index);
+
+    if (!opened && attempt < maxAttempts) {
+        setTimeout(() => openAuraHamperFromMessage(message, attempt + 1), retryMs);
+    }
+}
+
 function handleAuraBackendMessage(message) {
     switch (message.type) {
         case 'status':
@@ -293,16 +322,8 @@ function handleAuraBackendMessage(message) {
             break;
         }
         case 'view_hamper':
-            closeCollectionOverlay(); // Ensure we are on the main page
-            setTimeout(() => {
-                const el = document.getElementById('trending-hampers');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-                if (window.AuraHampers) {
-                    let opened = false;
-                    if (message.hamperId) opened = window.AuraHampers.openById(message.hamperId);
-                    if (!opened && typeof message.index === 'number') window.AuraHampers.openByIndex(message.index);
-                }
-            }, 350);
+            closeCollectionOverlay();
+            setTimeout(() => openAuraHamperFromMessage(message), 350);
             break;
         case 'scroll_to_section':
             closeCollectionOverlay(); // Ensure we are on the main page

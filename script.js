@@ -296,6 +296,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (idx === -1) return false;
         openHamperLightbox(currentHampers, idx);
         return true;
+      },
+      openByTitle: (title) => {
+        if (!currentHampers.length || !title) return false;
+        const needle = String(title).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        const idx = currentHampers.findIndex((h) => {
+          const t = String(h.title).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+          return t === needle || t.includes(needle) || needle.includes(t);
+        });
+        if (idx === -1) return false;
+        openHamperLightbox(currentHampers, idx);
+        return true;
       }
     };
 
