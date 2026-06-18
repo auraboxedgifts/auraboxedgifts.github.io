@@ -58,6 +58,7 @@ fun MainShell(
     onSearchChange: (String) -> Unit,
     onNavigateToOrders: () -> Unit,
     onNavigateToCatalog: () -> Unit,
+    onAddProduct: () -> Unit,
     onLogout: () -> Unit
 ) {
     Scaffold(
@@ -130,7 +131,9 @@ fun MainShell(
                 onRefresh = onRefreshCatalog,
                 onCollectionChange = onCollectionChange,
                 onSearchChange = onSearchChange,
-                onProductClick = onProductClick
+                onProductClick = onProductClick,
+                isAdminMode = true,
+                onAddProduct = onAddProduct
             )
 
             MainTab.PROFILE -> ProfileScreen(

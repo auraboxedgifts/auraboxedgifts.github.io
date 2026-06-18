@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,8 +17,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.AddShoppingCart
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -25,11 +32,17 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,8 +62,31 @@ import com.auraboxedgifts.orders.ui.theme.TextMedium
 fun ProductDetailScreen(
     state: ProductDetailUiState,
     collectionName: (String) -> String,
-    onBack: () -> Unit
+    isAdminMode: Boolean = false,
+    onBack: () -> Unit,
+    onAddToCart: (() -> Unit)? = null,
+    onEdit: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null
 ) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog && state.product != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete product?") },
+            text = { Text("This removes \"${state.product.name}\" from your catalog.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    onDelete?.invoke()
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
     Scaffold(
         containerColor = Cream,
         topBar = {
@@ -72,11 +108,9 @@ fun ProductDetailScreen(
         }
     ) { padding ->
         when {
-            state.isLoading -> {
+            state.isLoading || state.isDeleting -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
+                    modifier = Modifier.fillMaxSize().padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = RoseGold)
@@ -85,10 +119,7 @@ fun ProductDetailScreen(
 
             state.error != null -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(24.dp),
+                    modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(state.error, color = MaterialTheme.colorScheme.error)
@@ -106,9 +137,7 @@ fun ProductDetailScreen(
                     ProductImage(
                         imagePath = product.image,
                         contentDescription = product.name,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f),
+                        modifier = Modifier.fillMaxWidth().aspectRatio(1f),
                         cornerRadius = 0.dp
                     )
 
@@ -116,20 +145,10 @@ fun ProductDetailScreen(
                         modifier = Modifier.padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        Text(product.name, style = MaterialTheme.typography.headlineMedium, color = TextDark)
+                        Text(collectionName(product.collection), style = MaterialTheme.typography.bodyMedium, color = TextMedium)
                         Text(
-                            text = product.name,
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = TextDark
-                        )
-
-                        Text(
-                            text = collectionName(product.collection),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextMedium
-                        )
-
-                        Text(
-                            text = formatRupee(product.price),
+                            formatRupee(product.price),
                             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
                             color = RoseGold
                         )
@@ -138,20 +157,12 @@ fun ProductDetailScreen(
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                                colors = CardDefaults.cardColors(containerColor = Color.White)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = "Description",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = TextDark
-                                    )
+                                    Text("Description", style = MaterialTheme.typography.titleMedium, color = TextDark)
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = product.description,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
+                                    Text(product.description, style = MaterialTheme.typography.bodyMedium)
                                 }
                             }
                         }
@@ -176,13 +187,37 @@ fun ProductDetailScreen(
                             }
                         }
 
-                        Text(
-                            text = "ID: ${product.id}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = TextLight
-                        )
-                    }
+                        if (isAdminMode) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                OutlinedButton(
+                                    onClick = { onEdit?.invoke() },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(Icons.Outlined.Edit, contentDescription = null, tint = RoseGold)
+                                    Text("  Edit", color = RoseGold)
+                                }
+                                OutlinedButton(
+                                    onClick = { showDeleteDialog = true },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(Icons.Outlined.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                    Text("  Delete", color = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        } else if (onAddToCart != null) {
+                            Button(
+                                onClick = onAddToCart,
+                                modifier = Modifier.fillMaxWidth().height(52.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = RoseGold)
+                            ) {
+                                Icon(Icons.Outlined.AddShoppingCart, contentDescription = null)
+                                Text("  Add to cart")
+                            }
+                        }
 
+                        Text("ID: ${product.id}", style = MaterialTheme.typography.labelMedium, color = TextLight)
+                    }
                     Spacer(modifier = Modifier.height(24.dp))
                 }
             }

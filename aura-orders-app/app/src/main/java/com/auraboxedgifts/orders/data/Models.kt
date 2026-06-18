@@ -132,3 +132,82 @@ data class Collection(
     val description: String? = null,
     val image: String? = null
 )
+
+data class UserProfile(
+    val email: String? = null,
+    val name: String? = null,
+    val phone: String? = null,
+    val isAdmin: Boolean = false,
+    val hasPassword: Boolean = false
+)
+
+data class AuthTokenResponse(
+    val success: Boolean,
+    val token: String? = null,
+    val email: String? = null,
+    val user: UserProfile? = null,
+    val error: String? = null,
+    val message: String? = null
+)
+
+data class EmailCheckData(
+    val exists: Boolean,
+    val hasPassword: Boolean,
+    val isAdmin: Boolean = false
+)
+
+data class OtpRequest(val email: String)
+data class VerifyOtpRequest(val email: String, val otp: String)
+
+data class ProductPayload(
+    val id: String? = null,
+    val slug: String? = null,
+    val name: String,
+    val collection: String,
+    val price: Double,
+    val image: String,
+    val description: String? = null,
+    val tags: List<String>? = null
+)
+
+data class DeleteResult(val deleted: Boolean)
+
+data class UploadResult(
+    val url: String,
+    val absoluteUrl: String? = null,
+    val filename: String? = null
+)
+
+data class CartCalculateRequest(val items: List<LocalCartItem>)
+data class CartItemRequest(val productId: String, val qty: Int)
+
+data class RazorpayOrderInfo(
+    val id: String,
+    val amount: Int,
+    val currency: String? = null,
+    val receipt: String? = null
+)
+
+data class CreateOrderResponse(
+    val success: Boolean,
+    val order: RazorpayOrderInfo? = null,
+    val key_id: String? = null,
+    val error: String? = null
+)
+
+data class VerifyPaymentRequest(
+    val razorpay_order_id: String,
+    val razorpay_payment_id: String,
+    val razorpay_signature: String,
+    val cartItems: List<CartItemRequest>,
+    val customer: Customer
+)
+
+data class CheckoutInfo(
+    val name: String = "",
+    val phone: String = "",
+    val address: String = "",
+    val city: String = "",
+    val state: String = "",
+    val pincode: String = ""
+)

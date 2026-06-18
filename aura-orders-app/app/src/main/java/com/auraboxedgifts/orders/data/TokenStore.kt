@@ -12,40 +12,64 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "aura_orders")
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "aura_orders")
 
 class TokenStore(private val context: Context) {
 
-    private val tokenKey = stringPreferencesKey("admin_token")
-    private val emailKey = stringPreferencesKey("admin_email")
+    private val adminTokenKey = stringPreferencesKey("admin_token")
+    private val adminEmailKey = stringPreferencesKey("admin_email")
+    private val customerTokenKey = stringPreferencesKey("customer_token")
+    private val customerEmailKey = stringPreferencesKey("customer_email")
+    private val customerNameKey = stringPreferencesKey("customer_name")
     private val knownOrderIdsKey = stringSetPreferencesKey("known_order_ids")
     private val notificationsSeededKey = booleanPreferencesKey("notifications_seeded")
 
-    val tokenFlow: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[tokenKey]
-    }
+    val adminTokenFlow: Flow<String?> = context.dataStore.data.map { it[adminTokenKey] }
+    val adminEmailFlow: Flow<String?> = context.dataStore.data.map { it[adminEmailKey] }
+    val customerTokenFlow: Flow<String?> = context.dataStore.data.map { it[customerTokenKey] }
+    val customerEmailFlow: Flow<String?> = context.dataStore.data.map { it[customerEmailKey] }
+    val customerNameFlow: Flow<String?> = context.dataStore.data.map { it[customerNameKey] }
 
-    val emailFlow: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[emailKey]
-    }
+    /** @deprecated use adminTokenFlow */
+    val tokenFlow: Flow<String?> = adminTokenFlow
+    val emailFlow: Flow<String?> = adminEmailFlow
 
-    suspend fun getToken(): String? = context.dataStore.data.first()[tokenKey]
+    suspend fun getAdminToken(): String? = context.dataStore.data.first()[adminTokenKey]
+    suspend fun getCustomerToken(): String? = context.dataStore.data.first()[customerTokenKey]
 
-    suspend fun saveSession(token: String, email: String) {
+    suspend fun saveAdminSession(token: String, email: String) {
         context.dataStore.edit { prefs ->
-            prefs[tokenKey] = token
-            prefs[emailKey] = email
+            prefs[adminTokenKey] = token
+            prefs[adminEmailKey] = email
         }
     }
 
-    suspend fun clear() {
+    suspend fun saveCustomerSession(token: String, email: String, name: String = "") {
         context.dataStore.edit { prefs ->
-            prefs.remove(tokenKey)
-            prefs.remove(emailKey)
+            prefs[customerTokenKey] = token
+            prefs[customerEmailKey] = email
+            prefs[customerNameKey] = name
+        }
+    }
+
+    suspend fun clearAdmin() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(adminTokenKey)
+            prefs.remove(adminEmailKey)
             prefs.remove(knownOrderIdsKey)
             prefs.remove(notificationsSeededKey)
         }
     }
+
+    suspend fun clearCustomer() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(customerTokenKey)
+            prefs.remove(customerEmailKey)
+            prefs.remove(customerNameKey)
+        }
+    }
+
+    suspend fun clear() = clearAdmin()
 
     suspend fun areNotificationsSeeded(): Boolean =
         context.dataStore.data.first()[notificationsSeededKey] == true
@@ -53,17 +77,17 @@ class TokenStore(private val context: Context) {
     suspend fun getKnownOrderIds(): Set<String> =
         context.dataStore.data.first()[knownOrderIdsKey] ?: emptySet()
 
-    suspend fun seedKnownOrderIds(orderIds: Collection<String>) {
+    suspend fun seedKnownOrderIds(orderIds: Iterable<String>) {
         context.dataStore.edit { prefs ->
             prefs[knownOrderIdsKey] = orderIds.toSet()
             prefs[notificationsSeededKey] = true
         }
     }
 
-    suspend fun addKnownOrderIds(orderIds: Collection<String>) {
+    suspend fun addKnownOrderIds(orderIds: Iterable<String>) {
         context.dataStore.edit { prefs ->
             val current = prefs[knownOrderIdsKey] ?: emptySet()
-            prefs[knownOrderIdsKey] = current + orderIds
+            prefs[knownOrderIdsKey] = current + orderIds.toSet()
             prefs[notificationsSeededKey] = true
         }
     }

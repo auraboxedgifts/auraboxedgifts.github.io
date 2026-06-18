@@ -175,9 +175,9 @@ fun LoginScreen(
             }
 
             Text(
-                text = "Use the same admin credentials as your website dashboard",
-                style = MaterialTheme.typography.labelMedium,
-                color = TextLight,
+                text = "Store admin dashboard",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextMedium,
                 textAlign = TextAlign.Center
             )
         }

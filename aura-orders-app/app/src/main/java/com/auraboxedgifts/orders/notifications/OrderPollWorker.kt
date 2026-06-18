@@ -20,7 +20,7 @@ class OrderPollWorker(
 
     override suspend fun doWork(): Result {
         return try {
-            val token = TokenStore(applicationContext).getToken() ?: return Result.success()
+            val token = TokenStore(applicationContext).getAdminToken() ?: return Result.success()
             val orders = AuraRepository(ApiClient.create()).fetchOrders(token)
             val newOrders = OrderNotificationManager.processOrders(applicationContext, orders)
             OrderNotificationManager.showNewOrderNotifications(applicationContext, newOrders)

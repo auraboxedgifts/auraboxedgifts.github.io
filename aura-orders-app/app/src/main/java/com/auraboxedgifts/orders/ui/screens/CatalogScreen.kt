@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.AddShoppingCart
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
@@ -29,8 +31,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -59,10 +63,16 @@ fun CatalogScreen(
     state: CatalogUiState,
     filteredProducts: List<Product>,
     collectionName: (String) -> String,
+    title: String = "Product catalog",
+    subtitle: String? = null,
     onRefresh: () -> Unit,
     onCollectionChange: (String?) -> Unit,
     onSearchChange: (String) -> Unit,
-    onProductClick: (String) -> Unit
+    onProductClick: (String) -> Unit,
+    showAddToCart: Boolean = false,
+    onAddToCart: (String) -> Unit = {},
+    isAdminMode: Boolean = false,
+    onAddProduct: (() -> Unit)? = null
 ) {
     val pullRefreshState = rememberPullRefreshState(
         refreshing = state.isRefreshing,
@@ -76,8 +86,10 @@ fun CatalogScreen(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             CatalogHeader(
+                title = title,
                 productCount = state.products.size,
-                collectionCount = state.collections.size
+                collectionCount = state.collections.size,
+                subtitle = subtitle
             )
 
             OutlinedTextField(
@@ -168,7 +180,9 @@ fun CatalogScreen(
                             ProductCard(
                                 product = product,
                                 collectionLabel = collectionName(product.collection),
-                                onClick = { onProductClick(product.id) }
+                                onClick = { onProductClick(product.id) },
+                                showAddToCart = showAddToCart,
+                                onAddToCart = { onAddToCart(product.id) }
                             )
                         }
                         item { Spacer(modifier = Modifier.height(16.dp)) }
@@ -184,27 +198,42 @@ fun CatalogScreen(
             backgroundColor = Color.White,
             contentColor = RoseGold
         )
+
+        if (isAdminMode && onAddProduct != null) {
+            FloatingActionButton(
+                onClick = onAddProduct,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+                containerColor = RoseGold,
+                contentColor = Color.White
+            ) {
+                Icon(Icons.Outlined.Add, contentDescription = "Add product")
+            }
+        }
     }
 }
 
 @Composable
-private fun CatalogHeader(productCount: Int, collectionCount: Int) {
+private fun CatalogHeader(
+    title: String,
+    productCount: Int,
+    collectionCount: Int,
+    subtitle: String?
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 16.dp)
     ) {
-        Text(
-            text = "Product catalog",
-            style = MaterialTheme.typography.headlineMedium
-        )
+        Text(text = title, style = MaterialTheme.typography.headlineMedium)
         Text(
             text = "$productCount products · $collectionCount collections",
             style = MaterialTheme.typography.bodyMedium,
             color = TextMedium
         )
         Text(
-            text = "Synced with your website admin",
+            text = subtitle ?: "Synced with your website admin",
             style = MaterialTheme.typography.labelMedium,
             color = TextLight
         )
@@ -215,7 +244,9 @@ private fun CatalogHeader(productCount: Int, collectionCount: Int) {
 private fun ProductCard(
     product: Product,
     collectionLabel: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    showAddToCart: Boolean = false,
+    onAddToCart: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -254,6 +285,16 @@ private fun ProductCard(
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = RoseGold
                 )
+                if (showAddToCart) {
+                    OutlinedButton(
+                        onClick = onAddToCart,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Outlined.AddShoppingCart, contentDescription = null, tint = RoseGold)
+                        Text("  Add", color = RoseGold)
+                    }
+                }
             }
         }
     }

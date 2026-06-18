@@ -11,8 +11,8 @@ android {
         applicationId = "com.auraboxedgifts.orders"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.2.0"
 
         buildConfigField("String", "API_BASE_URL", "\"https://aura.devshubh.me\"")
     }
@@ -80,6 +80,8 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
 
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    implementation("com.razorpay:checkout:1.6.40")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
