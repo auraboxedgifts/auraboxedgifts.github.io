@@ -34,6 +34,12 @@ interface AuraApiService {
         @Path("id") id: String,
         @Body body: UpdateOrderRequest
     ): Response<ApiResponse<Order>>
+
+    @GET("/api/products")
+    suspend fun getProducts(): Response<ApiResponse<List<Product>>>
+
+    @GET("/api/collections")
+    suspend fun getCollections(): Response<ApiResponse<List<Collection>>>
 }
 
 class AuthInterceptor(private val tokenProvider: () -> String?) : Interceptor {
@@ -86,6 +92,24 @@ class AuraRepository(private val api: AuraApiService) {
             throw ApiException(body?.error ?: "Could not update order")
         }
         return body.data ?: throw ApiException("Update failed")
+    }
+
+    suspend fun fetchProducts(): List<Product> {
+        val response = api.getProducts()
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) {
+            throw ApiException(body?.error ?: "Could not load products")
+        }
+        return body.data ?: emptyList()
+    }
+
+    suspend fun fetchCollections(): List<Collection> {
+        val response = api.getCollections()
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) {
+            throw ApiException(body?.error ?: "Could not load collections")
+        }
+        return body.data ?: emptyList()
     }
 }
 

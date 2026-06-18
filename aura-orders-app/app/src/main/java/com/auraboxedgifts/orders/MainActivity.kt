@@ -21,8 +21,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.auraboxedgifts.orders.notifications.OrderNotificationManager
 import com.auraboxedgifts.orders.ui.screens.LoginScreen
+import com.auraboxedgifts.orders.ui.screens.MainShell
 import com.auraboxedgifts.orders.ui.screens.OrderDetailScreen
-import com.auraboxedgifts.orders.ui.screens.OrdersScreen
+import com.auraboxedgifts.orders.ui.screens.ProductDetailScreen
 import com.auraboxedgifts.orders.ui.theme.AuraOrdersTheme
 
 class MainActivity : ComponentActivity() {
@@ -48,15 +49,19 @@ class MainActivity : ComponentActivity() {
                 val loginState by viewModel.loginState.collectAsState()
                 val ordersState by viewModel.ordersState.collectAsState()
                 val detailState by viewModel.detailState.collectAsState()
+                val catalogState by viewModel.catalogState.collectAsState()
+                val productDetailState by viewModel.productDetailState.collectAsState()
+                val selectedTab by viewModel.selectedTab.collectAsState()
 
-                val startDestination = if (token.isNullOrBlank()) "login" else "orders"
+                val startDestination = if (token.isNullOrBlank()) "login" else "main"
 
                 LaunchedEffect(deepLinkOrderId, token) {
                     val orderId = deepLinkOrderId
                     if (!orderId.isNullOrBlank() && !token.isNullOrBlank()) {
                         viewModel.loadOrderDetail(orderId, token)
+                        viewModel.selectTab(MainTab.ORDERS)
                         navController.navigate("order/$orderId") {
-                            popUpTo("orders")
+                            popUpTo("main")
                         }
                     }
                 }
@@ -73,7 +78,7 @@ class MainActivity : ComponentActivity() {
                             onLogin = {
                                 requestNotificationPermissionIfNeeded()
                                 viewModel.login {
-                                    navController.navigate("orders") {
+                                    navController.navigate("main") {
                                         popUpTo("login") { inclusive = true }
                                     }
                                 }
@@ -81,16 +86,17 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable("orders") {
+                    composable("main") {
                         if (token.isNullOrBlank()) {
                             navController.navigate("login") {
-                                popUpTo("orders") { inclusive = true }
+                                popUpTo("main") { inclusive = true }
                             }
                             return@composable
                         }
 
                         LaunchedEffect(token) {
                             viewModel.loadOrders(token)
+                            viewModel.loadCatalog()
                         }
 
                         DisposableEffect(Unit) {
@@ -98,16 +104,31 @@ class MainActivity : ComponentActivity() {
                             onDispose { viewModel.stopForegroundOrderPolling() }
                         }
 
-                        OrdersScreen(
-                            state = ordersState,
+                        MainShell(
+                            selectedTab = selectedTab,
+                            onTabSelected = viewModel::selectTab,
+                            ordersState = ordersState,
+                            catalogState = catalogState,
                             adminEmail = adminEmail,
+                            dashboardStats = viewModel.dashboardStats(),
                             filteredOrders = viewModel.filteredOrders(),
-                            onRefresh = { viewModel.loadOrders(refreshing = true) },
-                            onFilterChange = viewModel::setOrderFilter,
+                            filteredProducts = viewModel.filteredProducts(),
+                            collectionName = viewModel::collectionName,
+                            onRefreshOrders = { viewModel.loadOrders(refreshing = true) },
+                            onRefreshCatalog = { viewModel.loadCatalog(refreshing = true) },
+                            onOrderFilterChange = viewModel::setOrderFilter,
                             onOrderClick = { orderId ->
                                 viewModel.loadOrderDetail(orderId)
                                 navController.navigate("order/$orderId")
                             },
+                            onProductClick = { productId ->
+                                viewModel.loadProductDetail(productId)
+                                navController.navigate("product/$productId")
+                            },
+                            onCollectionChange = viewModel::setCatalogCollection,
+                            onSearchChange = viewModel::setCatalogSearch,
+                            onNavigateToOrders = { viewModel.selectTab(MainTab.ORDERS) },
+                            onNavigateToCatalog = { viewModel.selectTab(MainTab.CATALOG) },
                             onLogout = {
                                 viewModel.logout()
                                 navController.navigate("login") {
@@ -128,6 +149,23 @@ class MainActivity : ComponentActivity() {
                             onStatusChange = { status ->
                                 viewModel.updateOrderStatus(orderId, status)
                             }
+                        )
+                    }
+
+                    composable(
+                        route = "product/{productId}",
+                        arguments = listOf(navArgument("productId") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val productId = backStackEntry.arguments?.getString("productId").orEmpty()
+                        LaunchedEffect(productId) {
+                            if (productId.isNotBlank()) {
+                                viewModel.loadProductDetail(productId)
+                            }
+                        }
+                        ProductDetailScreen(
+                            state = productDetailState,
+                            collectionName = viewModel::collectionName,
+                            onBack = { navController.popBackStack() }
                         )
                     }
                 }

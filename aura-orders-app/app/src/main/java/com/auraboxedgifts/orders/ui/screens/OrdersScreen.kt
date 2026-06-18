@@ -69,9 +69,11 @@ import com.auraboxedgifts.orders.ui.theme.WarningAmber
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun OrdersScreen(
+    modifier: Modifier = Modifier,
     state: OrdersUiState,
     adminEmail: String?,
     filteredOrders: List<Order>,
+    showTopBar: Boolean = true,
     onRefresh: () -> Unit,
     onFilterChange: (OrderFilter) -> Unit,
     onOrderClick: (String) -> Unit,
@@ -83,37 +85,54 @@ fun OrdersScreen(
     )
 
     Scaffold(
+        modifier = modifier,
         containerColor = Cream,
         topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        BrandLogo(modifier = Modifier.size(36.dp))
-                        Column {
-                            Text("Orders", style = MaterialTheme.typography.titleLarge)
-                            if (!adminEmail.isNullOrBlank()) {
-                                Text(
-                                    adminEmail,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = TextLight
-                                )
+            if (showTopBar) {
+                TopAppBar(
+                    title = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            BrandLogo(modifier = Modifier.size(36.dp))
+                            Column {
+                                Text("Orders", style = MaterialTheme.typography.titleLarge)
+                                if (!adminEmail.isNullOrBlank()) {
+                                    Text(
+                                        adminEmail,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = TextLight
+                                    )
+                                }
                             }
                         }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onLogout) {
-                        Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = "Logout")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Cream,
-                    titleContentColor = TextDark
+                    },
+                    actions = {
+                        IconButton(onClick = onLogout) {
+                            Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = "Logout")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Cream,
+                        titleContentColor = TextDark
+                    )
                 )
-            )
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Cream)
+                        .padding(horizontal = 16.dp, vertical = 16.dp)
+                ) {
+                    Text("Orders", style = MaterialTheme.typography.headlineMedium)
+                    Text(
+                        "Manage customer checkouts",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextMedium
+                    )
+                }
+            }
         }
     ) { padding ->
         Box(
@@ -309,7 +328,7 @@ fun StatusChip(label: String, color: Color) {
 }
 
 @Composable
-private fun EmptyState(
+fun EmptyState(
     title: String,
     subtitle: String,
     action: String? = null,

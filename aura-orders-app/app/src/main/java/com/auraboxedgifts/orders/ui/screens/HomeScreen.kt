@@ -1,0 +1,429 @@
+package com.auraboxedgifts.orders.ui.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.Receipt
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.auraboxedgifts.orders.DashboardStats
+import com.auraboxedgifts.orders.data.Order
+import com.auraboxedgifts.orders.data.OrderStatus
+import com.auraboxedgifts.orders.data.displayName
+import com.auraboxedgifts.orders.data.formatRupee
+import com.auraboxedgifts.orders.data.isPaid
+import com.auraboxedgifts.orders.formatOrderDate
+import com.auraboxedgifts.orders.ui.components.BrandLogo
+import com.auraboxedgifts.orders.ui.components.ProductImage
+import com.auraboxedgifts.orders.ui.theme.Cream
+import com.auraboxedgifts.orders.ui.theme.CreamDark
+import com.auraboxedgifts.orders.ui.theme.Gold
+import com.auraboxedgifts.orders.ui.theme.RoseGold
+import com.auraboxedgifts.orders.ui.theme.RoseLight
+import com.auraboxedgifts.orders.ui.theme.SuccessGreen
+import com.auraboxedgifts.orders.ui.theme.TextDark
+import com.auraboxedgifts.orders.ui.theme.TextLight
+import com.auraboxedgifts.orders.ui.theme.TextMedium
+import com.auraboxedgifts.orders.ui.theme.WarningAmber
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun HomeScreen(
+    modifier: Modifier = Modifier,
+    adminEmail: String?,
+    stats: DashboardStats,
+    onOrderClick: (String) -> Unit,
+    onViewAllOrders: () -> Unit,
+    onViewCatalog: () -> Unit,
+    onRefresh: () -> Unit,
+    isRefreshing: Boolean
+) {
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isRefreshing,
+        onRefresh = onRefresh
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
+    ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                HeroHeader(adminEmail = adminEmail)
+            }
+
+            item {
+                StatsGrid(stats = stats)
+            }
+
+            item {
+                QuickActions(
+                    onViewOrders = onViewAllOrders,
+                    onViewCatalog = onViewCatalog
+                )
+            }
+
+            item {
+                SectionHeader(
+                    title = "Recent orders",
+                    action = "View all",
+                    onAction = onViewAllOrders
+                )
+            }
+
+            if (stats.recentOrders.isEmpty()) {
+                item {
+                    EmptyCard(
+                        message = "No orders yet. New checkouts from your website will appear here."
+                    )
+                }
+            } else {
+                items(stats.recentOrders, key = { it.id }) { order ->
+                    RecentOrderRow(
+                        order = order,
+                        onClick = { onOrderClick(order.id) },
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+            }
+        }
+
+        PullRefreshIndicator(
+            refreshing = isRefreshing,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            backgroundColor = Color.White,
+            contentColor = RoseGold
+        )
+    }
+}
+
+@Composable
+private fun HeroHeader(adminEmail: String?) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(RoseLight.copy(alpha = 0.45f), Cream)
+                )
+            )
+            .padding(horizontal = 20.dp, vertical = 24.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            BrandLogo(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(16.dp))
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Aura Boxed Gift",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Text(
+                    text = "Store dashboard",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextMedium
+                )
+                if (!adminEmail.isNullOrBlank()) {
+                    Text(
+                        text = adminEmail,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextLight,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatsGrid(stats: DashboardStats) {
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StatCard(
+                modifier = Modifier.weight(1f),
+                label = "Orders",
+                value = stats.totalOrders.toString(),
+                icon = Icons.Outlined.Receipt,
+                accent = RoseGold
+            )
+            StatCard(
+                modifier = Modifier.weight(1f),
+                label = "Products",
+                value = stats.totalProducts.toString(),
+                icon = Icons.Outlined.Inventory2,
+                accent = Gold
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StatCard(
+                modifier = Modifier.weight(1f),
+                label = "Paid",
+                value = stats.paidOrders.toString(),
+                icon = Icons.Outlined.Receipt,
+                accent = SuccessGreen
+            )
+            StatCard(
+                modifier = Modifier.weight(1f),
+                label = "Pending",
+                value = stats.pendingOrders.toString(),
+                icon = Icons.Outlined.Schedule,
+                accent = WarningAmber
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatCard(
+    modifier: Modifier = Modifier,
+    label: String,
+    value: String,
+    icon: ImageVector,
+    accent: Color
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(accent.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
+            }
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = TextDark
+            )
+            Text(text = label, style = MaterialTheme.typography.labelMedium)
+        }
+    }
+}
+
+@Composable
+private fun QuickActions(
+    onViewOrders: () -> Unit,
+    onViewCatalog: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        ActionChip(
+            modifier = Modifier.weight(1f),
+            label = "Manage orders",
+            icon = Icons.Outlined.Receipt,
+            onClick = onViewOrders
+        )
+        ActionChip(
+            modifier = Modifier.weight(1f),
+            label = "Browse catalog",
+            icon = Icons.Outlined.GridView,
+            onClick = onViewCatalog
+        )
+    }
+}
+
+@Composable
+private fun ActionChip(
+    modifier: Modifier = Modifier,
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = RoseGold.copy(alpha = 0.08f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null, tint = RoseGold, modifier = Modifier.size(18.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = RoseGold,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                Icons.AutoMirrored.Outlined.ArrowForward,
+                contentDescription = null,
+                tint = RoseGold,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(
+    title: String,
+    action: String,
+    onAction: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(title, style = MaterialTheme.typography.titleLarge)
+        Text(
+            text = action,
+            style = MaterialTheme.typography.labelLarge,
+            color = RoseGold,
+            modifier = Modifier.clickable(onClick = onAction)
+        )
+    }
+}
+
+@Composable
+private fun RecentOrderRow(
+    order: Order,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val status = OrderStatus.fromApi(order.status)
+    val firstImage = order.cart?.lines?.firstOrNull()?.image
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ProductImage(
+                imagePath = firstImage,
+                contentDescription = order.cart?.lines?.firstOrNull()?.name,
+                modifier = Modifier.size(48.dp),
+                cornerRadius = 12.dp
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    order.displayName(),
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    formatOrderDate(order.createdAt),
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    formatRupee(order.cart?.grandTotal ?: 0.0),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = RoseGold
+                )
+                StatusChip(
+                    label = if (order.isPaid()) "Paid" else status.label,
+                    color = if (order.isPaid()) SuccessGreen else WarningAmber
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyCard(message: String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CreamDark)
+    ) {
+        Text(
+            text = message,
+            modifier = Modifier.padding(20.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextMedium
+        )
+    }
+}

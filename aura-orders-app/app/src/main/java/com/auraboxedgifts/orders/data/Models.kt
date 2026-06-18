@@ -114,3 +114,21 @@ fun Order.isPaid(): Boolean = paymentStatus?.equals("paid", ignoreCase = true) =
 
 fun formatRupee(amount: Double): String =
     "₹%,.0f".format(amount).replace(",", ",")
+
+data class Product(
+    val id: String,
+    val slug: String? = null,
+    val name: String,
+    val collection: String,
+    val price: Double = 0.0,
+    val image: String? = null,
+    val description: String? = null,
+    val tags: List<String>? = null
+)
+
+data class Collection(
+    val slug: String,
+    val name: String,
+    val description: String? = null,
+    val image: String? = null
+)

@@ -92,12 +92,12 @@ fun LoginScreen(
             )
 
             Text(
-                text = "Aura Boxed Gifts",
+                text = "Aura Boxed Gift",
                 style = MaterialTheme.typography.displayLarge,
                 textAlign = TextAlign.Center
             )
             Text(
-                text = "Sign in to view customer orders",
+                text = "Your store, orders & catalog in one place",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextMedium,
                 textAlign = TextAlign.Center

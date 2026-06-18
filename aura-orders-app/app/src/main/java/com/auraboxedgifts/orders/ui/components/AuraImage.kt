@@ -68,7 +68,7 @@ fun ProductImage(
 @Composable
 fun BrandLogo(
     modifier: Modifier = Modifier,
-    contentDescription: String = "Aura Boxed Gifts"
+    contentDescription: String = "Aura Boxed Gift"
 ) {
     androidx.compose.foundation.Image(
         painter = androidx.compose.ui.res.painterResource(
