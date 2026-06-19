@@ -2,7 +2,6 @@ package com.auraboxedgifts.orders.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -11,8 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -64,7 +61,7 @@ fun CustomerAccountScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = RoseGold.copy(alpha = 0.1f))
+                colors = CardDefaults.cardColors(containerColor = RoseGold.copy(alpha = 0.12f))
             ) {
                 Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("Admin signed in", style = MaterialTheme.typography.titleMedium, color = RoseGold)
@@ -152,31 +149,33 @@ fun CustomerAccountScreen(
                 }
             }
         } else if (!isAdminLoggedIn) {
-            Text(
-                "Sign in to track orders and pay at checkout.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextMedium,
-                textAlign = TextAlign.Center
-            )
-            Button(
-                onClick = onSignIn,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = RoseGold)
-            ) {
-                Text("Sign in / Sign up")
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedButton(
-                onClick = onAdminPanel,
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = CreamDark.copy(alpha = 0.5f))
             ) {
-                Text("Store admin sign in")
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        "Sign in to track orders and pay at checkout.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextMedium,
+                        textAlign = TextAlign.Center
+                    )
+                    Button(
+                        onClick = onSignIn,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = RoseGold)
+                    ) {
+                        Text("Sign in / Sign up")
+                    }
+                }
             }
         }
     }

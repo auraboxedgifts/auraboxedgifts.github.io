@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Aura AI — Gift Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream: #faf6f2;
+      --cream-dark: #f0e8e2;
+      --rose: #b76e79;
+      --rose-light: #e8c4c9;
+      --text: #3d2c2c;
+      --text-muted: #7a6565;
+      --white: #ffffff;
+      --shadow: 0 12px 40px rgba(183, 110, 121, 0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: linear-gradient(165deg, var(--cream) 0%, var(--cream-dark) 45%, #f5e4e8 100%);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 20px 24px 12px;
+      text-align: center;
+      background: rgba(250, 246, 242, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(183, 110, 121, 0.12);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header h1 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--rose);
+    }
+    header p { font-size: 0.875rem; color: var(--text-muted); margin-top: 4px; }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #6bcb77;
+      animation: pulse 2s ease infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 16px 20px 8px;
+      justify-content: center;
+    }
+    .chip {
+      border: 1px solid var(--rose-light);
+      background: var(--white);
+      color: var(--rose);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .chip:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 16px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .msg {
+      max-width: 88%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      line-height: 1.55;
+      font-size: 0.9375rem;
+      white-space: pre-wrap;
+      animation: fadeUp 0.35s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .msg.user {
+      align-self: flex-end;
+      background: var(--rose);
+      color: var(--white);
+      border-bottom-right-radius: 6px;
+    }
+    .msg.aura {
+      align-self: flex-start;
+      background: var(--white);
+      border: 1px solid var(--cream-dark);
+      box-shadow: var(--shadow);
+      border-bottom-left-radius: 6px;
+    }
+    .msg.typing { color: var(--text-muted); font-style: italic; }
+    .composer {
+      padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+      background: rgba(250, 246, 242, 0.92);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(183, 110, 121, 0.12);
+    }
+    .composer-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    textarea {
+      flex: 1;
+      resize: none;
+      border: 1px solid var(--rose-light);
+      border-radius: 16px;
+      padding: 12px 16px;
+      font: inherit;
+      min-height: 48px;
+      max-height: 120px;
+      background: var(--white);
+      color: var(--text);
+    }
+    textarea:focus { outline: 2px solid rgba(183, 110, 121, 0.35); border-color: var(--rose); }
+    button.send {
+      border: none;
+      background: var(--rose);
+      color: white;
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      cursor: pointer;
+      font-size: 1.25rem;
+      transition: transform 0.15s, opacity 0.15s;
+    }
+    button.send:disabled { opacity: 0.5; cursor: not-allowed; }
+    button.send:not(:disabled):hover { transform: scale(1.04); }
+    .footer-link {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      padding-bottom: 8px;
+    }
+    .footer-link a { color: var(--rose); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Aura AI</h1>
+    <p>Your gift concierge for Aura Boxed Gifts</p>
+    <div class="status"><span class="status-dot"></span><span id="statusText">Connecting…</span></div>
+  </header>
+  <div class="suggestions" id="suggestions"></div>
+  <div id="chat"></div>
+  <div class="composer">
+    <div class="composer-inner">
+      <textarea id="input" rows="1" placeholder="Ask about gifts, hampers, or occasions…" maxlength="800"></textarea>
+      <button class="send" id="sendBtn" title="Send" disabled>↑</button>
+    </div>
+    <p class="footer-link"><a href="/">← Back to store</a> · Voice assistant on homepage</p>
+  </div>
+  <script>
+    const chatEl = document.getElementById('chat');
+    const inputEl = document.getElementById('input');
+    const sendBtn = document.getElementById('sendBtn');
+    const suggestionsEl = document.getElementById('suggestions');
+    const statusText = document.getElementById('statusText');
+    const history = [];
+
+    function addMessage(text, role) {
+      const div = document.createElement('div');
+      div.className = 'msg ' + (role === 'user' ? 'user' : 'aura');
+      div.textContent = text;
+      chatEl.appendChild(div);
+      chatEl.scrollTop = chatEl.scrollHeight;
+      return div;
+    }
+
+    async function loadStatus() {
+      try {
+        const res = await fetch('/api/ai/status');
+        const json = await res.json();
+        if (json.success && json.data?.ready) {
+          statusText.textContent = 'Ready to help you find the perfect gift';
+          sendBtn.disabled = false;
+        } else {
+          statusText.textContent = json.data?.message || 'Aura AI is unavailable';
+        }
+      } catch (_) {
+        statusText.textContent = 'Could not reach Aura AI';
+      }
+    }
+
+    async function loadSuggestions() {
+      try {
+        const res = await fetch('/api/ai/suggestions');
+        const json = await res.json();
+        (json.data?.suggestions || []).forEach((text) => {
+          const chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'chip';
+          chip.textContent = text;
+          chip.onclick = () => { inputEl.value = text; sendMessage(); };
+          suggestionsEl.appendChild(chip);
+        });
+      } catch (_) {}
+    }
+
+    async function sendMessage() {
+      const message = inputEl.value.trim();
+      if (!message || sendBtn.disabled) return;
+      inputEl.value = '';
+      suggestionsEl.style.display = 'none';
+      addMessage(message, 'user');
+      history.push({ role: 'user', content: message });
+      const typing = addMessage('Aura is thinking…', 'aura');
+      typing.classList.add('typing');
+      sendBtn.disabled = true;
+      try {
+        const res = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, history: history.slice(0, -1) })
+        });
+        const json = await res.json();
+        typing.remove();
+        if (!json.success) throw new Error(json.error || 'Chat failed');
+        const reply = json.data.reply;
+        addMessage(reply, 'aura');
+        history.push({ role: 'assistant', content: reply });
+      } catch (err) {
+        typing.remove();
+        addMessage(err.message || 'Something went wrong. Please try again.', 'aura');
+      } finally {
+        sendBtn.disabled = false;
+        inputEl.focus();
+      }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+    inputEl.addEventListener('input', () => {
+      inputEl.style.height = 'auto';
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+    });
+
+    loadStatus();
+    loadSuggestions();
+    addMessage('Hi! I\'m Aura — ask me about gifts, hampers, or what to buy for any occasion. 💝', 'aura');
+  </script>
+</body>
+</html>

@@ -261,15 +261,18 @@ class ApiException(message: String) : Exception(message)
 
 object ApiClient {
     fun create(): AuraApiService {
-        val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
-        }
-        val client = OkHttpClient.Builder()
+        val clientBuilder = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
-            .addInterceptor(logging)
-            .build()
+        if (BuildConfig.DEBUG) {
+            clientBuilder.addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BASIC
+                }
+            )
+        }
+        val client = clientBuilder.build()
 
         return Retrofit.Builder()
             .baseUrl(BuildConfig.API_BASE_URL.trimEnd('/') + "/")

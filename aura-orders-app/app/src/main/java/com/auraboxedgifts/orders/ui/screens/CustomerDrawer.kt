@@ -15,8 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.automirrored.outlined.Login
 import androidx.compose.material.icons.outlined.AdminPanelSettings
-import androidx.compose.material.icons.outlined.Login
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material.icons.outlined.ShoppingBag
@@ -122,12 +122,12 @@ fun CustomerDrawerContent(
                 )
             }
             !isCustomerLoggedIn -> {
-                DrawerItem(index = 5, icon = Icons.Outlined.Login, label = "Sign in / Sign up", highlight = true, onClick = onSignIn)
                 DrawerItem(
-                    index = 6,
-                    icon = Icons.Outlined.AdminPanelSettings,
-                    label = "Store admin sign in",
-                    onClick = onAdminPanel
+                    index = 5,
+                    icon = Icons.AutoMirrored.Outlined.Login,
+                    label = "Sign in / Sign up",
+                    highlight = true,
+                    onClick = onSignIn
                 )
             }
         }

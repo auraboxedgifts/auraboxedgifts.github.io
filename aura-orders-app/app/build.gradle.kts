@@ -11,15 +11,20 @@ android {
         applicationId = "com.auraboxedgifts.orders"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "1.2.2"
+        versionCode = 6
+        versionName = "1.2.3"
+
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        }
 
         buildConfigField("String", "API_BASE_URL", "\"https://aura.devshubh.me\"")
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

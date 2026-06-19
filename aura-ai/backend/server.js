@@ -1532,6 +1532,49 @@ app.get('/api/config', (req, res) => {
 
 const { SYSTEM_PROMPT } = require('./ai/systemPrompt');
 const { toolDeclarations } = require('./ai/toolDeclarations');
+const { chatWithAura, buildSuggestions } = require('./ai/textChat');
+
+const AI_PUBLIC_DIR = path.join(__dirname, 'public');
+if (!fs.existsSync(AI_PUBLIC_DIR)) {
+    fs.mkdirSync(AI_PUBLIC_DIR, { recursive: true });
+}
+app.use('/aura-ai', express.static(AI_PUBLIC_DIR, { maxAge: '1h', index: false }));
+
+app.get('/aura-ai/chat', (req, res) => {
+    res.sendFile(path.join(AI_PUBLIC_DIR, 'aura-ai-chat.html'));
+});
+
+app.get('/api/ai/status', (req, res) => {
+    return jsonOk(res, {
+        ready: Boolean(GEMINI_API_KEY),
+        message: GEMINI_API_KEY
+            ? 'Aura AI is ready — voice on the homepage, text chat below.'
+            : 'Set GEMINI_API_KEY on the server to enable Aura AI.',
+        modes: { voice: true, text: true },
+        chatUrl: '/aura-ai/chat',
+        websocket: true
+    });
+});
+
+app.get('/api/ai/suggestions', (req, res) => {
+    return jsonOk(res, { suggestions: buildSuggestions(getCatalog, getSite) });
+});
+
+app.post('/api/ai/chat', async (req, res) => {
+    try {
+        const data = await chatWithAura({
+            apiKey: GEMINI_API_KEY,
+            message: req.body?.message,
+            history: req.body?.history,
+            getCatalog,
+            getSite
+        });
+        return jsonOk(res, data);
+    } catch (err) {
+        const status = /required|empty/i.test(err.message) ? 400 : 500;
+        return jsonErr(res, status, err.message);
+    }
+});
 
 const wss = new WebSocket.Server({ noServer: true });
 const pendingCartTotals = new Map();
@@ -2092,6 +2135,8 @@ app.get('/health', (req, res) => {
         service: 'Aura AI Backend',
         auraAi: {
             websocket: true,
+            textChat: true,
+            chatUrl: '/aura-ai/chat',
             geminiConfigured: Boolean(GEMINI_API_KEY)
         }
     });

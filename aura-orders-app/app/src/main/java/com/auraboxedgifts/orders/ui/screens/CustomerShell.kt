@@ -185,11 +185,23 @@ fun CustomerShell(
                             }
                         },
                         actions = {
-                            IconButton(onClick = onOpenCart, modifier = Modifier.scale(cartIconScale)) {
-                                if (cartItemCount > 0) {
-                                    BadgedBox(
-                                        badge = {
-                                                Badge(containerColor = RoseGold) {
+                            Box(
+                                modifier = Modifier
+                                    .padding(end = 12.dp)
+                                    .size(48.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                IconButton(
+                                    onClick = onOpenCart,
+                                    modifier = Modifier.scale(cartIconScale)
+                                ) {
+                                    if (cartItemCount > 0) {
+                                        BadgedBox(
+                                            badge = {
+                                                Badge(
+                                                    containerColor = RoseGold,
+                                                    modifier = Modifier.padding(end = 2.dp)
+                                                ) {
                                                     Text(
                                                         if (cartItemCount > 99) "99+" else "$cartItemCount",
                                                         style = MaterialTheme.typography.labelSmall
@@ -197,18 +209,21 @@ fun CustomerShell(
                                                 }
                                             }
                                         ) {
+                                            Icon(
+                                                Icons.Outlined.ShoppingCart,
+                                                contentDescription = "Cart",
+                                                tint = TextDark,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        }
+                                    } else {
                                         Icon(
                                             Icons.Outlined.ShoppingCart,
                                             contentDescription = "Cart",
-                                            tint = TextDark
+                                            tint = TextDark,
+                                            modifier = Modifier.size(24.dp)
                                         )
                                     }
-                                } else {
-                                    Icon(
-                                        Icons.Outlined.ShoppingCart,
-                                        contentDescription = "Cart",
-                                        tint = TextDark
-                                    )
                                 }
                             }
                         },
