@@ -1,4 +1,11 @@
 const { mobileToolDeclarations } = require('./mobileTools');
+const {
+    buildHampersShowcase,
+    buildGiftsShowcase,
+    buildProductShowcase,
+    buildSearchShowcase,
+    showcaseMobileAction
+} = require('./mobileShowcase');
 
 const MOBILE_LIVE_KICKOFF =
     '[SYSTEM NOTE: The customer just opened Aura AI Voice in the Aura Boxed Gifts Android app. Greet them warmly in one short sentence and ask how you can help with gifts or hampers.]';
@@ -15,7 +22,9 @@ function buildMobileLiveInstruction(getCatalog, getSite, getSettings) {
         .join('\n');
     return [
         'You are Aura AI — a warm voice shopping assistant for Aura Boxed Gifts inside the Android app.',
-        'Speak naturally in short sentences. Use mobile tools to navigate the app, show products, and add to cart.',
+        'Speak naturally in short sentences. Use mobile tools to help shop.',
+        'When the customer wants to SEE hampers or gifts, call show_hampers or show_gifts — cards appear on the Aura AI screen. Do NOT navigate to the shop for browsing.',
+        'Use navigate_cart, navigate_checkout, navigate_account only when they ask to open those screens.',
         'Never invent product ids — use ids from the catalog below.',
         '',
         'MOBILE CATALOG:',
@@ -28,8 +37,19 @@ function buildMobileLiveInstruction(getCatalog, getSite, getSettings) {
     ].join('\n');
 }
 
+function sendShowcase(clientWs, showcase) {
+    clientWs.send(
+        JSON.stringify({
+            type: 'mobile_action',
+            action: showcaseMobileAction(showcase)
+        })
+    );
+}
+
 async function executeMobileLiveTool(fc, clientWs, ctx) {
     const {
+        getCatalog,
+        getSite,
         getSellable,
         resolveProductId,
         lastViewedProduct,
@@ -44,6 +64,26 @@ async function executeMobileLiveTool(fc, clientWs, ctx) {
     let viewed = null;
 
     switch (name) {
+        case 'show_hampers': {
+            const showcase = buildHampersShowcase(getSite, args.query);
+            sendShowcase(clientWs, showcase);
+            response = {
+                result: showcase.items.length
+                    ? `Showing ${showcase.items.length} hampers on screen`
+                    : 'No hampers matched that filter'
+            };
+            break;
+        }
+        case 'show_gifts': {
+            const showcase = buildGiftsShowcase(getCatalog, args.query, args.collection);
+            sendShowcase(clientWs, showcase);
+            response = {
+                result: showcase.items.length
+                    ? `Showing ${showcase.items.length} gifts on screen`
+                    : 'No gifts matched that filter'
+            };
+            break;
+        }
         case 'navigate_shop':
             clientWs.send(JSON.stringify({ type: 'mobile_action', action: { type: 'navigate_shop' } }));
             response = { result: 'Opened shop' };
@@ -69,11 +109,13 @@ async function executeMobileLiveTool(fc, clientWs, ctx) {
                     productName: args.productName || sellable?.name || '',
                     productPrice: Number(sellable?.price || 0)
                 };
-                clientWs.send(JSON.stringify({
-                    type: 'mobile_action',
-                    action: { type: 'view_product', productId, productName: viewed.productName }
-                }));
-                response = { result: `Opened ${viewed.productName || productId}` };
+                const showcase = buildProductShowcase(getSellable, productId, viewed.productName);
+                if (showcase) {
+                    sendShowcase(clientWs, showcase);
+                    response = { result: `Showing ${viewed.productName || productId} on screen` };
+                } else {
+                    response = { result: 'Could not find that product id' };
+                }
             } else {
                 response = { result: 'Could not find that product id' };
             }
@@ -110,13 +152,16 @@ async function executeMobileLiveTool(fc, clientWs, ctx) {
             }
             break;
         }
-        case 'search_products':
-            clientWs.send(JSON.stringify({
-                type: 'mobile_action',
-                action: { type: 'search_products', query: String(args.query || '') }
-            }));
-            response = { result: `Searching for ${args.query || 'products'}` };
+        case 'search_products': {
+            const showcase = buildSearchShowcase(getCatalog, getSite, args.query);
+            sendShowcase(clientWs, showcase);
+            response = {
+                result: showcase.items.length
+                    ? `Showing ${showcase.items.length} matches on screen`
+                    : `No matches for ${args.query || 'that search'}`
+            };
             break;
+        }
         case 'calculate_cart_total':
             try {
                 const payload = await requestCartTotalsFromClient(clientWs);

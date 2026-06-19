@@ -1,5 +1,12 @@
 const { SYSTEM_PROMPT } = require('./systemPrompt');
 const { mobileToolDeclarations } = require('./mobileTools');
+const {
+    buildHampersShowcase,
+    buildGiftsShowcase,
+    buildProductShowcase,
+    buildSearchShowcase,
+    showcaseMobileAction
+} = require('./mobileShowcase');
 
 const MOBILE_MODEL = process.env.GEMINI_MOBILE_MODEL || 'gemini-3.5-flash';
 
@@ -35,8 +42,13 @@ function normalizeHistory(history) {
         .filter((entry) => entry.text.length > 0);
 }
 
-function toolCallToAction(name, args) {
+function toolCallToAction(name, args, ctx) {
+    const { getCatalog, getSite, getSellable } = ctx;
     switch (name) {
+        case 'show_hampers':
+            return showcaseMobileAction(buildHampersShowcase(getSite, args.query));
+        case 'show_gifts':
+            return showcaseMobileAction(buildGiftsShowcase(getCatalog, args.query, args.collection));
         case 'navigate_shop':
             return { type: 'navigate_shop' };
         case 'navigate_cart':
@@ -45,12 +57,13 @@ function toolCallToAction(name, args) {
             return { type: 'navigate_account' };
         case 'navigate_checkout':
             return { type: 'navigate_checkout' };
-        case 'view_product':
-            return {
-                type: 'view_product',
-                productId: String(args.productId || ''),
-                productName: String(args.productName || '')
-            };
+        case 'view_product': {
+            const productId = String(args.productId || '');
+            const showcase = buildProductShowcase(getSellable, productId, args.productName);
+            return showcase
+                ? showcaseMobileAction(showcase)
+                : { type: 'view_product', productId, productName: String(args.productName || '') };
+        }
         case 'add_to_cart':
             return {
                 type: 'add_to_cart',
@@ -59,7 +72,7 @@ function toolCallToAction(name, args) {
                 qty: Math.max(1, Number(args.qty || 1))
             };
         case 'search_products':
-            return { type: 'search_products', query: String(args.query || '') };
+            return showcaseMobileAction(buildSearchShowcase(getCatalog, getSite, args.query));
         default:
             return null;
     }
@@ -73,7 +86,8 @@ async function chatWithMobileAura({
     screen,
     getCatalog,
     getSite,
-    getSettings
+    getSettings,
+    getSellable
 }) {
     if (!apiKey) throw new Error('GEMINI_API_KEY is not configured on the server.');
     const trimmed = String(message || '').trim();
@@ -88,7 +102,7 @@ async function chatWithMobileAura({
         : 'Customer cart: unknown (app will sync).';
     const screenNote = screen ? `Current app screen: ${screen}.` : '';
 
-    const systemInstruction = `${SYSTEM_PROMPT}\n\n${catalogContext}\n\n${cartNote}\n${screenNote}\n\nYou are Aura AI inside the Aura Boxed Gifts Android app. Use mobile tools to navigate and add to cart. Keep replies short and warm (under 90 words). Call tools when the customer asks to see cart, checkout, a product, or add items. Never invent product ids — use ids from the catalog above.`;
+    const systemInstruction = `${SYSTEM_PROMPT}\n\n${catalogContext}\n\n${cartNote}\n${screenNote}\n\nYou are Aura AI inside the Aura Boxed Gifts Android app. Use show_hampers and show_gifts to present gifts on the Aura AI screen instead of navigating away. Keep replies short and warm (under 90 words). Call tools when the customer asks to browse, see cart, checkout, or add items. Never invent product ids — use ids from the catalog above.`;
 
     const contents = [
         ...prior.map((entry) => ({
@@ -97,6 +111,20 @@ async function chatWithMobileAura({
         })),
         { role: 'user', parts: [{ text: trimmed }] }
     ];
+
+    const toolCtx = {
+        getCatalog,
+        getSite,
+        getSellable: getSellable || ((id) => {
+            const product = getCatalog().find((p) => p.id === id);
+            if (product) return product;
+            const hamper = (getSite().hampers || []).find((h) => h.id === id);
+            if (hamper && Number(hamper.price) > 0) {
+                return { id: hamper.id, name: hamper.title, image: hamper.image, price: Number(hamper.price) };
+            }
+            return null;
+        })
+    };
 
     const response = await ai.models.generateContent({
         model: MOBILE_MODEL,
@@ -112,13 +140,13 @@ async function chatWithMobileAura({
     const actions = [];
     const functionCalls = response.functionCalls || [];
     for (const call of functionCalls) {
-        const action = toolCallToAction(call.name, call.args || {});
+        const action = toolCallToAction(call.name, call.args || {}, toolCtx);
         if (action) actions.push(action);
     }
 
     let reply = String(response.text || '').trim();
     if (!reply && actions.length) {
-        reply = 'Done — taking you there now.';
+        reply = 'Here you go — I’ve pulled those up for you on screen.';
     }
     if (!reply && !actions.length) {
         throw new Error('Aura AI returned an empty response. Please try again.');

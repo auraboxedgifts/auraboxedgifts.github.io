@@ -1,7 +1,30 @@
 const mobileToolDeclarations = [
     {
+        name: 'show_hampers',
+        description:
+            'Show curated gift hampers inside the Aura AI screen (do NOT navigate away). Use when the customer asks to see hampers, gift boxes, or curated bundles.',
+        parameters: {
+            type: 'object',
+            properties: {
+                query: { type: 'string', description: 'Optional filter e.g. birthday, wedding' }
+            }
+        }
+    },
+    {
+        name: 'show_gifts',
+        description:
+            'Show gift products inside the Aura AI screen (do NOT navigate away). Use when browsing gifts, collections, or occasions.',
+        parameters: {
+            type: 'object',
+            properties: {
+                query: { type: 'string', description: 'Optional search e.g. birthday, mom' },
+                collection: { type: 'string', description: 'Optional collection name from catalog' }
+            }
+        }
+    },
+    {
         name: 'navigate_shop',
-        description: 'Open the shop / catalog tab in the mobile app.',
+        description: 'Open the full shop tab only when the customer explicitly wants the entire catalog screen.',
         parameters: { type: 'object', properties: {} }
     },
     {
@@ -21,7 +44,8 @@ const mobileToolDeclarations = [
     },
     {
         name: 'view_product',
-        description: 'Open a product detail page by product id from the live catalog.',
+        description:
+            'Highlight a product or hamper in the Aura AI showcase (stay on voice screen). Use after the customer picks an item or asks about a specific id.',
         parameters: {
             type: 'object',
             properties: {
@@ -45,7 +69,8 @@ const mobileToolDeclarations = [
     },
     {
         name: 'search_products',
-        description: 'Filter the shop catalog by search query.',
+        description:
+            'Search gifts and hampers and show matching cards in the Aura AI screen (do NOT open the shop tab).',
         parameters: {
             type: 'object',
             properties: {

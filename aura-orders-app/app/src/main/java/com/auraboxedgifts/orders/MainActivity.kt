@@ -309,7 +309,8 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                                 viewModel.stopAuraVoiceSession()
                                 navController.popBackStack()
                             },
-                            onToggleMute = viewModel::toggleAuraVoiceMute
+                            onToggleMute = viewModel::toggleAuraVoiceMute,
+                            onAddToCart = viewModel::addToCart
                         )
                     }
 

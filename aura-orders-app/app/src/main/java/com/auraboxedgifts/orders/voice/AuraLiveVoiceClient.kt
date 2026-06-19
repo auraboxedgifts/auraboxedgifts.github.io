@@ -37,7 +37,7 @@ class AuraLiveVoiceClient(
         val request = Request.Builder().url(wsUrl).build()
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
-                listener.onStatus("Starting Aura AI…")
+                listener.onStatus("Connecting to Aura AI…")
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
@@ -79,7 +79,7 @@ class AuraLiveVoiceClient(
             "status" -> {
                 val status = json.get("status")?.asString.orEmpty()
                 when (status) {
-                    "connecting" -> listener.onStatus("Starting Aura AI…")
+                    "connecting" -> listener.onStatus("Connecting to Aura AI…")
                     "connected" -> listener.onStatus("Ready", connected = true)
                     "disconnected" -> listener.onStatus("Disconnected", connected = false)
                 }

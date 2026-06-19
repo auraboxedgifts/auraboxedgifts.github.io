@@ -1631,7 +1631,8 @@ app.post('/api/mobile-ai/chat', async (req, res) => {
             screen: req.body?.screen,
             getCatalog,
             getSite,
-            getSettings
+            getSettings,
+            getSellable
         });
         return jsonOk(res, data);
     } catch (err) {
@@ -1922,6 +1923,8 @@ wss.on('connection', (clientWs, request) => {
 
                                 if (isMobileClient) {
                                     const mobileResult = await executeMobileLiveTool(fc, clientWs, {
+                                        getCatalog,
+                                        getSite,
                                         getSellable,
                                         resolveProductId,
                                         lastViewedProduct,

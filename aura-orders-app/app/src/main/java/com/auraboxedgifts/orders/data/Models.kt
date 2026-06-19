@@ -244,12 +244,23 @@ data class StoreSettings(
     val shippingFlatRate: Double = 120.0
 )
 
+data class AuraShowcaseItem(
+    val id: String,
+    val title: String,
+    val subtitle: String = "",
+    val price: Double = 0.0,
+    val image: String = "",
+    val isHamper: Boolean = false
+)
+
 data class MobileAiAction(
     val type: String,
     val productId: String? = null,
     val productName: String? = null,
     val qty: Int? = null,
-    val query: String? = null
+    val query: String? = null,
+    val title: String? = null,
+    val items: List<AuraShowcaseItem>? = null
 )
 
 data class MobileAiChatResult(

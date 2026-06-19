@@ -19,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.automirrored.outlined.Login
-import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Receipt
@@ -56,8 +55,7 @@ fun CustomerDrawerContent(
     onAccount: () -> Unit,
     onSignIn: () -> Unit,
     onAdminPanel: () -> Unit,
-    onCustomerLogout: () -> Unit,
-    onOpenAuraAi: () -> Unit
+    onCustomerLogout: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -114,16 +112,9 @@ fun CustomerDrawerContent(
                 onClick = onCart
             )
             DrawerItem(index = 3, icon = Icons.Outlined.Person, label = "My account", onClick = onAccount)
-            DrawerItem(
-                index = 4,
-                icon = Icons.Outlined.AutoAwesome,
-                label = "Aura AI assistant",
-                highlight = true,
-                onClick = onOpenAuraAi
-            )
 
             if (isCustomerLoggedIn) {
-                DrawerItem(index = 5, icon = Icons.Outlined.Receipt, label = "My orders", onClick = onAccount)
+                DrawerItem(index = 4, icon = Icons.Outlined.Receipt, label = "My orders", onClick = onAccount)
             }
         }
 

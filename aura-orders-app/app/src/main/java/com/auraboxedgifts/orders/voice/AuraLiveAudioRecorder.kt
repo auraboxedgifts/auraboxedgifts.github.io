@@ -1,8 +1,11 @@
 package com.auraboxedgifts.orders.voice
 
 import android.media.AudioFormat
+import android.media.AudioManager
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.media.audiofx.AcousticEchoCanceler
+import android.media.audiofx.NoiseSuppressor
 import android.util.Base64
 import kotlin.math.sqrt
 
@@ -11,8 +14,15 @@ class AuraLiveAudioRecorder(
     private val onLevel: (Float) -> Unit
 ) {
     private var audioRecord: AudioRecord? = null
+    private var echoCanceler: AcousticEchoCanceler? = null
+    private var noiseSuppressor: NoiseSuppressor? = null
     @Volatile
     private var running = false
+
+    val audioSessionId: Int
+        get() = audioRecord?.audioSessionId ?: AudioManager.AUDIO_SESSION_ID_GENERATE
+
+    fun isRunning(): Boolean = running
 
     fun start(): Boolean {
         if (running) return true
@@ -33,6 +43,21 @@ class AuraLiveAudioRecorder(
             record.release()
             return false
         }
+
+        val sessionId = record.audioSessionId
+        if (AcousticEchoCanceler.isAvailable()) {
+            try {
+                echoCanceler = AcousticEchoCanceler.create(sessionId)?.also { it.enabled = true }
+            } catch (_: Exception) {
+            }
+        }
+        if (NoiseSuppressor.isAvailable()) {
+            try {
+                noiseSuppressor = NoiseSuppressor.create(sessionId)?.also { it.enabled = true }
+            } catch (_: Exception) {
+            }
+        }
+
         audioRecord = record
         running = true
         record.startRecording()
@@ -52,6 +77,16 @@ class AuraLiveAudioRecorder(
 
     fun stop() {
         running = false
+        try {
+            echoCanceler?.release()
+        } catch (_: Exception) {
+        }
+        echoCanceler = null
+        try {
+            noiseSuppressor?.release()
+        } catch (_: Exception) {
+        }
+        noiseSuppressor = null
         audioRecord?.let { record ->
             try {
                 record.stop()

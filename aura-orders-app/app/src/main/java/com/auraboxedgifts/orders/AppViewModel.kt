@@ -1,6 +1,8 @@
 package com.auraboxedgifts.orders
 
 import android.app.Application
+import android.content.Context
+import android.media.AudioManager
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,6 +11,7 @@ import com.auraboxedgifts.orders.data.ApiException
 import com.auraboxedgifts.orders.data.AppConfig
 import com.auraboxedgifts.orders.data.IndianLocations
 import com.auraboxedgifts.orders.data.AuraRepository
+import com.auraboxedgifts.orders.data.AuraShowcaseItem
 import com.auraboxedgifts.orders.data.Cart
 import com.auraboxedgifts.orders.data.CartItemRequest
 import com.auraboxedgifts.orders.data.CartStore
@@ -190,7 +193,9 @@ data class AuraVoiceUiState(
     val isSessionActive: Boolean = false,
     val isMicMuted: Boolean = false,
     val audioLevel: Float = 0f,
-    val error: String? = null
+    val error: String? = null,
+    val showcaseTitle: String? = null,
+    val showcaseItems: List<AuraShowcaseItem> = emptyList()
 )
 
 sealed class AiNavigationEvent {
@@ -285,6 +290,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private var liveAudioRecorder: AuraLiveAudioRecorder? = null
     private var liveAudioPlayer: AuraLiveAudioPlayer? = null
     private var liveMicSending = true
+    private var previousAudioMode = AudioManager.MODE_NORMAL
+    @Suppress("DEPRECATION")
+    private var wasSpeakerphoneOn = false
 
     private val _aiNavigation = MutableSharedFlow<AiNavigationEvent>()
     val aiNavigation: SharedFlow<AiNavigationEvent> = _aiNavigation.asSharedFlow()
@@ -1106,16 +1114,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun startAuraVoiceSession() {
         if (_aiState.value.isSessionActive) return
         liveMicSending = true
+        configureVoiceAudioRouting(active = true)
         _aiState.value = AuraVoiceUiState(
             phase = AuraVoicePhase.Connecting,
-            statusText = "Connecting…",
+            statusText = "Connecting to Aura AI…",
             isSessionActive = true
         )
         val wsUrl = BuildConfig.API_BASE_URL.trimEnd('/')
             .replace("https://", "wss://")
             .replace("http://", "ws://") + "?platform=android"
 
-        liveAudioPlayer = AuraLiveAudioPlayer()
+        liveAudioPlayer = AuraLiveAudioPlayer().also { it.startPlayback() }
         liveVoiceClient = AuraLiveVoiceClient(wsUrl, voiceListener()).also { it.connect() }
     }
 
@@ -1127,7 +1136,22 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         liveVoiceClient?.disconnect()
         liveVoiceClient = null
         liveMicSending = true
+        configureVoiceAudioRouting(active = false)
         _aiState.value = AuraVoiceUiState()
+    }
+
+    @Suppress("DEPRECATION")
+    private fun configureVoiceAudioRouting(active: Boolean) {
+        val am = getApplication<Application>().getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        if (active) {
+            previousAudioMode = am.mode
+            wasSpeakerphoneOn = am.isSpeakerphoneOn
+            am.mode = AudioManager.MODE_IN_COMMUNICATION
+            am.isSpeakerphoneOn = true
+        } else {
+            am.isSpeakerphoneOn = wasSpeakerphoneOn
+            am.mode = previousAudioMode
+        }
     }
 
     fun toggleAuraVoiceMute() {
@@ -1147,10 +1171,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             val phase = when {
                 connected -> AuraVoicePhase.Ready
                 status.contains("disconnect", ignoreCase = true) -> AuraVoicePhase.Idle
+                status.contains("connect", ignoreCase = true) -> AuraVoicePhase.Connecting
                 else -> AuraVoicePhase.Connecting
             }
+            val statusText = when {
+                connected -> "Aura is ready — start talking"
+                phase == AuraVoicePhase.Connecting -> "Connecting to Aura AI…"
+                else -> status
+            }
             _aiState.value = _aiState.value.copy(
-                statusText = status,
+                statusText = statusText,
                 phase = phase,
                 error = null,
                 isSessionActive = connected || _aiState.value.isSessionActive
@@ -1180,7 +1210,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         override fun onTurnComplete() {
-            beginAuraListening()
+            _aiState.value = _aiState.value.copy(
+                phase = AuraVoicePhase.Listening,
+                statusText = if (liveMicSending) "Listening…" else "Mic muted"
+            )
         }
 
         override fun onMobileAction(action: JsonObject) {
@@ -1193,6 +1226,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun beginAuraListening() {
+        if (liveAudioRecorder?.isRunning() == true) {
+            _aiState.value = _aiState.value.copy(
+                phase = AuraVoicePhase.Listening,
+                statusText = if (liveMicSending) "Listening…" else "Mic muted"
+            )
+            return
+        }
         liveAudioRecorder?.stop()
         var recorderRef: AuraLiveAudioRecorder? = null
         recorderRef = AuraLiveAudioRecorder(
@@ -1209,6 +1249,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         )
         liveAudioRecorder = recorderRef
         if (recorderRef.start()) {
+            liveAudioPlayer?.setPlaybackSessionId(recorderRef.audioSessionId)
             _aiState.value = _aiState.value.copy(
                 phase = AuraVoicePhase.Listening,
                 statusText = if (liveMicSending) "Listening…" else "Mic muted"
@@ -1241,6 +1282,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun dispatchMobileAction(action: JsonObject) {
         when (action.get("type")?.asString) {
+            "showcase" -> {
+                val (title, items) = parseShowcaseAction(action)
+                applyShowcase(title, items)
+            }
             "navigate_shop" -> _aiNavigation.emit(AiNavigationEvent.Shop)
             "navigate_cart" -> _aiNavigation.emit(AiNavigationEvent.Cart)
             "navigate_account" -> _aiNavigation.emit(AiNavigationEvent.Account)
@@ -1248,18 +1293,39 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 prepareCheckout()
                 _aiNavigation.emit(AiNavigationEvent.Checkout)
             }
-            "view_product" -> action.get("productId")?.asString?.takeIf { it.isNotBlank() }?.let {
-                loadProductDetail(it)
-                _aiNavigation.emit(AiNavigationEvent.Product(it))
-            }
             "add_to_cart" -> action.get("productId")?.asString?.takeIf { it.isNotBlank() }?.let { id ->
                 addToCart(id, action.get("qty")?.asInt ?: 1)
             }
-            "search_products" -> action.get("query")?.asString?.takeIf { it.isNotBlank() }?.let { query ->
-                setCatalogSearch(query)
-                _aiNavigation.emit(AiNavigationEvent.Search(query))
-            }
         }
+    }
+
+    fun clearAuraShowcase() {
+        _aiState.value = _aiState.value.copy(showcaseTitle = null, showcaseItems = emptyList())
+    }
+
+    private fun applyShowcase(title: String?, items: List<AuraShowcaseItem>) {
+        _aiState.value = _aiState.value.copy(
+            showcaseTitle = title,
+            showcaseItems = items
+        )
+    }
+
+    private fun parseShowcaseAction(action: JsonObject): Pair<String?, List<AuraShowcaseItem>> {
+        val title = action.get("title")?.asString
+        val items = action.getAsJsonArray("items")?.mapNotNull { element ->
+            if (!element.isJsonObject) return@mapNotNull null
+            val obj = element.asJsonObject
+            val id = obj.get("id")?.asString?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            AuraShowcaseItem(
+                id = id,
+                title = obj.get("title")?.asString.orEmpty(),
+                subtitle = obj.get("subtitle")?.asString.orEmpty(),
+                price = obj.get("price")?.asDouble ?: 0.0,
+                image = obj.get("image")?.asString.orEmpty(),
+                isHamper = obj.get("isHamper")?.asBoolean ?: false
+            )
+        }.orEmpty()
+        return title to items
     }
 
     override fun onCleared() {

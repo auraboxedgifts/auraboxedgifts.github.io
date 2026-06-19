@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.ShoppingBag
@@ -52,8 +51,10 @@ import androidx.compose.ui.unit.dp
 import com.auraboxedgifts.orders.CatalogUiState
 import com.auraboxedgifts.orders.CustomerOrdersUiState
 import com.auraboxedgifts.orders.CustomerTab
+import com.auraboxedgifts.orders.R
 import com.auraboxedgifts.orders.data.Product
 import com.auraboxedgifts.orders.ui.components.AuraMotion
+import androidx.compose.ui.res.painterResource
 import com.auraboxedgifts.orders.ui.components.BrandLogo
 import com.auraboxedgifts.orders.ui.components.drawerBackdropEffect
 import com.auraboxedgifts.orders.ui.theme.Cream
@@ -155,10 +156,6 @@ fun CustomerShell(
                 onCustomerLogout = {
                     closeDrawer()
                     onCustomerLogout()
-                },
-                onOpenAuraAi = {
-                    closeDrawer()
-                    onOpenAuraAi()
                 }
             )
         }
@@ -171,9 +168,14 @@ fun CustomerShell(
                     FloatingActionButton(
                         onClick = onOpenAuraAi,
                         containerColor = RoseGold,
-                        contentColor = Cream
+                        contentColor = Cream,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     ) {
-                        Icon(Icons.Outlined.AutoAwesome, contentDescription = "Aura AI")
+                        Icon(
+                            painter = painterResource(R.drawable.ic_aura_hamper),
+                            contentDescription = "Talk to Aura AI",
+                            modifier = Modifier.size(26.dp)
+                        )
                     }
                 },
                 topBar = {
