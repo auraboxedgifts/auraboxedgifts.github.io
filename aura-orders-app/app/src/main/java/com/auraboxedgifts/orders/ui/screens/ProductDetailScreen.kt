@@ -52,7 +52,6 @@ import com.auraboxedgifts.orders.ProductDetailUiState
 import com.auraboxedgifts.orders.data.formatRupee
 import com.auraboxedgifts.orders.ui.components.ProductImage
 import com.auraboxedgifts.orders.ui.components.StaggeredFadeIn
-import com.auraboxedgifts.orders.ui.components.StaggeredFadeIn
 import com.auraboxedgifts.orders.ui.theme.Cream
 import com.auraboxedgifts.orders.ui.theme.RoseGold
 import com.auraboxedgifts.orders.ui.theme.TextDark

@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
@@ -47,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.auraboxedgifts.orders.CatalogUiState
+import com.auraboxedgifts.orders.data.Hamper
 import com.auraboxedgifts.orders.data.Product
 import com.auraboxedgifts.orders.data.formatRupee
 import com.auraboxedgifts.orders.ui.components.PressableScale
@@ -74,6 +77,8 @@ fun CatalogScreen(
     onCollectionChange: (String?) -> Unit,
     onSearchChange: (String) -> Unit,
     onProductClick: (String) -> Unit,
+    hampers: List<Hamper> = emptyList(),
+    onHamperClick: (String) -> Unit = onProductClick,
     showAddToCart: Boolean = false,
     onAddToCart: (String) -> Unit = {},
     isAdminMode: Boolean = false,
@@ -89,123 +94,184 @@ fun CatalogScreen(
             .fillMaxSize()
             .pullRefresh(pullRefreshState)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            if (showHeader) {
-                CatalogHeader(
-                    title = title,
-                    productCount = state.products.size,
-                    collectionCount = state.collections.size,
-                    subtitle = subtitle
-                )
-            }
-
-            OutlinedTextField(
-                value = state.searchQuery,
-                onValueChange = onSearchChange,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                placeholder = { Text("Search products…") },
-                leadingIcon = {
-                    Icon(Icons.Outlined.Search, contentDescription = null, tint = RoseGold)
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = RoseGold,
-                    unfocusedBorderColor = RoseLight,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
-                )
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                item {
-                    FilterChip(
-                        selected = state.selectedCollection == null,
-                        onClick = { onCollectionChange(null) },
-                        label = { Text("All") },
-                        colors = filterChipColors()
-                    )
-                }
-                items(state.collections, key = { it.slug }) { collection ->
-                    FilterChip(
-                        selected = state.selectedCollection == collection.slug,
-                        onClick = { onCollectionChange(collection.slug) },
-                        label = { Text(collection.name) },
-                        colors = filterChipColors()
-                    )
+        when {
+            state.isLoading && filteredProducts.isEmpty() -> {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(6) {
+                        ShimmerBox(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(0.72f)
+                                .clip(RoundedCornerShape(20.dp))
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            state.error != null && filteredProducts.isEmpty() -> {
+                EmptyState(
+                    title = "Could not load catalog",
+                    subtitle = state.error,
+                    action = "Try again",
+                    onAction = onRefresh
+                )
+            }
 
-            when {
-                state.isLoading -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(6) {
-                            ShimmerBox(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(0.72f)
-                                    .clip(RoundedCornerShape(20.dp))
+            filteredProducts.isEmpty() && !state.isLoading -> {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(16.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    item(span = { GridItemSpan(2) }) {
+                        OutlinedTextField(
+                            value = state.searchQuery,
+                            onValueChange = onSearchChange,
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Search products…") },
+                            leadingIcon = {
+                                Icon(Icons.Outlined.Search, contentDescription = null, tint = RoseGold)
+                            },
+                            singleLine = true,
+                            shape = RoundedCornerShape(16.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = RoseGold,
+                                unfocusedBorderColor = RoseLight,
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White
+                            )
+                        )
+                    }
+                    item(span = { GridItemSpan(2) }) {
+                        EmptyState(
+                            title = if (state.products.isEmpty()) "No products yet" else "No matching products",
+                            subtitle = if (state.products.isEmpty()) {
+                                "Products added in your website admin will appear here automatically."
+                            } else {
+                                "Try a different search or collection filter."
+                            }
+                        )
+                    }
+                }
+            }
+
+            else -> {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    if (showHeader) {
+                        item(span = { GridItemSpan(2) }) {
+                            CatalogHeader(
+                                title = title,
+                                productCount = state.products.size,
+                                collectionCount = state.collections.size,
+                                subtitle = subtitle
                             )
                         }
                     }
-                }
 
-                state.error != null -> {
-                    EmptyState(
-                        title = "Could not load catalog",
-                        subtitle = state.error,
-                        action = "Try again",
-                        onAction = onRefresh
-                    )
-                }
+                    item(span = { GridItemSpan(2) }) {
+                        OutlinedTextField(
+                            value = state.searchQuery,
+                            onValueChange = onSearchChange,
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Search products…") },
+                            leadingIcon = {
+                                Icon(Icons.Outlined.Search, contentDescription = null, tint = RoseGold)
+                            },
+                            singleLine = true,
+                            shape = RoundedCornerShape(16.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = RoseGold,
+                                unfocusedBorderColor = RoseLight,
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White
+                            )
+                        )
+                    }
 
-                filteredProducts.isEmpty() -> {
-                    EmptyState(
-                        title = if (state.products.isEmpty()) "No products yet" else "No matching products",
-                        subtitle = if (state.products.isEmpty()) {
-                            "Products added in your website admin will appear here automatically."
-                        } else {
-                            "Try a different search or collection filter."
-                        }
-                    )
-                }
-
-                else -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(filteredProducts.size, key = { filteredProducts[it].id }) { index ->
-                            val product = filteredProducts[index]
-                            StaggeredFadeIn(index = index) {
-                                ProductCard(
-                                    product = product,
-                                    collectionLabel = collectionName(product.collection),
-                                    onClick = { onProductClick(product.id) },
-                                    showAddToCart = showAddToCart,
-                                    onAddToCart = { onAddToCart(product.id) }
+                    item(span = { GridItemSpan(2) }) {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            item {
+                                FilterChip(
+                                    selected = state.selectedCollection == null,
+                                    onClick = { onCollectionChange(null) },
+                                    label = { Text("All") },
+                                    colors = filterChipColors()
+                                )
+                            }
+                            items(state.collections, key = { it.slug }) { collection ->
+                                FilterChip(
+                                    selected = state.selectedCollection == collection.slug,
+                                    onClick = { onCollectionChange(collection.slug) },
+                                    label = { Text(collection.name) },
+                                    colors = filterChipColors()
                                 )
                             }
                         }
-                        item { Spacer(modifier = Modifier.height(16.dp)) }
+                    }
+
+                    if (hampers.isNotEmpty()) {
+                        item(span = { GridItemSpan(2) }) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = "Gift hampers",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    color = TextDark,
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                )
+                                Text(
+                                    text = "Curated hampers from our website showcase",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextMedium
+                                )
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.padding(top = 8.dp)
+                                ) {
+                                    items(hampers, key = { it.id }) { hamper ->
+                                        HamperCard(
+                                            hamper = hamper,
+                                            onClick = { onHamperClick(hamper.id) },
+                                            onAddToCart = if (showAddToCart) {{ onAddToCart(hamper.id) }} else null
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        item(span = { GridItemSpan(2) }) {
+                            Text(
+                                text = "All gifts",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = TextDark,
+                                modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
+                            )
+                        }
+                    }
+
+                    items(filteredProducts.size, key = { filteredProducts[it].id }) { index ->
+                        val product = filteredProducts[index]
+                        StaggeredFadeIn(index = index) {
+                            ProductCard(
+                                product = product,
+                                collectionLabel = collectionName(product.collection),
+                                onClick = { onProductClick(product.id) },
+                                showAddToCart = showAddToCart,
+                                onAddToCart = { onAddToCart(product.id) }
+                            )
+                        }
                     }
                 }
             }
@@ -257,6 +323,63 @@ private fun CatalogHeader(
             style = MaterialTheme.typography.labelMedium,
             color = TextLight
         )
+    }
+}
+
+@Composable
+private fun HamperCard(
+    hamper: Hamper,
+    onClick: () -> Unit,
+    onAddToCart: (() -> Unit)? = null
+) {
+    PressableScale(onClick = onClick) {
+        Card(
+            modifier = Modifier.width(210.dp),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column {
+                ProductImage(
+                    imagePath = hamper.image,
+                    contentDescription = hamper.title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1.05f),
+                    cornerRadius = 0.dp
+                )
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = hamper.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        color = TextDark
+                    )
+                    hamper.subtitle?.takeIf { it.isNotBlank() }?.let {
+                        Text(text = it, style = MaterialTheme.typography.labelMedium, color = TextMedium)
+                    }
+                    Text(
+                        text = formatRupee(hamper.price),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = RoseGold
+                    )
+                    if (onAddToCart != null) {
+                        OutlinedButton(
+                            onClick = onAddToCart,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Outlined.AddShoppingCart, contentDescription = null, tint = RoseGold)
+                            Text("  Add", color = RoseGold)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

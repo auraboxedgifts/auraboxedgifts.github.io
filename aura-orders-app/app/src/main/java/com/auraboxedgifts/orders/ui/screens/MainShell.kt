@@ -1,5 +1,6 @@
 package com.auraboxedgifts.orders.ui.screens
 
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.GridView
@@ -59,14 +60,17 @@ fun MainShell(
     onNavigateToOrders: () -> Unit,
     onNavigateToCatalog: () -> Unit,
     onAddProduct: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    shippingRate: Double = 120.0,
+    onShippingRateChange: (Double, () -> Unit, (String) -> Unit) -> Unit = { _, _, _ -> }
 ) {
     Scaffold(
         containerColor = Cream,
         bottomBar = {
             NavigationBar(
                 containerColor = Cream,
-                contentColor = RoseGold
+                contentColor = RoseGold,
+                modifier = Modifier.navigationBarsPadding()
             ) {
                 tabs.forEach { item ->
                     NavigationBarItem(
@@ -140,6 +144,8 @@ fun MainShell(
                 modifier = Modifier.padding(padding),
                 adminEmail = adminEmail,
                 stats = dashboardStats,
+                shippingRate = shippingRate,
+                onShippingRateChange = onShippingRateChange,
                 onLogout = onLogout
             )
         }

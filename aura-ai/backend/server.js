@@ -88,7 +88,10 @@ const DEFAULT_SITE = {
         ]
     },
     hampers: [],
-    about: { ...DEFAULT_ABOUT }
+    about: { ...DEFAULT_ABOUT },
+    settings: {
+        shippingFlatRate: 120
+    }
 };
 
 const ROOT_DIR = path.resolve(__dirname, '../..');
@@ -243,7 +246,14 @@ function getSite() {
     if (!site.hero || !Array.isArray(site.hero.slides)) site.hero = { slides: [] };
     if (!Array.isArray(site.hampers)) site.hampers = [];
     site.about = { ...DEFAULT_ABOUT, ...(site.about || {}) };
+    site.settings = { ...DEFAULT_SITE.settings, ...(site.settings || {}) };
     return site;
+}
+
+function getSettings() {
+    const settings = getSite().settings || DEFAULT_SITE.settings;
+    const shippingFlatRate = Math.max(0, Number(settings.shippingFlatRate ?? 120) || 120);
+    return { shippingFlatRate };
 }
 
 function saveSite(site) {
@@ -280,7 +290,7 @@ function calculateCart(items) {
             lineTotal
         });
     }
-    const shipping = lines.length ? 120 : 0;
+    const shipping = lines.length ? getSettings().shippingFlatRate : 0;
     const discount = 0;
     const tax = 0;
     const grandTotal = subtotal + shipping + tax - discount;
@@ -486,6 +496,25 @@ app.get('/api/collections', (req, res) => {
 // Public site content (hero slides + hampers showcase)
 app.get('/api/site', (req, res) => {
     return jsonOk(res, getSite());
+});
+
+app.get('/api/settings', (req, res) => {
+    return jsonOk(res, getSettings());
+});
+
+app.get('/api/admin/settings', requireAdmin, (req, res) => {
+    return jsonOk(res, getSettings());
+});
+
+app.put('/api/admin/settings', requireAdmin, (req, res) => {
+    const site = getSite();
+    const rate = Number(req.body?.shippingFlatRate);
+    if (!Number.isFinite(rate) || rate < 0) {
+        return jsonErr(res, 400, 'shippingFlatRate must be a non-negative number');
+    }
+    site.settings = { ...getSettings(), shippingFlatRate: Math.round(rate) };
+    saveSite(site);
+    return jsonOk(res, site.settings);
 });
 
 app.get('/api/hampers', (req, res) => {
@@ -1514,6 +1543,10 @@ app.post('/api/verify-payment', async (req, res) => {
             console.error('[WhatsApp] Failed to send order notification:', err);
         });
 
+        const { notifyAdminsNewOrder, notifyCustomerOrderConfirmed } = require('./fcm');
+        notifyAdminsNewOrder(order).catch((err) => console.error('[FCM] Admin notify failed:', err.message));
+        notifyCustomerOrderConfirmed(customer?.email, order).catch((err) => console.error('[FCM] Customer notify failed:', err.message));
+
         return jsonOk(res, { order });
     } catch (err) {
         return jsonErr(res, 500, err.message);
@@ -1533,6 +1566,8 @@ app.get('/api/config', (req, res) => {
 const { SYSTEM_PROMPT } = require('./ai/systemPrompt');
 const { toolDeclarations } = require('./ai/toolDeclarations');
 const { chatWithAura, buildSuggestions } = require('./ai/textChat');
+const { chatWithMobileAura } = require('./ai/mobileAi');
+const { registerToken, sendCartReminder } = require('./fcm');
 
 const AI_PUBLIC_DIR = path.join(__dirname, 'public');
 if (!fs.existsSync(AI_PUBLIC_DIR)) {
@@ -1573,6 +1608,68 @@ app.post('/api/ai/chat', async (req, res) => {
     } catch (err) {
         const status = /required|empty/i.test(err.message) ? 400 : 500;
         return jsonErr(res, status, err.message);
+    }
+});
+
+app.get('/api/mobile-ai/status', (req, res) => {
+    return jsonOk(res, {
+        ready: Boolean(GEMINI_API_KEY),
+        model: process.env.GEMINI_MOBILE_MODEL || 'gemini-3.5-flash',
+        message: GEMINI_API_KEY ? 'Aura AI mobile assistant is ready.' : 'Set GEMINI_API_KEY on the server.'
+    });
+});
+
+app.post('/api/mobile-ai/chat', async (req, res) => {
+    try {
+        const data = await chatWithMobileAura({
+            apiKey: GEMINI_API_KEY,
+            message: req.body?.message,
+            history: req.body?.history,
+            cartContext: req.body?.cartContext,
+            screen: req.body?.screen,
+            getCatalog,
+            getSite,
+            getSettings
+        });
+        return jsonOk(res, data);
+    } catch (err) {
+        const status = /required|empty/i.test(err.message) ? 400 : 500;
+        return jsonErr(res, status, err.message);
+    }
+});
+
+app.post('/api/fcm/register', (req, res) => {
+    const token = String(req.body?.token || '').trim();
+    if (!token) return jsonErr(res, 400, 'FCM token required');
+    const role = String(req.body?.role || 'customer').trim().toLowerCase();
+    let email = String(req.body?.email || '').trim().toLowerCase();
+    const authToken = getToken(req);
+    if (authToken) {
+        try {
+            const decoded = jwt.verify(authToken, JWT_SECRET);
+            email = decoded.email || email;
+        } catch (_) { /* optional auth */ }
+    }
+    if (role === 'admin') {
+        try {
+            const decoded = jwt.verify(authToken || '', JWT_SECRET);
+            if (decoded.role !== 'admin') return jsonErr(res, 403, 'Admin token required');
+        } catch (_) {
+            return jsonErr(res, 401, 'Admin authentication required');
+        }
+    }
+    registerToken({ token, role, email });
+    return jsonOk(res, { registered: true });
+});
+
+app.post('/api/fcm/cart-reminder', requireAuth, async (req, res) => {
+    const itemCount = Math.max(0, Number(req.body?.itemCount || 0));
+    if (itemCount <= 0) return jsonOk(res, { sent: false, reason: 'empty_cart' });
+    try {
+        const result = await sendCartReminder(req.auth.email, itemCount);
+        return jsonOk(res, result);
+    } catch (err) {
+        return jsonErr(res, 500, err.message);
     }
 });
 

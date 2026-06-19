@@ -1,5 +1,7 @@
 package com.auraboxedgifts.orders
 
+import android.app.Activity
+import android.content.Intent
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -30,6 +32,7 @@ import com.auraboxedgifts.orders.ui.components.slideInFromBottom
 import com.auraboxedgifts.orders.ui.components.slideOutToBottom
 import com.auraboxedgifts.orders.notifications.OrderNotificationManager
 import com.auraboxedgifts.orders.ui.screens.AdminProductFormScreen
+import com.auraboxedgifts.orders.ui.screens.AuraAiScreen
 import com.auraboxedgifts.orders.ui.screens.CartScreen
 import com.auraboxedgifts.orders.ui.screens.CheckoutScreen
 import com.auraboxedgifts.orders.ui.screens.CustomerAuthScreen
@@ -42,14 +45,51 @@ import com.auraboxedgifts.orders.ui.theme.AuraOrdersTheme
 import com.razorpay.Checkout
 import com.razorpay.PaymentData
 import com.razorpay.PaymentResultWithDataListener
+import android.speech.tts.TextToSpeech
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.widget.Autocomplete
+import com.google.android.libraries.places.widget.model.AutocompleteActivityMode
+import com.google.firebase.messaging.FirebaseMessaging
 import org.json.JSONObject
+import java.util.Locale
 
 class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
 
     private lateinit var viewModel: AppViewModel
+    private var textToSpeech: TextToSpeech? = null
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { }
+
+    private val placesLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode != Activity.RESULT_OK || result.data == null) return@registerForActivityResult
+        if (!::viewModel.isInitialized) return@registerForActivityResult
+        try {
+            val place = Autocomplete.getPlaceFromIntent(result.data!!)
+            var city = ""
+            var state = ""
+            var pincode = ""
+            place.addressComponents?.asList()?.forEach { component ->
+                component.types.forEach { type ->
+                    when (type) {
+                        "locality" -> if (city.isBlank()) city = component.name
+                        "postal_town" -> if (city.isBlank()) city = component.name
+                        "administrative_area_level_1" -> state = component.name
+                        "postal_code" -> pincode = component.name
+                    }
+                }
+            }
+            viewModel.applyCheckoutAddress(
+                address = place.address.orEmpty(),
+                city = city,
+                state = state,
+                pincode = pincode
+            )
+        } catch (_: Exception) { }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +97,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
         Checkout.preload(applicationContext)
         OrderNotificationManager.ensureChannel(this)
         requestNotificationPermissionIfNeeded()
+        initTextToSpeech()
 
         val deepLinkOrderId = intent?.getStringExtra("order_id")
 
@@ -81,9 +122,20 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                 val productFormState by vm.productFormState.collectAsState()
                 val cartState by vm.cartState.collectAsState()
                 val checkoutState by vm.checkoutState.collectAsState()
+                val aiState by vm.aiState.collectAsState()
+                val storeSettings by vm.storeSettings.collectAsState()
+                val mapsConfig by vm.mapsConfig.collectAsState()
                 val selectedTab by vm.selectedTab.collectAsState()
                 val customerTab by vm.customerTab.collectAsState()
                 val snackbarMessage by vm.snackbarMessage.collectAsState()
+
+                LaunchedEffect(vm) {
+                    FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            task.result?.let { viewModel.setPendingFcmToken(it) }
+                        }
+                    }
+                }
 
                 LaunchedEffect(appMode) {
                     if (appMode == AppMode.ADMIN) {
@@ -121,6 +173,46 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                     }
                 }
 
+                LaunchedEffect(Unit) {
+                    viewModel.aiNavigation.collect { event ->
+                        when (event) {
+                            AiNavigationEvent.Shop -> {
+                                viewModel.selectCustomerTab(CustomerTab.SHOP)
+                                if (navController.currentDestination?.route != "shop") {
+                                    navController.navigate("shop") {
+                                        popUpTo("shop") { inclusive = true }
+                                        launchSingleTop = true
+                                    }
+                                }
+                            }
+                            AiNavigationEvent.Cart -> navController.navigate("cart")
+                            AiNavigationEvent.Account -> {
+                                viewModel.selectCustomerTab(CustomerTab.ACCOUNT)
+                                navController.navigate("shop") {
+                                    popUpTo("shop") { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            }
+                            AiNavigationEvent.Checkout -> {
+                                viewModel.prepareCheckout()
+                                navController.navigate("checkout")
+                            }
+                            is AiNavigationEvent.Product -> {
+                                viewModel.loadProductDetail(event.productId)
+                                navController.navigate("product/${event.productId}")
+                            }
+                            is AiNavigationEvent.AddToCart -> { /* snackbar from addToCart */ }
+                            is AiNavigationEvent.Search -> {
+                                viewModel.selectCustomerTab(CustomerTab.SHOP)
+                                navController.navigate("shop") {
+                                    popUpTo("shop") { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            }
+                        }
+                    }
+                }
+
                 NavHost(
                     navController = navController,
                     startDestination = if (appMode == AppMode.ADMIN) "admin" else "shop"
@@ -138,6 +230,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                             catalogState = catalogState,
                             cartItemCount = viewModel.cartItemCount(),
                             filteredProducts = viewModel.filteredProducts(),
+                            hampers = viewModel.filteredHampers(),
                             collectionName = viewModel::collectionName,
                             isCustomerLoggedIn = !customerToken.isNullOrBlank(),
                             isAdminLoggedIn = !adminToken.isNullOrBlank(),
@@ -164,6 +257,18 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                                 }
                             },
                             onCustomerLogout = viewModel::logoutCustomer,
+                            onOpenAuraAi = { navController.navigate("aura_ai") },
+                        )
+                    }
+
+                    auraComposable("aura_ai") {
+                        AuraAiScreen(
+                            state = aiState,
+                            onBack = { navController.popBackStack() },
+                            onSend = { viewModel.sendAiMessage(it, screen = "aura_ai") },
+                            onSpeak = { text ->
+                                textToSpeech?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "aura_ai_reply")
+                            }
                         )
                     }
 
@@ -175,6 +280,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                         }
                         CartScreen(
                             state = cartState,
+                            shippingRate = storeSettings.shippingFlatRate,
                             isLoggedIn = !customerToken.isNullOrBlank(),
                             productForId = viewModel::productForCartItem,
                             onBack = { navController.popBackStack() },
@@ -251,7 +357,9 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                                 navController.navigate("shop") {
                                     popUpTo("admin") { inclusive = true }
                                 }
-                            }
+                            },
+                            shippingRate = storeSettings.shippingFlatRate,
+                            onShippingRateChange = viewModel::updateShippingRate
                         )
                     }
 
@@ -325,9 +433,11 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                         popEnterTransition = { popEnter() },
                         popExitTransition = { popExit() }
                     ) {
+                        LaunchedEffect(Unit) { viewModel.prepareCheckout() }
                         CheckoutScreen(
                             state = checkoutState,
-                            cartTotal = cartState.calculated?.grandTotal ?: 0.0,
+                            cartTotal = viewModel.cartGrandTotal(),
+                            mapsEnabled = mapsConfig.mapsEnabled && !mapsConfig.googleMapsApiKey.isNullOrBlank(),
                             onBack = { navController.popBackStack() },
                             onNameChange = { v -> viewModel.updateCheckoutInfo { it.copy(name = v) } },
                             onPhoneChange = { v -> viewModel.updateCheckoutInfo { it.copy(phone = v) } },
@@ -335,6 +445,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                             onCityChange = { v -> viewModel.updateCheckoutInfo { it.copy(city = v) } },
                             onStateChange = { v -> viewModel.updateCheckoutInfo { it.copy(state = v) } },
                             onPincodeChange = { v -> viewModel.updateCheckoutInfo { it.copy(pincode = v) } },
+                            onSearchAddress = { launchPlacesAutocomplete(mapsConfig.googleMapsApiKey.orEmpty()) },
                             onPay = {
                                 viewModel.startCheckout {
                                     navController.navigate("customer_auth?redirect=checkout")
@@ -450,6 +561,34 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        textToSpeech?.stop()
+        textToSpeech?.shutdown()
+        super.onDestroy()
+    }
+
+    private fun initTextToSpeech() {
+        textToSpeech = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                textToSpeech?.language = Locale.ENGLISH
+            }
+        }
+    }
+
+    private fun launchPlacesAutocomplete(apiKey: String) {
+        if (apiKey.isBlank()) return
+        try {
+            if (!Places.isInitialized()) {
+                Places.initialize(applicationContext, apiKey)
+            }
+            val fields = listOf(Place.Field.ADDRESS, Place.Field.ADDRESS_COMPONENTS)
+            val intent = Autocomplete.IntentBuilder(AutocompleteActivityMode.OVERLAY, fields)
+                .setCountries(listOf("IN"))
+                .build(this)
+            placesLauncher.launch(intent)
+        } catch (_: Exception) { }
     }
 
     private fun launchRazorpay(data: PaymentLaunchData) {

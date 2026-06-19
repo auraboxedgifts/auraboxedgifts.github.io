@@ -56,6 +56,7 @@ import com.auraboxedgifts.orders.ui.theme.TextMedium
 fun CartScreen(
     modifier: Modifier = Modifier,
     state: CartUiState,
+    shippingRate: Double = 120.0,
     isLoggedIn: Boolean,
     productForId: (String) -> Product?,
     onBack: (() -> Unit)? = null,
@@ -141,7 +142,7 @@ fun CartScreen(
                             val p = productForId(item.productId)
                             (p?.price ?: 0.0) * item.qty
                         }
-                    val shipping = state.calculated?.shipping ?: if (state.items.isNotEmpty()) 120.0 else 0.0
+                    val shipping = state.calculated?.shipping ?: if (state.items.isNotEmpty()) shippingRate else 0.0
                     val total = state.calculated?.grandTotal ?: (subtotal + shipping)
 
                     StaggeredFadeIn(index = state.items.size.coerceAtMost(6), modifier = Modifier.fillMaxWidth()) {

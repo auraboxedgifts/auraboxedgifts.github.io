@@ -9,13 +9,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.automirrored.outlined.Login
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Receipt
@@ -52,89 +56,113 @@ fun CustomerDrawerContent(
     onAccount: () -> Unit,
     onSignIn: () -> Unit,
     onAdminPanel: () -> Unit,
-    onCustomerLogout: () -> Unit
+    onCustomerLogout: () -> Unit,
+    onOpenAuraAi: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxHeight()
             .width(300.dp)
             .background(Cream)
-            .padding(vertical = 24.dp)
+            .navigationBarsPadding()
     ) {
-        StaggeredFadeIn(index = 0, modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                BrandLogo(
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(vertical = 24.dp)
+        ) {
+            StaggeredFadeIn(index = 0, modifier = Modifier.fillMaxWidth()) {
+                Row(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                )
-                Column {
-                    Text("Aura Boxed Gift", style = MaterialTheme.typography.titleLarge, color = TextDark)
-                    Text(
-                        text = when {
-                            isAdminLoggedIn -> "Admin · ${customerEmail ?: "Store owner"}"
-                            isCustomerLoggedIn -> customerEmail.orEmpty()
-                            else -> "Browse & shop freely"
-                        },
-                        style = MaterialTheme.typography.labelMedium,
-                        color = TextLight,
-                        maxLines = 1
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    BrandLogo(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                    Column {
+                        Text("Aura Boxed Gift", style = MaterialTheme.typography.titleLarge, color = TextDark)
+                        Text(
+                            text = when {
+                                isAdminLoggedIn -> "Admin · ${customerEmail ?: "Store owner"}"
+                                isCustomerLoggedIn -> customerEmail.orEmpty()
+                                else -> "Browse & shop freely"
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = TextLight,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = CreamDark)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            DrawerItem(index = 1, icon = Icons.Outlined.ShoppingBag, label = "Shop", onClick = onShop)
+            DrawerItem(
+                index = 2,
+                icon = Icons.Outlined.ShoppingCart,
+                label = "My cart",
+                badge = if (cartItemCount > 0) cartItemCount.toString() else null,
+                onClick = onCart
+            )
+            DrawerItem(index = 3, icon = Icons.Outlined.Person, label = "My account", onClick = onAccount)
+            DrawerItem(
+                index = 4,
+                icon = Icons.Outlined.AutoAwesome,
+                label = "Aura AI assistant",
+                highlight = true,
+                onClick = onOpenAuraAi
+            )
+
+            if (isCustomerLoggedIn) {
+                DrawerItem(index = 5, icon = Icons.Outlined.Receipt, label = "My orders", onClick = onAccount)
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp)
+        ) {
+            HorizontalDivider(color = CreamDark)
+
+            when {
+                isAdminLoggedIn -> {
+                    DrawerItem(
+                        index = 6,
+                        icon = Icons.Outlined.AdminPanelSettings,
+                        label = "Admin dashboard",
+                        highlight = true,
+                        onClick = onAdminPanel
+                    )
+                }
+                !isCustomerLoggedIn -> {
+                    DrawerItem(
+                        index = 6,
+                        icon = Icons.AutoMirrored.Outlined.Login,
+                        label = "Sign in / Sign up",
+                        highlight = true,
+                        onClick = onSignIn
                     )
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
-        HorizontalDivider(color = CreamDark)
-        Spacer(modifier = Modifier.height(8.dp))
-
-        DrawerItem(index = 1, icon = Icons.Outlined.ShoppingBag, label = "Shop", onClick = onShop)
-        DrawerItem(
-            index = 2,
-            icon = Icons.Outlined.ShoppingCart,
-            label = "My cart",
-            badge = if (cartItemCount > 0) cartItemCount.toString() else null,
-            onClick = onCart
-        )
-        DrawerItem(index = 3, icon = Icons.Outlined.Person, label = "My account", onClick = onAccount)
-
-        if (isCustomerLoggedIn) {
-            DrawerItem(index = 4, icon = Icons.Outlined.Receipt, label = "My orders", onClick = onAccount)
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-        HorizontalDivider(color = CreamDark)
-
-        when {
-            isAdminLoggedIn -> {
+            if (isCustomerLoggedIn && !isAdminLoggedIn) {
                 DrawerItem(
-                    index = 5,
-                    icon = Icons.Outlined.AdminPanelSettings,
-                    label = "Admin dashboard",
-                    highlight = true,
-                    onClick = onAdminPanel
+                    index = 7,
+                    icon = Icons.AutoMirrored.Outlined.Logout,
+                    label = "Sign out",
+                    onClick = onCustomerLogout
                 )
             }
-            !isCustomerLoggedIn -> {
-                DrawerItem(
-                    index = 5,
-                    icon = Icons.AutoMirrored.Outlined.Login,
-                    label = "Sign in / Sign up",
-                    highlight = true,
-                    onClick = onSignIn
-                )
-            }
-        }
-
-        if (isCustomerLoggedIn && !isAdminLoggedIn) {
-            Spacer(modifier = Modifier.height(8.dp))
-            DrawerItem(index = 7, icon = Icons.AutoMirrored.Outlined.Logout, label = "Sign out", onClick = onCustomerLogout)
         }
     }
 }

@@ -36,6 +36,8 @@ class TokenStore(private val context: Context) {
 
     suspend fun getAdminToken(): String? = context.dataStore.data.first()[adminTokenKey]
     suspend fun getCustomerToken(): String? = context.dataStore.data.first()[customerTokenKey]
+    suspend fun getAdminEmail(): String? = context.dataStore.data.first()[adminEmailKey]
+    suspend fun getCustomerEmail(): String? = context.dataStore.data.first()[customerEmailKey]
 
     suspend fun saveAdminSession(token: String, email: String) {
         context.dataStore.edit { prefs ->

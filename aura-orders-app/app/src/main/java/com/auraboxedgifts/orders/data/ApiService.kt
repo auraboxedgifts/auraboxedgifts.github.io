@@ -48,6 +48,9 @@ interface AuraApiService {
     @GET("/api/collections")
     suspend fun getCollections(): Response<ApiResponse<List<Collection>>>
 
+    @GET("/api/hampers")
+    suspend fun getHampers(): Response<ApiResponse<List<Hamper>>>
+
     @POST("/api/admin/products")
     suspend fun createProduct(
         @Header("Authorization") auth: String,
@@ -89,14 +92,44 @@ interface AuraApiService {
     @GET("/api/orders")
     suspend fun getCustomerOrders(@Header("Authorization") auth: String): Response<ApiResponse<List<Order>>>
 
+    @GET("/api/config")
+    suspend fun getConfig(): Response<ApiResponse<AppConfig>>
+
     @POST("/api/cart/calculate")
-    suspend fun calculateCart(@Body body: Map<String, List<CartItemRequest>>): Response<ApiResponse<Cart>>
+    suspend fun calculateCart(@Body body: CartCalculateRequest): Response<ApiResponse<Cart>>
+
+    @GET("/api/settings")
+    suspend fun getSettings(): Response<ApiResponse<StoreSettings>>
+
+    @PUT("/api/admin/settings")
+    suspend fun updateSettings(
+        @Header("Authorization") auth: String,
+        @Body body: ShippingSettingsRequest
+    ): Response<ApiResponse<StoreSettings>>
+
+    @GET("/api/auth/checkout-info")
+    suspend fun getCheckoutInfo(@Header("Authorization") auth: String): Response<ApiResponse<CheckoutInfo>>
+
+    @GET("/api/mobile-ai/status")
+    suspend fun mobileAiStatus(): Response<ApiResponse<Map<String, Any>>>
+
+    @POST("/api/mobile-ai/chat")
+    suspend fun mobileAiChat(@Body body: Map<String, @JvmSuppressWildcards Any?>): Response<ApiResponse<MobileAiChatResult>>
+
+    @POST("/api/fcm/register")
+    suspend fun registerFcm(@Header("Authorization") auth: String?, @Body body: FcmRegisterRequest): Response<ApiResponse<Map<String, Boolean>>>
 
     @POST("/api/create-order")
-    suspend fun createPaymentOrder(@Body body: Map<String, List<CartItemRequest>>): Response<CreateOrderResponse>
+    suspend fun createPaymentOrder(@Body body: CreatePaymentRequest): Response<CreateOrderResponse>
 
     @POST("/api/verify-payment")
-    suspend fun verifyPayment(@Body body: VerifyPaymentRequest): Response<ApiResponse<Order>>
+    suspend fun verifyPayment(@Body body: VerifyPaymentRequest): Response<ApiResponse<VerifyPaymentData>>
+
+    @POST("/api/fcm/cart-reminder")
+    suspend fun cartReminder(
+        @Header("Authorization") auth: String,
+        @Body body: Map<String, @JvmSuppressWildcards Number>
+    ): Response<ApiResponse<Map<String, Any>>>
 }
 
 class AuraRepository(private val api: AuraApiService) {
@@ -192,6 +225,15 @@ class AuraRepository(private val api: AuraApiService) {
         return body.data ?: emptyList()
     }
 
+    suspend fun fetchHampers(): List<Hamper> {
+        val response = api.getHampers()
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) {
+            return emptyList()
+        }
+        return body.data?.filter { it.price > 0 } ?: emptyList()
+    }
+
     suspend fun createProduct(token: String, payload: ProductPayload): Product {
         val response = api.createProduct(bearer(token), payload)
         val body = response.body()
@@ -229,8 +271,15 @@ class AuraRepository(private val api: AuraApiService) {
         return body.data ?: throw ApiException("Upload failed")
     }
 
+    suspend fun fetchConfig(): AppConfig {
+        val response = api.getConfig()
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) return AppConfig()
+        return body.data ?: AppConfig()
+    }
+
     suspend fun calculateCart(items: List<LocalCartItem>): Cart {
-        val response = api.calculateCart(mapOf("items" to items.map { CartItemRequest(it.productId, it.qty) }))
+        val response = api.calculateCart(CartCalculateRequest(items))
         val body = response.body()
         if (!response.isSuccessful || body?.success != true) {
             throw ApiException(body?.error ?: "Could not calculate cart")
@@ -238,22 +287,86 @@ class AuraRepository(private val api: AuraApiService) {
         return body.data ?: Cart()
     }
 
-    suspend fun createPaymentOrder(items: List<LocalCartItem>): Pair<RazorpayOrderInfo, String> {
-        val response = api.createPaymentOrder(mapOf("items" to items.map { CartItemRequest(it.productId, it.qty) }))
+    suspend fun createPaymentOrder(items: List<LocalCartItem>, amount: Double): Pair<RazorpayOrderInfo, String> {
+        val response = api.createPaymentOrder(CreatePaymentRequest(items = items, amount = amount))
         val body = response.body()
         if (!response.isSuccessful || body?.success != true || body.order == null || body.key_id.isNullOrBlank()) {
-            throw ApiException(body?.error ?: "Could not create payment order")
+            val err = body?.error ?: response.errorBody()?.string()?.take(200) ?: "Could not create payment order (HTTP ${response.code()})"
+            throw ApiException(err)
         }
         return body.order to body.key_id
+    }
+
+    suspend fun fetchSettings(): StoreSettings {
+        val response = api.getSettings()
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) {
+            return StoreSettings()
+        }
+        return body.data ?: StoreSettings()
+    }
+
+    suspend fun updateShippingRate(token: String, rate: Double): StoreSettings {
+        val response = api.updateSettings(bearer(token), ShippingSettingsRequest(rate))
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) {
+            throw ApiException(body?.error ?: "Could not save shipping rate")
+        }
+        return body.data ?: StoreSettings(shippingFlatRate = rate)
+    }
+
+    suspend fun fetchCheckoutInfo(token: String): CheckoutInfo? {
+        val response = api.getCheckoutInfo(bearer(token))
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) return null
+        return body.data
+    }
+
+    suspend fun mobileAiChat(
+        message: String,
+        history: List<Map<String, String>>,
+        cartContext: MobileAiCartContext?,
+        screen: String
+    ): MobileAiChatResult {
+        val payload = mutableMapOf<String, Any?>(
+            "message" to message,
+            "history" to history,
+            "screen" to screen
+        )
+        if (cartContext != null) payload["cartContext"] = cartContext
+        val response = api.mobileAiChat(payload)
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true || body.data == null) {
+            throw ApiException(body?.error ?: "Aura AI request failed")
+        }
+        return body.data
+    }
+
+    suspend fun registerFcmToken(token: String?, role: String, email: String?, fcmToken: String) {
+        val response = api.registerFcm(token?.let { bearer(it) }, FcmRegisterRequest(fcmToken, role, email))
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) {
+            throw ApiException(body?.error ?: "FCM registration failed")
+        }
     }
 
     suspend fun verifyPayment(request: VerifyPaymentRequest): Order {
         val response = api.verifyPayment(request)
         val body = response.body()
         if (!response.isSuccessful || body?.success != true) {
-            throw ApiException(body?.error ?: "Payment verification failed")
+            val errBody = response.errorBody()?.string()?.take(300)
+            throw ApiException(body?.error ?: errBody ?: "Payment verification failed (HTTP ${response.code()})")
         }
-        return body.data ?: throw ApiException("Payment verification failed")
+        body.data?.order?.let { return it }
+        throw ApiException(body?.error ?: "Payment verification failed")
+    }
+
+    suspend fun requestCartReminder(token: String, itemCount: Int) {
+        val response = api.cartReminder(bearer(token), mapOf("itemCount" to itemCount))
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) {
+            throw ApiException(body?.error ?: "Cart reminder failed")
+        }
     }
 }
 

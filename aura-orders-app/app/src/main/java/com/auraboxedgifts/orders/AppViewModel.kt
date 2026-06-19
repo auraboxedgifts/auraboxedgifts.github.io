@@ -6,6 +6,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.auraboxedgifts.orders.data.ApiClient
 import com.auraboxedgifts.orders.data.ApiException
+import com.auraboxedgifts.orders.data.AppConfig
+import com.auraboxedgifts.orders.data.IndianLocations
 import com.auraboxedgifts.orders.data.AuraRepository
 import com.auraboxedgifts.orders.data.Cart
 import com.auraboxedgifts.orders.data.CartItemRequest
@@ -19,8 +21,13 @@ import com.auraboxedgifts.orders.data.OrderStatus
 import com.auraboxedgifts.orders.data.Product
 import com.auraboxedgifts.orders.data.ProductPayload
 import com.auraboxedgifts.orders.data.TokenStore
+import com.auraboxedgifts.orders.data.Hamper
+import com.auraboxedgifts.orders.data.MobileAiCartContext
+import com.auraboxedgifts.orders.data.StoreSettings
 import com.auraboxedgifts.orders.data.VerifyPaymentRequest
 import com.auraboxedgifts.orders.data.isPaid
+import com.auraboxedgifts.orders.data.toProduct
+import com.auraboxedgifts.orders.notifications.CartReminderWorker
 import com.auraboxedgifts.orders.notifications.OrderNotificationManager
 import com.auraboxedgifts.orders.notifications.OrderPollWorker
 import kotlinx.coroutines.Job
@@ -102,6 +109,7 @@ data class CatalogUiState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val products: List<Product> = emptyList(),
+    val hampers: List<Hamper> = emptyList(),
     val collections: List<Collection> = emptyList(),
     val selectedCollection: String? = null,
     val searchQuery: String = "",
@@ -161,11 +169,33 @@ data class DashboardStats(
 data class PaymentLaunchData(
     val keyId: String,
     val orderId: String,
-    val amountPaise: Int,
+    val amountPaise: Long,
     val customerName: String,
     val customerEmail: String,
     val customerPhone: String
 )
+
+data class AiChatMessage(
+    val role: String,
+    val text: String
+)
+
+data class AiUiState(
+    val messages: List<AiChatMessage> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val ready: Boolean = true
+)
+
+sealed class AiNavigationEvent {
+    data object Shop : AiNavigationEvent()
+    data object Cart : AiNavigationEvent()
+    data object Account : AiNavigationEvent()
+    data object Checkout : AiNavigationEvent()
+    data class Product(val productId: String) : AiNavigationEvent()
+    data class AddToCart(val productId: String) : AiNavigationEvent()
+    data class Search(val query: String) : AiNavigationEvent()
+}
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -175,6 +205,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private var foregroundPollJob: Job? = null
     private var pendingCartItems: List<LocalCartItem> = emptyList()
     private var pendingCheckoutInfo: CheckoutInfo = CheckoutInfo()
+    private var pendingFcmToken: String? = null
 
     val adminToken = tokenStore.adminTokenFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     val adminEmail = tokenStore.adminEmailFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -234,12 +265,34 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val _paymentEvent = MutableSharedFlow<PaymentLaunchData>()
     val paymentEvent: SharedFlow<PaymentLaunchData> = _paymentEvent.asSharedFlow()
 
+    private val _storeSettings = MutableStateFlow(StoreSettings())
+    val storeSettings: StateFlow<StoreSettings> = _storeSettings.asStateFlow()
+
+    private val _mapsConfig = MutableStateFlow(AppConfig())
+    val mapsConfig: StateFlow<AppConfig> = _mapsConfig.asStateFlow()
+
+    private val _aiState = MutableStateFlow(AiUiState())
+    val aiState: StateFlow<AiUiState> = _aiState.asStateFlow()
+
+    private val _aiNavigation = MutableSharedFlow<AiNavigationEvent>()
+    val aiNavigation: SharedFlow<AiNavigationEvent> = _aiNavigation.asSharedFlow()
+
     init {
         viewModelScope.launch {
             cartStore.cartFlow.collect { items ->
                 _cartState.value = _cartState.value.copy(items = items)
                 refreshCartTotals(items)
+                if (items.isNotEmpty() && isCustomerLoggedIn) {
+                    CartReminderWorker.schedule(getApplication())
+                } else if (items.isEmpty()) {
+                    CartReminderWorker.cancel(getApplication())
+                }
             }
+        }
+        viewModelScope.launch {
+            try {
+                _storeSettings.value = repository.fetchSettings()
+            } catch (_: Exception) { }
         }
         viewModelScope.launch { loadCatalog() }
     }
@@ -267,6 +320,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val result = repository.login(current.email, current.password)
                 tokenStore.saveAdminSession(result.token, result.email)
                 OrderPollWorker.schedule(getApplication())
+                registerPushTokenIfAvailable()
                 _loginState.value = LoginUiState()
                 loadOrders(result.token, checkNotifications = true)
                 loadCatalog()
@@ -349,6 +403,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 if (user?.isAdmin == true) {
                     tokenStore.saveAdminSession(token, s.email.trim().lowercase())
                     OrderPollWorker.schedule(getApplication())
+                    registerPushTokenIfAvailable()
                     loadOrders(token)
                     _customerAuthState.value = CustomerAuthUiState()
                     onSuccess()
@@ -356,6 +411,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 tokenStore.saveCustomerSession(token, s.email.trim().lowercase(), user?.name.orEmpty())
                 _customerAuthState.value = CustomerAuthUiState()
+                registerPushTokenIfAvailable()
                 loadCustomerOrders()
                 onSuccess()
             } catch (e: ApiException) {
@@ -378,6 +434,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val (token, user) = repository.verifyOtp(s.email, s.otp)
                 tokenStore.saveCustomerSession(token, s.email.trim().lowercase(), user?.name.orEmpty())
                 _customerAuthState.value = CustomerAuthUiState()
+                registerPushTokenIfAvailable()
                 onSuccess()
             } catch (e: ApiException) {
                 _customerAuthState.value = s.copy(isLoading = false, error = e.message)
@@ -406,18 +463,20 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         _snackbarMessage.value = null
     }
 
-    fun addToCart(productId: String) {
+    fun addToCart(productId: String, qty: Int = 1) {
         viewModelScope.launch {
-            val product = _catalogState.value.products.find { it.id == productId }
+            val name = sellableName(productId)
             val current = cartStore.getCart().toMutableList()
             val idx = current.indexOfFirst { it.productId == productId }
+            val addQty = qty.coerceAtLeast(1)
             if (idx >= 0) {
-                current[idx] = current[idx].copy(qty = current[idx].qty + 1)
+                current[idx] = current[idx].copy(qty = current[idx].qty + addQty)
             } else {
-                current.add(LocalCartItem(productId, 1))
+                current.add(LocalCartItem(productId, addQty))
             }
             cartStore.saveCart(current)
-            _snackbarMessage.value = "${product?.name ?: "Item"} added to cart"
+            scheduleCartReminderIfNeeded(current)
+            _snackbarMessage.value = "$name added to cart"
         }
     }
 
@@ -431,12 +490,30 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 if (idx >= 0) current[idx] = current[idx].copy(qty = qty)
             }
             cartStore.saveCart(current)
+            scheduleCartReminderIfNeeded(current)
         }
     }
 
     fun clearCart() {
-        viewModelScope.launch { cartStore.clear() }
+        viewModelScope.launch {
+            cartStore.clear()
+            CartReminderWorker.cancel(getApplication())
+        }
     }
+
+    private fun scheduleCartReminderIfNeeded(items: List<LocalCartItem>) {
+        val count = items.sumOf { it.qty }
+        if (count > 0 && isCustomerLoggedIn) {
+            CartReminderWorker.schedule(getApplication())
+        } else {
+            CartReminderWorker.cancel(getApplication())
+        }
+    }
+
+    private fun sellableName(productId: String): String =
+        productForCartItem(productId)?.name
+            ?: _catalogState.value.hampers.find { it.id == productId }?.title
+            ?: "Item"
 
     private fun refreshCartTotals(items: List<LocalCartItem>) {
         if (items.isEmpty()) {
@@ -458,17 +535,85 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun cartItemCount(): Int = _cartState.value.items.sumOf { it.qty }
 
+    fun cartGrandTotal(): Double {
+        val state = _cartState.value
+        state.calculated?.grandTotal?.takeIf { it > 0 }?.let { return it }
+        if (state.items.isEmpty()) return 0.0
+        val subtotal = state.items.sumOf { item ->
+            val product = productForCartItem(item.productId)
+            (product?.price ?: 0.0) * item.qty
+        }
+        val shipping = if (state.items.isNotEmpty()) _storeSettings.value.shippingFlatRate else 0.0
+        return subtotal + shipping
+    }
+
+    fun cartSubtotal(): Double {
+        val state = _cartState.value
+        state.calculated?.subtotal?.takeIf { it > 0 }?.let { return it }
+        return state.items.sumOf { item ->
+            val product = productForCartItem(item.productId)
+            (product?.price ?: 0.0) * item.qty
+        }
+    }
+
+    fun shippingRate(): Double = _storeSettings.value.shippingFlatRate
+
     fun updateCheckoutInfo(transform: (CheckoutInfo) -> CheckoutInfo) {
         _checkoutState.value = _checkoutState.value.copy(info = transform(_checkoutState.value.info))
     }
 
     fun prepareCheckout() {
-        val email = customerEmail.value.orEmpty()
-        val name = customerName.value.orEmpty()
-        if (name.isNotBlank() || email.isNotBlank()) {
-            _checkoutState.value = _checkoutState.value.copy(
-                info = _checkoutState.value.info.copy(name = name.ifBlank { _checkoutState.value.info.name }, phone = _checkoutState.value.info.phone)
+        viewModelScope.launch {
+            try {
+                _mapsConfig.value = repository.fetchConfig()
+            } catch (_: Exception) { }
+            try {
+                val cart = if (_cartState.value.items.isNotEmpty()) {
+                    repository.calculateCart(_cartState.value.items)
+                } else null
+                if (cart != null) {
+                    _cartState.value = _cartState.value.copy(calculated = cart)
+                }
+            } catch (_: Exception) { }
+            val name = customerName.value.orEmpty()
+            val token = customerToken.value
+            var info = _checkoutState.value.info
+            if (name.isNotBlank()) {
+                info = info.copy(name = name)
+            }
+            if (!token.isNullOrBlank()) {
+                repository.fetchCheckoutInfo(token)?.let { saved ->
+                    info = info.copy(
+                        name = saved.name.ifBlank { info.name },
+                        phone = normalizePhoneDigits(saved.phone).ifBlank { info.phone },
+                        address = saved.address.ifBlank { info.address },
+                        city = saved.city.ifBlank { info.city },
+                        state = IndianLocations.normalizeState(saved.state) ?: saved.state.ifBlank { info.state },
+                        pincode = saved.pincode.ifBlank { info.pincode }
+                    )
+                }
+            }
+            _checkoutState.value = _checkoutState.value.copy(info = info, error = null)
+        }
+    }
+
+    fun applyCheckoutAddress(address: String, city: String, state: String, pincode: String) {
+        updateCheckoutInfo { info ->
+            info.copy(
+                address = address.ifBlank { info.address },
+                city = city.ifBlank { info.city },
+                state = IndianLocations.normalizeState(state) ?: state.ifBlank { info.state },
+                pincode = pincode.ifBlank { info.pincode }
             )
+        }
+    }
+
+    private fun normalizePhoneDigits(raw: String): String {
+        val digits = raw.filter { it.isDigit() }
+        return when {
+            digits.length == 10 -> digits
+            digits.length >= 12 && digits.startsWith("91") -> digits.takeLast(10)
+            else -> digits.take(10)
         }
     }
 
@@ -484,10 +629,30 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             _checkoutState.value = _checkoutState.value.copy(error = "Fill in name, phone and address")
             return
         }
+        if (info.phone.length != 10) {
+            _checkoutState.value = _checkoutState.value.copy(error = "Enter a valid 10-digit mobile number")
+            return
+        }
+        if (info.state.isBlank() || info.city.isBlank()) {
+            _checkoutState.value = _checkoutState.value.copy(error = "Select state and city")
+            return
+        }
+        if (info.pincode.length != 6) {
+            _checkoutState.value = _checkoutState.value.copy(error = "Enter a valid 6-digit pincode")
+            return
+        }
+        val total = cartGrandTotal()
+        if (total <= 0) {
+            _checkoutState.value = _checkoutState.value.copy(error = "Cart total is invalid. Refresh and try again.")
+            return
+        }
         viewModelScope.launch {
             _checkoutState.value = _checkoutState.value.copy(isProcessing = true, error = null)
             try {
-                val (order, keyId) = repository.createPaymentOrder(items)
+                val cart = repository.calculateCart(items)
+                _cartState.value = _cartState.value.copy(calculated = cart, isLoading = false)
+                val amount = cart.grandTotal.takeIf { it > 0 } ?: total
+                val (order, keyId) = repository.createPaymentOrder(items, amount)
                 pendingCartItems = items
                 pendingCheckoutInfo = info
                 _paymentEvent.emit(
@@ -497,14 +662,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         amountPaise = order.amount,
                         customerName = info.name,
                         customerEmail = customerEmail.value.orEmpty(),
-                        customerPhone = info.phone
+                        customerPhone = "91${info.phone}"
                     )
                 )
                 _checkoutState.value = _checkoutState.value.copy(isProcessing = false)
             } catch (e: ApiException) {
                 _checkoutState.value = _checkoutState.value.copy(isProcessing = false, error = e.message)
-            } catch (_: Exception) {
-                _checkoutState.value = _checkoutState.value.copy(isProcessing = false, error = "Could not start payment")
+            } catch (e: Exception) {
+                _checkoutState.value = _checkoutState.value.copy(
+                    isProcessing = false,
+                    error = e.message ?: "Could not start payment"
+                )
             }
         }
     }
@@ -532,6 +700,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 )
                 cartStore.clear()
+                CartReminderWorker.cancel(getApplication())
                 _checkoutState.value = CheckoutUiState(orderComplete = order)
                 loadCustomerOrders()
             } catch (e: ApiException) {
@@ -773,10 +942,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val products = repository.fetchProducts()
                 val collections = repository.fetchCollections()
+                val hampers = repository.fetchHampers()
                 _catalogState.value = _catalogState.value.copy(
                     isLoading = false,
                     isRefreshing = false,
                     products = products,
+                    hampers = hampers,
                     collections = collections
                 )
             } catch (e: ApiException) {
@@ -810,6 +981,19 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         return list
     }
 
+    fun filteredHampers(): List<Hamper> {
+        val state = _catalogState.value
+        val query = state.searchQuery.trim()
+        var list = state.hampers
+        if (query.isNotBlank()) {
+            list = list.filter {
+                it.title.contains(query, ignoreCase = true) ||
+                    it.subtitle.orEmpty().contains(query, ignoreCase = true)
+            }
+        }
+        return list
+    }
+
     fun loadProductDetail(productId: String) {
         viewModelScope.launch {
             val cached = _catalogState.value.products.find { it.id == productId }
@@ -817,28 +1001,34 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 _productDetailState.value = ProductDetailUiState(product = cached)
                 return@launch
             }
+            val hamper = _catalogState.value.hampers.find { it.id == productId }
+            if (hamper != null) {
+                _productDetailState.value = ProductDetailUiState(product = hamper.toProduct())
+                return@launch
+            }
             _productDetailState.value = ProductDetailUiState(isLoading = true)
             try {
-                if (_catalogState.value.products.isEmpty()) loadCatalog()
-                val products = repository.fetchProducts()
-                val collections = repository.fetchCollections()
-                _catalogState.value = _catalogState.value.copy(products = products, collections = collections)
-                val product = products.find { it.id == productId }
-                _productDetailState.value = if (product != null) {
-                    ProductDetailUiState(product = product)
-                } else {
-                    ProductDetailUiState(error = "Product not found")
+                if (_catalogState.value.products.isEmpty() || _catalogState.value.hampers.isEmpty()) {
+                    loadCatalog()
+                }
+                val product = _catalogState.value.products.find { it.id == productId }
+                val resolvedHamper = _catalogState.value.hampers.find { it.id == productId }
+                _productDetailState.value = when {
+                    product != null -> ProductDetailUiState(product = product)
+                    resolvedHamper != null -> ProductDetailUiState(product = resolvedHamper.toProduct())
+                    else -> ProductDetailUiState(error = "Item not found")
                 }
             } catch (e: ApiException) {
                 _productDetailState.value = ProductDetailUiState(error = e.message)
             } catch (_: Exception) {
-                _productDetailState.value = ProductDetailUiState(error = "Could not load product")
+                _productDetailState.value = ProductDetailUiState(error = "Could not load item")
             }
         }
     }
 
     fun collectionName(slug: String): String =
-        _catalogState.value.collections.find { it.slug == slug }?.name ?: slug.replaceFirstChar {
+        if (slug == "hampers") "Gift hamper"
+        else _catalogState.value.collections.find { it.slug == slug }?.name ?: slug.replaceFirstChar {
             if (it.isLowerCase()) it.titlecase(Locale.ENGLISH) else it.toString()
         }
 
@@ -851,8 +1041,118 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         recentOrders = _ordersState.value.orders.take(5)
     )
 
-    fun productForCartItem(productId: String): Product? =
-        _catalogState.value.products.find { it.id == productId }
+    fun productForCartItem(productId: String): Product? {
+        _catalogState.value.products.find { it.id == productId }?.let { return it }
+        return _catalogState.value.hampers.find { it.id == productId }?.toProduct()
+    }
+
+    fun updateShippingRate(rate: Double, onDone: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        val token = adminToken.value ?: return
+        viewModelScope.launch {
+            try {
+                _storeSettings.value = repository.updateShippingRate(token, rate)
+                onDone()
+            } catch (e: ApiException) {
+                onError(e.message ?: "Could not save")
+            } catch (_: Exception) {
+                onError("Could not save shipping rate")
+            }
+        }
+    }
+
+    fun registerPushToken(fcmToken: String) {
+        viewModelScope.launch {
+            try {
+                when {
+                    !adminToken.value.isNullOrBlank() -> repository.registerFcmToken(
+                        adminToken.value,
+                        "admin",
+                        adminEmail.value,
+                        fcmToken
+                    )
+                    !customerToken.value.isNullOrBlank() -> repository.registerFcmToken(
+                        customerToken.value,
+                        "customer",
+                        customerEmail.value,
+                        fcmToken
+                    )
+                }
+            } catch (_: Exception) { }
+        }
+    }
+
+    fun registerPushTokenIfAvailable() {
+        val pending = pendingFcmToken
+        if (!pending.isNullOrBlank()) registerPushToken(pending)
+    }
+
+    fun setPendingFcmToken(token: String) {
+        pendingFcmToken = token
+        registerPushTokenIfAvailable()
+    }
+
+    fun sendAiMessage(message: String, screen: String = "shop") {
+        val trimmed = message.trim()
+        if (trimmed.isBlank() || _aiState.value.isLoading) return
+        val userMsg = AiChatMessage("user", trimmed)
+        _aiState.value = _aiState.value.copy(
+            messages = _aiState.value.messages + userMsg,
+            isLoading = true,
+            error = null
+        )
+        viewModelScope.launch {
+            try {
+                val history = _aiState.value.messages.dropLast(1).takeLast(10).map {
+                    mapOf("role" to it.role, "content" to it.text)
+                }
+                val cart = _cartState.value
+                val cartContext = if (cart.items.isNotEmpty()) {
+                    MobileAiCartContext(
+                        itemCount = cartItemCount(),
+                        subtotal = cartSubtotal(),
+                        shipping = shippingRate(),
+                        total = cartGrandTotal()
+                    )
+                } else null
+                val result = repository.mobileAiChat(trimmed, history, cartContext, screen)
+                _aiState.value = _aiState.value.copy(
+                    messages = _aiState.value.messages + AiChatMessage("assistant", result.reply),
+                    isLoading = false
+                )
+                dispatchAiActions(result.actions)
+            } catch (e: ApiException) {
+                _aiState.value = _aiState.value.copy(isLoading = false, error = e.message)
+            } catch (e: Exception) {
+                _aiState.value = _aiState.value.copy(isLoading = false, error = e.message ?: "Aura AI unavailable")
+            }
+        }
+    }
+
+    private suspend fun dispatchAiActions(actions: List<com.auraboxedgifts.orders.data.MobileAiAction>) {
+        for (action in actions) {
+            when (action.type) {
+                "navigate_shop" -> _aiNavigation.emit(AiNavigationEvent.Shop)
+                "navigate_cart" -> _aiNavigation.emit(AiNavigationEvent.Cart)
+                "navigate_account" -> _aiNavigation.emit(AiNavigationEvent.Account)
+                "navigate_checkout" -> _aiNavigation.emit(AiNavigationEvent.Checkout)
+                "view_product" -> action.productId?.takeIf { it.isNotBlank() }?.let {
+                    _aiNavigation.emit(AiNavigationEvent.Product(it))
+                }
+                "add_to_cart" -> action.productId?.takeIf { it.isNotBlank() }?.let { id ->
+                    addToCart(id, action.qty ?: 1)
+                    _aiNavigation.emit(AiNavigationEvent.AddToCart(id))
+                }
+                "search_products" -> action.query?.takeIf { it.isNotBlank() }?.let {
+                    setCatalogSearch(it)
+                    _aiNavigation.emit(AiNavigationEvent.Search(it))
+                }
+            }
+        }
+    }
+
+    fun clearAiChat() {
+        _aiState.value = AiUiState()
+    }
 }
 
 private val displayFormatter = DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a", Locale.ENGLISH)

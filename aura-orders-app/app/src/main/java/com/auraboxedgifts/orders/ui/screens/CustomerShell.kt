@@ -8,9 +8,11 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.ShoppingBag
@@ -22,6 +24,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -68,6 +71,7 @@ fun CustomerShell(
     catalogState: CatalogUiState,
     cartItemCount: Int,
     filteredProducts: List<Product>,
+    hampers: List<com.auraboxedgifts.orders.data.Hamper> = emptyList(),
     collectionName: (String) -> String,
     isCustomerLoggedIn: Boolean,
     isAdminLoggedIn: Boolean,
@@ -84,7 +88,8 @@ fun CustomerShell(
     onOpenCart: () -> Unit,
     onSignIn: () -> Unit,
     onAdminPanel: () -> Unit,
-    onCustomerLogout: () -> Unit
+    onCustomerLogout: () -> Unit,
+    onOpenAuraAi: () -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -150,6 +155,10 @@ fun CustomerShell(
                 onCustomerLogout = {
                     closeDrawer()
                     onCustomerLogout()
+                },
+                onOpenAuraAi = {
+                    closeDrawer()
+                    onOpenAuraAi()
                 }
             )
         }
@@ -158,6 +167,15 @@ fun CustomerShell(
             Scaffold(
                 containerColor = Cream,
                 snackbarHost = { SnackbarHost(snackbarHostState) },
+                floatingActionButton = {
+                    FloatingActionButton(
+                        onClick = onOpenAuraAi,
+                        containerColor = RoseGold,
+                        contentColor = Cream
+                    ) {
+                        Icon(Icons.Outlined.AutoAwesome, contentDescription = "Aura AI")
+                    }
+                },
                 topBar = {
                     TopAppBar(
                         title = {
@@ -234,7 +252,10 @@ fun CustomerShell(
                     )
                 },
                 bottomBar = {
-                    NavigationBar(containerColor = Cream) {
+                    NavigationBar(
+                        containerColor = Cream,
+                        modifier = Modifier.navigationBarsPadding()
+                    ) {
                         NavigationBarItem(
                             selected = selectedTab == CustomerTab.SHOP,
                             onClick = { onTabSelected(CustomerTab.SHOP) },
@@ -264,6 +285,7 @@ fun CustomerShell(
                             modifier = Modifier.padding(padding),
                             state = catalogState,
                             filteredProducts = filteredProducts,
+                            hampers = hampers,
                             collectionName = collectionName,
                             title = "Curated for you",
                             subtitle = "Swipe from left or tap ☰ to open menu",

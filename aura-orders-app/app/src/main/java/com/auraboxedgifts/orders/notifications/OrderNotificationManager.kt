@@ -93,4 +93,34 @@ object OrderNotificationManager {
             manager.notify(notificationId++, notification)
         }
     }
+
+    fun showGenericNotification(
+        context: Context,
+        title: String,
+        body: String,
+        orderId: String? = null
+    ) {
+        if (!canNotify(context)) return
+        ensureChannel(context)
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            if (!orderId.isNullOrBlank()) putExtra("order_id", orderId)
+        }
+        val pending = PendingIntent.getActivity(
+            context,
+            (orderId ?: title).hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(pending)
+            .build()
+        NotificationManagerCompat.from(context).notify(notificationId++, notification)
+    }
 }

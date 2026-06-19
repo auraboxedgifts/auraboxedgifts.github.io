@@ -1683,6 +1683,16 @@
         </div>
 
         <div class="aap-tool-card">
+          <h3><i class="fas fa-truck"></i> Shipping rate</h3>
+          <p class="aap-hint">Flat shipping added once per cart at checkout (website + Android app).</p>
+          <div class="aap-tool-row">
+            <input class="aap-input" id="aapShippingRate" type="number" min="0" step="1" placeholder="120">
+            <button class="aap-btn-primary" id="aapSaveShipping"><i class="fas fa-save"></i> Save rate</button>
+          </div>
+          <p class="aap-hint" id="aapShippingStatus" style="margin-top:8px;"></p>
+        </div>
+
+        <div class="aap-tool-card">
           <h3><i class="fas fa-map-location-dot"></i> Address autocomplete</h3>
           <p class="aap-tool-status">${dot(status.maps.configured)}</p>
           <p class="aap-hint">Google Maps Places for faster address entry at checkout.</p>
@@ -1713,6 +1723,44 @@
         </form>
         <div id="aapTestOrderResult"></div>
       </div>`;
+
+    const shippingInput = content.querySelector('#aapShippingRate');
+    const shippingStatus = content.querySelector('#aapShippingStatus');
+    try {
+      const settingsRes = await fetch('/api/settings');
+      const settingsJson = await settingsRes.json();
+      if (settingsJson.success && settingsJson.data && shippingInput) {
+        shippingInput.value = settingsJson.data.shippingFlatRate ?? 120;
+        if (shippingStatus) {
+          shippingStatus.textContent = `Current flat rate: ₹${settingsJson.data.shippingFlatRate ?? 120}`;
+        }
+      }
+    } catch (_) { }
+
+    content.querySelector('#aapSaveShipping')?.addEventListener('click', async function () {
+      const rate = Number(shippingInput?.value);
+      if (!Number.isFinite(rate) || rate < 0) {
+        toast('Enter a valid shipping amount', 'error');
+        return;
+      }
+      this.disabled = true;
+      const orig = this.innerHTML;
+      this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+      try {
+        const res = await adminFetch('/api/admin/settings', {
+          method: 'PUT',
+          body: JSON.stringify({ shippingFlatRate: Math.round(rate) })
+        });
+        if (shippingStatus) {
+          shippingStatus.textContent = `Saved — flat rate is now ₹${res.data.shippingFlatRate}`;
+        }
+        toast('Shipping rate updated', 'success');
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+      this.disabled = false;
+      this.innerHTML = orig;
+    });
 
     content.querySelector('#aapTestEmail').addEventListener('click', async function () {
       const to = content.querySelector('#aapTestEmailTo').value.trim();

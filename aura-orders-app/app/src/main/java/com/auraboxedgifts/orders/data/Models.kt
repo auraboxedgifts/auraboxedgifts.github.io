@@ -179,11 +179,17 @@ data class UploadResult(
 )
 
 data class CartCalculateRequest(val items: List<LocalCartItem>)
+data class CreatePaymentRequest(val items: List<LocalCartItem>, val amount: Double)
+data class ShippingSettingsRequest(val shippingFlatRate: Double)
+data class AppConfig(
+    val googleMapsApiKey: String? = null,
+    val mapsEnabled: Boolean = false
+)
 data class CartItemRequest(val productId: String, val qty: Int)
 
 data class RazorpayOrderInfo(
     val id: String,
-    val amount: Int,
+    val amount: Long,
     val currency: String? = null,
     val receipt: String? = null
 )
@@ -203,6 +209,28 @@ data class VerifyPaymentRequest(
     val customer: Customer
 )
 
+data class VerifyPaymentData(
+    val order: Order
+)
+
+data class Hamper(
+    val id: String,
+    val title: String,
+    val subtitle: String? = null,
+    val image: String? = null,
+    val price: Double = 0.0
+)
+
+fun Hamper.toProduct(): Product = Product(
+    id = id,
+    name = title,
+    collection = "hampers",
+    price = price,
+    image = image,
+    description = subtitle?.takeIf { it.isNotBlank() },
+    tags = listOf("Hamper")
+)
+
 data class CheckoutInfo(
     val name: String = "",
     val phone: String = "",
@@ -210,4 +238,35 @@ data class CheckoutInfo(
     val city: String = "",
     val state: String = "",
     val pincode: String = ""
+)
+
+data class StoreSettings(
+    val shippingFlatRate: Double = 120.0
+)
+
+data class MobileAiAction(
+    val type: String,
+    val productId: String? = null,
+    val productName: String? = null,
+    val qty: Int? = null,
+    val query: String? = null
+)
+
+data class MobileAiChatResult(
+    val reply: String,
+    val actions: List<MobileAiAction> = emptyList(),
+    val model: String? = null
+)
+
+data class MobileAiCartContext(
+    val itemCount: Int,
+    val subtotal: Double,
+    val shipping: Double,
+    val total: Double
+)
+
+data class FcmRegisterRequest(
+    val token: String,
+    val role: String,
+    val email: String? = null
 )

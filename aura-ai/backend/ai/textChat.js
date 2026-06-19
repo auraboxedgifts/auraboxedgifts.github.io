@@ -22,7 +22,7 @@ function buildCatalogContext(getCatalog, getSite) {
         'TRENDING HAMPERS:',
         hamperLines || 'No hampers configured.',
         '',
-        'Shipping: ₹120 when cart is not empty. Currency: INR.'
+        'Shipping: flat rate from store settings when cart is not empty. Currency: INR.'
     ].join('\n');
 }
 
