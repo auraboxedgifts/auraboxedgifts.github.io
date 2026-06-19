@@ -54,7 +54,6 @@ enum class MainTab(val label: String) {
 
 enum class CustomerTab(val label: String) {
     SHOP("Shop"),
-    CART("Cart"),
     ACCOUNT("Account")
 }
 
@@ -229,6 +228,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val _customerTab = MutableStateFlow(CustomerTab.SHOP)
     val customerTab: StateFlow<CustomerTab> = _customerTab.asStateFlow()
 
+    private val _snackbarMessage = MutableStateFlow<String?>(null)
+    val snackbarMessage: StateFlow<String?> = _snackbarMessage.asStateFlow()
+
     private val _paymentEvent = MutableSharedFlow<PaymentLaunchData>()
     val paymentEvent: SharedFlow<PaymentLaunchData> = _paymentEvent.asSharedFlow()
 
@@ -400,8 +402,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun clearSnackbar() {
+        _snackbarMessage.value = null
+    }
+
     fun addToCart(productId: String) {
         viewModelScope.launch {
+            val product = _catalogState.value.products.find { it.id == productId }
             val current = cartStore.getCart().toMutableList()
             val idx = current.indexOfFirst { it.productId == productId }
             if (idx >= 0) {
@@ -410,6 +417,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 current.add(LocalCartItem(productId, 1))
             }
             cartStore.saveCart(current)
+            _snackbarMessage.value = "${product?.name ?: "Item"} added to cart"
         }
     }
 

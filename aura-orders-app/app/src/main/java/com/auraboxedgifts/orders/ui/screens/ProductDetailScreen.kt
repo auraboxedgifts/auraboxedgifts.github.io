@@ -51,6 +51,8 @@ import androidx.compose.ui.unit.dp
 import com.auraboxedgifts.orders.ProductDetailUiState
 import com.auraboxedgifts.orders.data.formatRupee
 import com.auraboxedgifts.orders.ui.components.ProductImage
+import com.auraboxedgifts.orders.ui.components.StaggeredFadeIn
+import com.auraboxedgifts.orders.ui.components.StaggeredFadeIn
 import com.auraboxedgifts.orders.ui.theme.Cream
 import com.auraboxedgifts.orders.ui.theme.RoseGold
 import com.auraboxedgifts.orders.ui.theme.TextDark
@@ -134,89 +136,105 @@ fun ProductDetailScreen(
                         .padding(padding)
                         .verticalScroll(rememberScrollState())
                 ) {
-                    ProductImage(
-                        imagePath = product.image,
-                        contentDescription = product.name,
-                        modifier = Modifier.fillMaxWidth().aspectRatio(1f),
-                        cornerRadius = 0.dp
-                    )
+                    StaggeredFadeIn(index = 0, modifier = Modifier.fillMaxWidth()) {
+                        ProductImage(
+                            imagePath = product.image,
+                            contentDescription = product.name,
+                            modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                            cornerRadius = 0.dp
+                        )
+                    }
 
                     Column(
                         modifier = Modifier.padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(product.name, style = MaterialTheme.typography.headlineMedium, color = TextDark)
-                        Text(collectionName(product.collection), style = MaterialTheme.typography.bodyMedium, color = TextMedium)
-                        Text(
-                            formatRupee(product.price),
-                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = RoseGold
-                        )
+                        StaggeredFadeIn(index = 1, modifier = Modifier.fillMaxWidth()) {
+                            Text(product.name, style = MaterialTheme.typography.headlineMedium, color = TextDark)
+                        }
+                        StaggeredFadeIn(index = 2, modifier = Modifier.fillMaxWidth()) {
+                            Text(collectionName(product.collection), style = MaterialTheme.typography.bodyMedium, color = TextMedium)
+                        }
+                        StaggeredFadeIn(index = 3, modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                formatRupee(product.price),
+                                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = RoseGold
+                            )
+                        }
 
                         if (!product.description.isNullOrBlank()) {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White)
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text("Description", style = MaterialTheme.typography.titleMedium, color = TextDark)
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(product.description, style = MaterialTheme.typography.bodyMedium)
+                            StaggeredFadeIn(index = 4, modifier = Modifier.fillMaxWidth()) {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text("Description", style = MaterialTheme.typography.titleMedium, color = TextDark)
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(product.description, style = MaterialTheme.typography.bodyMedium)
+                                    }
                                 }
                             }
                         }
 
                         if (!product.tags.isNullOrEmpty()) {
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                product.tags.forEach { tag ->
-                                    AssistChip(
-                                        onClick = {},
-                                        enabled = false,
-                                        label = { Text(tag) },
-                                        colors = AssistChipDefaults.assistChipColors(
-                                            disabledContainerColor = RoseGold.copy(alpha = 0.1f),
-                                            disabledLabelColor = RoseGold
-                                        ),
-                                        border = null
-                                    )
+                            StaggeredFadeIn(index = 5, modifier = Modifier.fillMaxWidth()) {
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    product.tags.forEach { tag ->
+                                        AssistChip(
+                                            onClick = {},
+                                            enabled = false,
+                                            label = { Text(tag) },
+                                            colors = AssistChipDefaults.assistChipColors(
+                                                disabledContainerColor = RoseGold.copy(alpha = 0.1f),
+                                                disabledLabelColor = RoseGold
+                                            ),
+                                            border = null
+                                        )
+                                    }
                                 }
                             }
                         }
 
-                        if (isAdminMode) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                OutlinedButton(
-                                    onClick = { onEdit?.invoke() },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Icon(Icons.Outlined.Edit, contentDescription = null, tint = RoseGold)
-                                    Text("  Edit", color = RoseGold)
+                        StaggeredFadeIn(index = 6, modifier = Modifier.fillMaxWidth()) {
+                            if (isAdminMode) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    OutlinedButton(
+                                        onClick = { onEdit?.invoke() },
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(Icons.Outlined.Edit, contentDescription = null, tint = RoseGold)
+                                        Text("  Edit", color = RoseGold)
+                                    }
+                                    OutlinedButton(
+                                        onClick = { showDeleteDialog = true },
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(Icons.Outlined.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                        Text("  Delete", color = MaterialTheme.colorScheme.error)
+                                    }
                                 }
-                                OutlinedButton(
-                                    onClick = { showDeleteDialog = true },
-                                    modifier = Modifier.weight(1f)
+                            } else if (onAddToCart != null) {
+                                Button(
+                                    onClick = onAddToCart,
+                                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = RoseGold)
                                 ) {
-                                    Icon(Icons.Outlined.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                                    Text("  Delete", color = MaterialTheme.colorScheme.error)
+                                    Icon(Icons.Outlined.AddShoppingCart, contentDescription = null)
+                                    Text("  Add to cart")
                                 }
-                            }
-                        } else if (onAddToCart != null) {
-                            Button(
-                                onClick = onAddToCart,
-                                modifier = Modifier.fillMaxWidth().height(52.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = RoseGold)
-                            ) {
-                                Icon(Icons.Outlined.AddShoppingCart, contentDescription = null)
-                                Text("  Add to cart")
                             }
                         }
 
-                        Text("ID: ${product.id}", style = MaterialTheme.typography.labelMedium, color = TextLight)
+                        StaggeredFadeIn(index = 7, modifier = Modifier.fillMaxWidth()) {
+                            Text("ID: ${product.id}", style = MaterialTheme.typography.labelMedium, color = TextLight)
+                        }
                     }
                     Spacer(modifier = Modifier.height(24.dp))
                 }

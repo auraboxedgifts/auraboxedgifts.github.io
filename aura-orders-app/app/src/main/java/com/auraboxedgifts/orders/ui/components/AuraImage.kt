@@ -15,7 +15,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
+import com.auraboxedgifts.orders.ui.components.ShimmerBox
 import com.auraboxedgifts.orders.ui.theme.CreamDark
 import com.auraboxedgifts.orders.ui.theme.RoseGold
 import com.auraboxedgifts.orders.ui.theme.RoseLight
@@ -41,17 +44,17 @@ fun ProductImage(
                 tint = RoseGold.copy(alpha = 0.6f)
             )
         } else {
+            val context = LocalContext.current
             SubcomposeAsyncImage(
-                model = url,
+                model = ImageRequest.Builder(context)
+                    .data(url)
+                    .crossfade(320)
+                    .build(),
                 contentDescription = contentDescription,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
                 loading = {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(RoseLight.copy(alpha = 0.35f))
-                    )
+                    ShimmerBox(modifier = Modifier.fillMaxSize())
                 },
                 error = {
                     Icon(

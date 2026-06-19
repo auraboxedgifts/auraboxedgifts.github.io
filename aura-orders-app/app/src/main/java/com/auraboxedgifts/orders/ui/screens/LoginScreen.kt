@@ -1,5 +1,8 @@
 package com.auraboxedgifts.orders.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -41,7 +44,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.auraboxedgifts.orders.LoginUiState
 import com.auraboxedgifts.orders.R
+import com.auraboxedgifts.orders.ui.components.AuraMotion
 import com.auraboxedgifts.orders.ui.components.BrandLogo
+import com.auraboxedgifts.orders.ui.components.StaggeredFadeIn
 import com.auraboxedgifts.orders.ui.theme.Cream
 import com.auraboxedgifts.orders.ui.theme.CreamDark
 import com.auraboxedgifts.orders.ui.theme.RoseGold
@@ -85,101 +90,121 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            BrandLogo(
-                modifier = Modifier
-                    .size(108.dp)
-                    .clip(RoundedCornerShape(24.dp))
-            )
+            StaggeredFadeIn(index = 0) {
+                BrandLogo(
+                    modifier = Modifier
+                        .size(108.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                )
+            }
 
-            Text(
-                text = "Aura Boxed Gift",
-                style = MaterialTheme.typography.displayLarge,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = "Your store, orders & catalog in one place",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextMedium,
-                textAlign = TextAlign.Center
-            )
+            StaggeredFadeIn(index = 1) {
+                Text(
+                    text = "Aura Boxed Gift",
+                    style = MaterialTheme.typography.displayLarge,
+                    textAlign = TextAlign.Center
+                )
+            }
+            StaggeredFadeIn(index = 2) {
+                Text(
+                    text = "Your store, orders & catalog in one place",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextMedium,
+                    textAlign = TextAlign.Center
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedTextField(
-                value = state.email,
-                onValueChange = onEmailChange,
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Admin email") },
-                leadingIcon = {
-                    Icon(Icons.Outlined.Email, contentDescription = null, tint = RoseGold)
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Next
-                ),
-                shape = RoundedCornerShape(16.dp),
-                colors = fieldColors()
-            )
-
-            OutlinedTextField(
-                value = state.password,
-                onValueChange = onPasswordChange,
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Password") },
-                leadingIcon = {
-                    Icon(Icons.Outlined.Lock, contentDescription = null, tint = RoseGold)
-                },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(onDone = { onLogin() }),
-                shape = RoundedCornerShape(16.dp),
-                colors = fieldColors()
-            )
-
-            if (state.error != null) {
-                Text(
-                    text = state.error,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
+            StaggeredFadeIn(index = 3, modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = state.email,
+                    onValueChange = onEmailChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Admin email") },
+                    leadingIcon = {
+                        Icon(Icons.Outlined.Email, contentDescription = null, tint = RoseGold)
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = fieldColors()
                 )
             }
 
-            Button(
-                onClick = onLogin,
-                enabled = !state.isLoading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = RoseGold,
-                    contentColor = Color.White
+            StaggeredFadeIn(index = 4, modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = state.password,
+                    onValueChange = onPasswordChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Password") },
+                    leadingIcon = {
+                        Icon(Icons.Outlined.Lock, contentDescription = null, tint = RoseGold)
+                    },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { onLogin() }),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = fieldColors()
                 )
+            }
+
+            AnimatedVisibility(
+                visible = state.error != null,
+                enter = fadeIn(AuraMotion.smoothTween(220)),
+                exit = fadeOut(AuraMotion.smoothTween(180))
             ) {
-                if (state.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(22.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
+                state.error?.let { error ->
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
-                } else {
-                    Text("Sign in", style = MaterialTheme.typography.labelLarge)
                 }
             }
 
-            Text(
-                text = "Store admin dashboard",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextMedium,
-                textAlign = TextAlign.Center
-            )
+            StaggeredFadeIn(index = 5, modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = onLogin,
+                    enabled = !state.isLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RoseGold,
+                        contentColor = Color.White
+                    )
+                ) {
+                    if (state.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Sign in", style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+            }
+
+            StaggeredFadeIn(index = 6) {
+                Text(
+                    text = "Store admin dashboard",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextMedium,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }

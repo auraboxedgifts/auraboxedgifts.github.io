@@ -12,9 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.AdminPanelSettings
-import androidx.compose.material.icons.outlined.Login
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -43,11 +41,12 @@ import com.auraboxedgifts.orders.ui.theme.TextMedium
 fun CustomerAccountScreen(
     modifier: Modifier = Modifier,
     isLoggedIn: Boolean,
+    isAdminLoggedIn: Boolean,
     email: String?,
     name: String?,
     ordersState: CustomerOrdersUiState,
     onSignIn: () -> Unit,
-    onAdminSignIn: () -> Unit,
+    onAdminPanel: () -> Unit,
     onLogout: () -> Unit
 ) {
     Column(
@@ -60,6 +59,31 @@ fun CustomerAccountScreen(
     ) {
         BrandLogo(modifier = Modifier.size(72.dp))
         Text("Aura Boxed Gift", style = MaterialTheme.typography.headlineMedium)
+
+        if (isAdminLoggedIn) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = RoseGold.copy(alpha = 0.1f))
+            ) {
+                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Admin signed in", style = MaterialTheme.typography.titleMedium, color = RoseGold)
+                    Text(
+                        "You have full store access. Open the admin dashboard to manage orders and products.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextMedium
+                    )
+                    Button(
+                        onClick = onAdminPanel,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = RoseGold)
+                    ) {
+                        Text("Open admin dashboard")
+                    }
+                }
+            }
+        }
 
         if (isLoggedIn) {
             Card(
@@ -118,16 +142,18 @@ fun CustomerAccountScreen(
                 }
             }
 
-            OutlinedButton(
-                onClick = onLogout,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Text("Sign out")
+            if (!isAdminLoggedIn) {
+                OutlinedButton(
+                    onClick = onLogout,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text("Sign out")
+                }
             }
-        } else {
+        } else if (!isAdminLoggedIn) {
             Text(
-                "Sign in to track orders and checkout faster.",
+                "Sign in to track orders and pay at checkout.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextMedium,
                 textAlign = TextAlign.Center
@@ -142,16 +168,16 @@ fun CustomerAccountScreen(
             ) {
                 Text("Sign in / Sign up")
             }
-        }
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedButton(
-            onClick = onAdminSignIn,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Text("Store admin sign in")
+            OutlinedButton(
+                onClick = onAdminPanel,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Text("Store admin sign in")
+            }
         }
     }
 }

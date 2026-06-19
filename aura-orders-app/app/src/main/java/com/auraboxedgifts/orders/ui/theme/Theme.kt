@@ -28,6 +28,7 @@ fun AuraOrdersTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = LightColors,
         typography = AuraTypography,
+        shapes = AuraShapes,
         content = content
     )
 }

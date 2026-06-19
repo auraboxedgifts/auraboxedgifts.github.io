@@ -41,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,7 +49,10 @@ import androidx.compose.ui.unit.dp
 import com.auraboxedgifts.orders.CatalogUiState
 import com.auraboxedgifts.orders.data.Product
 import com.auraboxedgifts.orders.data.formatRupee
+import com.auraboxedgifts.orders.ui.components.PressableScale
 import com.auraboxedgifts.orders.ui.components.ProductImage
+import com.auraboxedgifts.orders.ui.components.ShimmerBox
+import com.auraboxedgifts.orders.ui.components.StaggeredFadeIn
 import com.auraboxedgifts.orders.ui.theme.Cream
 import com.auraboxedgifts.orders.ui.theme.RoseGold
 import com.auraboxedgifts.orders.ui.theme.RoseLight
@@ -65,6 +69,7 @@ fun CatalogScreen(
     collectionName: (String) -> String,
     title: String = "Product catalog",
     subtitle: String? = null,
+    showHeader: Boolean = true,
     onRefresh: () -> Unit,
     onCollectionChange: (String?) -> Unit,
     onSearchChange: (String) -> Unit,
@@ -85,12 +90,14 @@ fun CatalogScreen(
             .pullRefresh(pullRefreshState)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            CatalogHeader(
-                title = title,
-                productCount = state.products.size,
-                collectionCount = state.collections.size,
-                subtitle = subtitle
-            )
+            if (showHeader) {
+                CatalogHeader(
+                    title = title,
+                    productCount = state.products.size,
+                    collectionCount = state.collections.size,
+                    subtitle = subtitle
+                )
+            }
 
             OutlinedTextField(
                 value = state.searchQuery,
@@ -140,11 +147,21 @@ fun CatalogScreen(
 
             when {
                 state.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        CircularProgressIndicator(color = RoseGold)
+                        items(6) {
+                            ShimmerBox(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(0.72f)
+                                    .clip(RoundedCornerShape(20.dp))
+                            )
+                        }
                     }
                 }
 
@@ -176,14 +193,17 @@ fun CatalogScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        items(filteredProducts, key = { it.id }) { product ->
-                            ProductCard(
-                                product = product,
-                                collectionLabel = collectionName(product.collection),
-                                onClick = { onProductClick(product.id) },
-                                showAddToCart = showAddToCart,
-                                onAddToCart = { onAddToCart(product.id) }
-                            )
+                        items(filteredProducts.size, key = { filteredProducts[it].id }) { index ->
+                            val product = filteredProducts[index]
+                            StaggeredFadeIn(index = index) {
+                                ProductCard(
+                                    product = product,
+                                    collectionLabel = collectionName(product.collection),
+                                    onClick = { onProductClick(product.id) },
+                                    showAddToCart = showAddToCart,
+                                    onAddToCart = { onAddToCart(product.id) }
+                                )
+                            }
                         }
                         item { Spacer(modifier = Modifier.height(16.dp)) }
                     }
@@ -248,51 +268,51 @@ private fun ProductCard(
     showAddToCart: Boolean = false,
     onAddToCart: () -> Unit = {}
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column {
-            ProductImage(
-                imagePath = product.image,
-                contentDescription = product.name,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f),
-                cornerRadius = 0.dp
-            )
-            Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = product.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    color = TextDark
+    PressableScale(onClick = onClick) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column {
+                ProductImage(
+                    imagePath = product.image,
+                    contentDescription = product.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f),
+                    cornerRadius = 0.dp
                 )
-                Text(
-                    text = collectionLabel,
-                    style = MaterialTheme.typography.labelMedium
-                )
-                Text(
-                    text = formatRupee(product.price),
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = RoseGold
-                )
-                if (showAddToCart) {
-                    OutlinedButton(
-                        onClick = onAddToCart,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Outlined.AddShoppingCart, contentDescription = null, tint = RoseGold)
-                        Text("  Add", color = RoseGold)
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = product.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        color = TextDark
+                    )
+                    Text(
+                        text = collectionLabel,
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                    Text(
+                        text = formatRupee(product.price),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = RoseGold
+                    )
+                    if (showAddToCart) {
+                        OutlinedButton(
+                            onClick = onAddToCart,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Outlined.AddShoppingCart, contentDescription = null, tint = RoseGold)
+                            Text("  Add to cart", color = RoseGold)
+                        }
                     }
                 }
             }

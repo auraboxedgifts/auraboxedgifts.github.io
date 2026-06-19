@@ -11,8 +11,8 @@ android {
         applicationId = "com.auraboxedgifts.orders"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2.0"
+        versionCode = 5
+        versionName = "1.2.2"
 
         buildConfigField("String", "API_BASE_URL", "\"https://aura.devshubh.me\"")
     }

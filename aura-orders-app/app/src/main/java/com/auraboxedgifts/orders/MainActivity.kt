@@ -21,8 +21,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.auraboxedgifts.orders.ui.components.auraComposable
+import com.auraboxedgifts.orders.ui.components.fadeEnter
+import com.auraboxedgifts.orders.ui.components.fadeExit
+import com.auraboxedgifts.orders.ui.components.popEnter
+import com.auraboxedgifts.orders.ui.components.popExit
+import com.auraboxedgifts.orders.ui.components.slideInFromBottom
+import com.auraboxedgifts.orders.ui.components.slideOutToBottom
 import com.auraboxedgifts.orders.notifications.OrderNotificationManager
 import com.auraboxedgifts.orders.ui.screens.AdminProductFormScreen
+import com.auraboxedgifts.orders.ui.screens.CartScreen
 import com.auraboxedgifts.orders.ui.screens.CheckoutScreen
 import com.auraboxedgifts.orders.ui.screens.CustomerAuthScreen
 import com.auraboxedgifts.orders.ui.screens.CustomerShell
@@ -75,6 +83,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                 val checkoutState by vm.checkoutState.collectAsState()
                 val selectedTab by vm.selectedTab.collectAsState()
                 val customerTab by vm.customerTab.collectAsState()
+                val snackbarMessage by vm.snackbarMessage.collectAsState()
 
                 LaunchedEffect(appMode) {
                     if (appMode == AppMode.ADMIN) {
@@ -116,19 +125,27 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                     navController = navController,
                     startDestination = if (appMode == AppMode.ADMIN) "admin" else "shop"
                 ) {
-                    composable("shop") {
+                    composable(
+                        route = "shop",
+                        enterTransition = { fadeEnter() },
+                        exitTransition = { fadeExit() },
+                        popEnterTransition = { fadeEnter() },
+                        popExitTransition = { fadeExit() }
+                    ) {
                         CustomerShell(
                             selectedTab = customerTab,
                             onTabSelected = viewModel::selectCustomerTab,
                             catalogState = catalogState,
-                            cartState = cartState,
                             cartItemCount = viewModel.cartItemCount(),
                             filteredProducts = viewModel.filteredProducts(),
                             collectionName = viewModel::collectionName,
                             isCustomerLoggedIn = !customerToken.isNullOrBlank(),
-                            customerEmail = customerEmail,
+                            isAdminLoggedIn = !adminToken.isNullOrBlank(),
+                            customerEmail = customerEmail ?: adminEmail,
                             customerName = customerName,
                             customerOrdersState = customerOrdersState,
+                            snackbarMessage = snackbarMessage,
+                            onSnackbarShown = viewModel::clearSnackbar,
                             onRefreshCatalog = { viewModel.loadCatalog(refreshing = true) },
                             onCollectionChange = viewModel::setCatalogCollection,
                             onSearchChange = viewModel::setCatalogSearch,
@@ -137,8 +154,32 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                                 navController.navigate("product/$productId")
                             },
                             onAddToCart = viewModel::addToCart,
-                            onUpdateCartQty = viewModel::updateCartQty,
-                            onCheckout = {
+                            onOpenCart = { navController.navigate("cart") },
+                            onSignIn = { navController.navigate("customer_auth?redirect=") },
+                            onAdminPanel = {
+                                if (!adminToken.isNullOrBlank()) {
+                                    navController.navigate("admin") { popUpTo("shop") }
+                                } else {
+                                    navController.navigate("admin_login")
+                                }
+                            },
+                            onCustomerLogout = viewModel::logoutCustomer,
+                        )
+                    }
+
+                    auraComposable("cart") {
+                        LaunchedEffect(Unit) {
+                            if (catalogState.products.isEmpty()) {
+                                viewModel.loadCatalog()
+                            }
+                        }
+                        CartScreen(
+                            state = cartState,
+                            isLoggedIn = !customerToken.isNullOrBlank(),
+                            productForId = viewModel::productForCartItem,
+                            onBack = { navController.popBackStack() },
+                            onUpdateQty = viewModel::updateCartQty,
+                            onProceedToPay = {
                                 if (customerToken.isNullOrBlank()) {
                                     navController.navigate("customer_auth?redirect=checkout")
                                 } else {
@@ -146,14 +187,17 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                                     navController.navigate("checkout")
                                 }
                             },
-                            onSignIn = { navController.navigate("customer_auth?redirect=") },
-                            onAdminSignIn = { navController.navigate("admin_login") },
-                            onCustomerLogout = viewModel::logoutCustomer,
-                            productForCartItem = viewModel::productForCartItem
+                            onSignIn = { navController.navigate("customer_auth?redirect=checkout") }
                         )
                     }
 
-                    composable("admin") {
+                    composable(
+                        route = "admin",
+                        enterTransition = { fadeEnter() },
+                        exitTransition = { fadeExit() },
+                        popEnterTransition = { fadeEnter() },
+                        popExitTransition = { fadeExit() }
+                    ) {
                         if (adminToken.isNullOrBlank()) {
                             LaunchedEffect(Unit) {
                                 navController.navigate("shop") {
@@ -211,7 +255,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                         )
                     }
 
-                    composable("admin_login") {
+                    auraComposable("admin_login") {
                         LoginScreen(
                             state = loginState,
                             onEmailChange = viewModel::updateLoginEmail,
@@ -227,7 +271,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                         )
                     }
 
-                    composable(
+                    auraComposable(
                         route = "customer_auth?redirect={redirect}",
                         arguments = listOf(
                             navArgument("redirect") {
@@ -274,7 +318,13 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                         )
                     }
 
-                    composable("checkout") {
+                    auraComposable(
+                        route = "checkout",
+                        enterTransition = { slideInFromBottom() },
+                        exitTransition = { slideOutToBottom() },
+                        popEnterTransition = { popEnter() },
+                        popExitTransition = { popExit() }
+                    ) {
                         CheckoutScreen(
                             state = checkoutState,
                             cartTotal = cartState.calculated?.grandTotal ?: 0.0,
@@ -300,7 +350,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                         )
                     }
 
-                    composable(
+                    auraComposable(
                         route = "product/{productId}",
                         arguments = listOf(navArgument("productId") { type = NavType.StringType })
                     ) { entry ->
@@ -319,7 +369,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                         )
                     }
 
-                    composable(
+                    auraComposable(
                         route = "admin/product/{productId}",
                         arguments = listOf(navArgument("productId") { type = NavType.StringType })
                     ) { entry ->
@@ -344,7 +394,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                         )
                     }
 
-                    composable("admin_product/new") {
+                    auraComposable("admin_product/new") {
                         LaunchedEffect(Unit) { viewModel.loadProductForm(null) }
                         AdminProductFormScreen(
                             state = productFormState,
@@ -361,7 +411,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                         )
                     }
 
-                    composable(
+                    auraComposable(
                         route = "admin_product/edit/{productId}",
                         arguments = listOf(navArgument("productId") { type = NavType.StringType })
                     ) { entry ->
@@ -384,7 +434,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                         )
                     }
 
-                    composable(
+                    auraComposable(
                         route = "admin/order/{orderId}",
                         arguments = listOf(navArgument("orderId") { type = NavType.StringType })
                     ) { entry ->

@@ -1,5 +1,10 @@
 package com.auraboxedgifts.orders.ui.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,6 +42,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.auraboxedgifts.orders.AuthMode
 import com.auraboxedgifts.orders.CustomerAuthUiState
+import com.auraboxedgifts.orders.ui.components.AuraMotion
+import com.auraboxedgifts.orders.ui.components.StaggeredFadeIn
 import com.auraboxedgifts.orders.ui.theme.Cream
 import com.auraboxedgifts.orders.ui.theme.RoseGold
 import com.auraboxedgifts.orders.ui.theme.RoseLight
@@ -78,92 +85,112 @@ fun CustomerAuthScreen(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                "Sign in to checkout and track your orders.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextMedium
-            )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = state.mode == AuthMode.SIGN_IN,
-                    onClick = { onModeChange(AuthMode.SIGN_IN) },
-                    label = { Text("Sign in") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = RoseGold.copy(alpha = 0.15f),
-                        selectedLabelColor = RoseGold
-                    )
-                )
-                FilterChip(
-                    selected = state.mode == AuthMode.SIGN_UP,
-                    onClick = { onModeChange(AuthMode.SIGN_UP) },
-                    label = { Text("Sign up") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = RoseGold.copy(alpha = 0.15f),
-                        selectedLabelColor = RoseGold
-                    )
+            StaggeredFadeIn(index = 0, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "Sign in to checkout and track your orders.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextMedium
                 )
             }
 
-            OutlinedTextField(
-                value = state.email,
-                onValueChange = onEmailChange,
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Email") },
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
-                colors = authFieldColors()
-            )
+            StaggeredFadeIn(index = 1, modifier = Modifier.fillMaxWidth()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = state.mode == AuthMode.SIGN_IN,
+                        onClick = { onModeChange(AuthMode.SIGN_IN) },
+                        label = { Text("Sign in") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = RoseGold.copy(alpha = 0.15f),
+                            selectedLabelColor = RoseGold
+                        )
+                    )
+                    FilterChip(
+                        selected = state.mode == AuthMode.SIGN_UP,
+                        onClick = { onModeChange(AuthMode.SIGN_UP) },
+                        label = { Text("Sign up") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = RoseGold.copy(alpha = 0.15f),
+                            selectedLabelColor = RoseGold
+                        )
+                    )
+                }
+            }
 
-            if (state.mode == AuthMode.SIGN_IN) {
+            StaggeredFadeIn(index = 2, modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
-                    value = state.password,
-                    onValueChange = onPasswordChange,
+                    value = state.email,
+                    onValueChange = onEmailChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Password") },
+                    label = { Text("Email") },
                     singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
                     shape = RoundedCornerShape(16.dp),
                     colors = authFieldColors()
                 )
-            } else {
-                if (state.otpSent) {
-                    OutlinedTextField(
-                        value = state.otp,
-                        onValueChange = onOtpChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("OTP from email") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
-                        colors = authFieldColors()
-                    )
-                } else {
-                    OutlinedButton(onClick = onSendOtp, modifier = Modifier.fillMaxWidth()) {
-                        Text("Send OTP to email")
+            }
+
+            AnimatedContent(
+                targetState = state.mode,
+                transitionSpec = {
+                    fadeIn(AuraMotion.smoothTween(220)) togetherWith fadeOut(AuraMotion.smoothTween(180))
+                },
+                label = "authModeFields"
+            ) { mode ->
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    if (mode == AuthMode.SIGN_IN) {
+                        OutlinedTextField(
+                            value = state.password,
+                            onValueChange = onPasswordChange,
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Password") },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = authFieldColors()
+                        )
+                    } else if (state.otpSent) {
+                        OutlinedTextField(
+                            value = state.otp,
+                            onValueChange = onOtpChange,
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("OTP from email") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(16.dp),
+                            colors = authFieldColors()
+                        )
+                    } else {
+                        OutlinedButton(onClick = onSendOtp, modifier = Modifier.fillMaxWidth()) {
+                            Text("Send OTP to email")
+                        }
                     }
                 }
             }
 
-            state.error?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+            AnimatedVisibility(visible = state.error != null) {
+                state.error?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                }
             }
-            state.successMessage?.let {
-                Text(it, color = RoseGold, style = MaterialTheme.typography.bodyMedium)
+            AnimatedVisibility(visible = state.successMessage != null) {
+                state.successMessage?.let {
+                    Text(it, color = RoseGold, style = MaterialTheme.typography.bodyMedium)
+                }
             }
 
-            Button(
-                onClick = { if (state.mode == AuthMode.SIGN_IN) onSignIn() else onSignUp() },
-                enabled = !state.isLoading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = RoseGold)
-            ) {
-                if (state.isLoading) {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.height(22.dp))
-                } else {
-                    Text(if (state.mode == AuthMode.SIGN_IN) "Sign in" else "Verify & create account")
+            StaggeredFadeIn(index = 4, modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = { if (state.mode == AuthMode.SIGN_IN) onSignIn() else onSignUp() },
+                    enabled = !state.isLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = RoseGold)
+                ) {
+                    if (state.isLoading) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.height(22.dp))
+                    } else {
+                        Text(if (state.mode == AuthMode.SIGN_IN) "Sign in" else "Verify & create account")
+                    }
                 }
             }
         }
