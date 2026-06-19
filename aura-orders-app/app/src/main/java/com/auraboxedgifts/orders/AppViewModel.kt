@@ -22,7 +22,12 @@ import com.auraboxedgifts.orders.data.Product
 import com.auraboxedgifts.orders.data.ProductPayload
 import com.auraboxedgifts.orders.data.TokenStore
 import com.auraboxedgifts.orders.data.Hamper
-import com.auraboxedgifts.orders.data.MobileAiCartContext
+import com.auraboxedgifts.orders.BuildConfig
+import com.auraboxedgifts.orders.voice.AuraLiveAudioPlayer
+import com.auraboxedgifts.orders.voice.AuraLiveAudioRecorder
+import com.auraboxedgifts.orders.voice.AuraLiveVoiceClient
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import com.auraboxedgifts.orders.data.StoreSettings
 import com.auraboxedgifts.orders.data.VerifyPaymentRequest
 import com.auraboxedgifts.orders.data.isPaid
@@ -175,16 +180,17 @@ data class PaymentLaunchData(
     val customerPhone: String
 )
 
-data class AiChatMessage(
-    val role: String,
-    val text: String
-)
+enum class AuraVoicePhase {
+    Idle, Connecting, Ready, Listening, Speaking, Error
+}
 
-data class AiUiState(
-    val messages: List<AiChatMessage> = emptyList(),
-    val isLoading: Boolean = false,
-    val error: String? = null,
-    val ready: Boolean = true
+data class AuraVoiceUiState(
+    val phase: AuraVoicePhase = AuraVoicePhase.Idle,
+    val statusText: String = "Talk to Aura AI",
+    val isSessionActive: Boolean = false,
+    val isMicMuted: Boolean = false,
+    val audioLevel: Float = 0f,
+    val error: String? = null
 )
 
 sealed class AiNavigationEvent {
@@ -271,8 +277,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val _mapsConfig = MutableStateFlow(AppConfig())
     val mapsConfig: StateFlow<AppConfig> = _mapsConfig.asStateFlow()
 
-    private val _aiState = MutableStateFlow(AiUiState())
-    val aiState: StateFlow<AiUiState> = _aiState.asStateFlow()
+    private val _aiState = MutableStateFlow(AuraVoiceUiState())
+    val aiState: StateFlow<AuraVoiceUiState> = _aiState.asStateFlow()
+
+    private val gson = Gson()
+    private var liveVoiceClient: AuraLiveVoiceClient? = null
+    private var liveAudioRecorder: AuraLiveAudioRecorder? = null
+    private var liveAudioPlayer: AuraLiveAudioPlayer? = null
+    private var liveMicSending = true
 
     private val _aiNavigation = MutableSharedFlow<AiNavigationEvent>()
     val aiNavigation: SharedFlow<AiNavigationEvent> = _aiNavigation.asSharedFlow()
@@ -1091,67 +1103,175 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         registerPushTokenIfAvailable()
     }
 
-    fun sendAiMessage(message: String, screen: String = "shop") {
-        val trimmed = message.trim()
-        if (trimmed.isBlank() || _aiState.value.isLoading) return
-        val userMsg = AiChatMessage("user", trimmed)
-        _aiState.value = _aiState.value.copy(
-            messages = _aiState.value.messages + userMsg,
-            isLoading = true,
-            error = null
+    fun startAuraVoiceSession() {
+        if (_aiState.value.isSessionActive) return
+        liveMicSending = true
+        _aiState.value = AuraVoiceUiState(
+            phase = AuraVoicePhase.Connecting,
+            statusText = "Connecting…",
+            isSessionActive = true
         )
+        val wsUrl = BuildConfig.API_BASE_URL.trimEnd('/')
+            .replace("https://", "wss://")
+            .replace("http://", "ws://") + "?platform=android"
+
+        liveAudioPlayer = AuraLiveAudioPlayer()
+        liveVoiceClient = AuraLiveVoiceClient(wsUrl, voiceListener()).also { it.connect() }
+    }
+
+    fun stopAuraVoiceSession() {
+        liveAudioRecorder?.stop()
+        liveAudioRecorder = null
+        liveAudioPlayer?.release()
+        liveAudioPlayer = null
+        liveVoiceClient?.disconnect()
+        liveVoiceClient = null
+        liveMicSending = true
+        _aiState.value = AuraVoiceUiState()
+    }
+
+    fun toggleAuraVoiceMute() {
+        liveMicSending = !liveMicSending
+        _aiState.value = _aiState.value.copy(
+            isMicMuted = !liveMicSending,
+            statusText = if (liveMicSending) {
+                if (_aiState.value.phase == AuraVoicePhase.Speaking) "Speaking…" else "Listening…"
+            } else {
+                "Mic muted"
+            }
+        )
+    }
+
+    private fun voiceListener() = object : AuraLiveVoiceClient.Listener {
+        override fun onStatus(status: String, connected: Boolean) {
+            val phase = when {
+                connected -> AuraVoicePhase.Ready
+                status.contains("disconnect", ignoreCase = true) -> AuraVoicePhase.Idle
+                else -> AuraVoicePhase.Connecting
+            }
+            _aiState.value = _aiState.value.copy(
+                statusText = status,
+                phase = phase,
+                error = null,
+                isSessionActive = connected || _aiState.value.isSessionActive
+            )
+            if (connected) beginAuraListening()
+        }
+
+        override fun onError(message: String) {
+            _aiState.value = _aiState.value.copy(
+                phase = AuraVoicePhase.Error,
+                error = message,
+                statusText = "Error"
+            )
+        }
+
+        override fun onAudioChunk(base64Pcm: String) {
+            liveAudioPlayer?.enqueueBase64Pcm(base64Pcm)
+            _aiState.value = _aiState.value.copy(
+                phase = AuraVoicePhase.Speaking,
+                statusText = "Speaking…"
+            )
+        }
+
+        override fun onInterrupted() {
+            liveAudioPlayer?.stopAll()
+            beginAuraListening()
+        }
+
+        override fun onTurnComplete() {
+            beginAuraListening()
+        }
+
+        override fun onMobileAction(action: JsonObject) {
+            viewModelScope.launch { dispatchMobileAction(action) }
+        }
+
+        override fun onCalculateCartTotal(requestId: String) {
+            sendCartTotalsToVoice(requestId)
+        }
+    }
+
+    private fun beginAuraListening() {
+        liveAudioRecorder?.stop()
+        var recorderRef: AuraLiveAudioRecorder? = null
+        recorderRef = AuraLiveAudioRecorder(
+            onPcmChunk = { pcm ->
+                if (!liveMicSending) return@AuraLiveAudioRecorder
+                val encoded = recorderRef?.encodeBase64(pcm) ?: return@AuraLiveAudioRecorder
+                liveVoiceClient?.sendAudio(encoded)
+            },
+            onLevel = { level ->
+                if (_aiState.value.phase == AuraVoicePhase.Listening) {
+                    _aiState.value = _aiState.value.copy(audioLevel = level)
+                }
+            }
+        )
+        liveAudioRecorder = recorderRef
+        if (recorderRef.start()) {
+            _aiState.value = _aiState.value.copy(
+                phase = AuraVoicePhase.Listening,
+                statusText = if (liveMicSending) "Listening…" else "Mic muted"
+            )
+        } else {
+            _aiState.value = _aiState.value.copy(
+                phase = AuraVoicePhase.Error,
+                error = "Microphone unavailable",
+                statusText = "Mic error"
+            )
+        }
+    }
+
+    private fun sendCartTotalsToVoice(requestId: String) {
         viewModelScope.launch {
             try {
-                val history = _aiState.value.messages.dropLast(1).takeLast(10).map {
-                    mapOf("role" to it.role, "content" to it.text)
-                }
-                val cart = _cartState.value
-                val cartContext = if (cart.items.isNotEmpty()) {
-                    MobileAiCartContext(
-                        itemCount = cartItemCount(),
-                        subtotal = cartSubtotal(),
-                        shipping = shippingRate(),
-                        total = cartGrandTotal()
-                    )
-                } else null
-                val result = repository.mobileAiChat(trimmed, history, cartContext, screen)
-                _aiState.value = _aiState.value.copy(
-                    messages = _aiState.value.messages + AiChatMessage("assistant", result.reply),
-                    isLoading = false
+                val items = _cartState.value.items
+                val cart = if (items.isNotEmpty()) repository.calculateCart(items) else Cart()
+                val itemsPayload = items.map { mapOf("productId" to it.productId, "qty" to it.qty) }
+                liveVoiceClient?.sendCartTotalsResponse(
+                    requestId,
+                    gson.toJson(itemsPayload),
+                    gson.toJson(cart)
                 )
-                dispatchAiActions(result.actions)
-            } catch (e: ApiException) {
-                _aiState.value = _aiState.value.copy(isLoading = false, error = e.message)
-            } catch (e: Exception) {
-                _aiState.value = _aiState.value.copy(isLoading = false, error = e.message ?: "Aura AI unavailable")
+            } catch (_: Exception) {
+                liveVoiceClient?.sendCartTotalsResponse(requestId, "[]", gson.toJson(Cart()))
             }
         }
     }
 
-    private suspend fun dispatchAiActions(actions: List<com.auraboxedgifts.orders.data.MobileAiAction>) {
-        for (action in actions) {
-            when (action.type) {
-                "navigate_shop" -> _aiNavigation.emit(AiNavigationEvent.Shop)
-                "navigate_cart" -> _aiNavigation.emit(AiNavigationEvent.Cart)
-                "navigate_account" -> _aiNavigation.emit(AiNavigationEvent.Account)
-                "navigate_checkout" -> _aiNavigation.emit(AiNavigationEvent.Checkout)
-                "view_product" -> action.productId?.takeIf { it.isNotBlank() }?.let {
-                    _aiNavigation.emit(AiNavigationEvent.Product(it))
-                }
-                "add_to_cart" -> action.productId?.takeIf { it.isNotBlank() }?.let { id ->
-                    addToCart(id, action.qty ?: 1)
-                    _aiNavigation.emit(AiNavigationEvent.AddToCart(id))
-                }
-                "search_products" -> action.query?.takeIf { it.isNotBlank() }?.let {
-                    setCatalogSearch(it)
-                    _aiNavigation.emit(AiNavigationEvent.Search(it))
-                }
+    private suspend fun dispatchMobileAction(action: JsonObject) {
+        when (action.get("type")?.asString) {
+            "navigate_shop" -> _aiNavigation.emit(AiNavigationEvent.Shop)
+            "navigate_cart" -> _aiNavigation.emit(AiNavigationEvent.Cart)
+            "navigate_account" -> _aiNavigation.emit(AiNavigationEvent.Account)
+            "navigate_checkout" -> {
+                prepareCheckout()
+                _aiNavigation.emit(AiNavigationEvent.Checkout)
+            }
+            "view_product" -> action.get("productId")?.asString?.takeIf { it.isNotBlank() }?.let {
+                loadProductDetail(it)
+                _aiNavigation.emit(AiNavigationEvent.Product(it))
+            }
+            "add_to_cart" -> action.get("productId")?.asString?.takeIf { it.isNotBlank() }?.let { id ->
+                addToCart(id, action.get("qty")?.asInt ?: 1)
+            }
+            "search_products" -> action.get("query")?.asString?.takeIf { it.isNotBlank() }?.let { query ->
+                setCatalogSearch(query)
+                _aiNavigation.emit(AiNavigationEvent.Search(query))
             }
         }
     }
 
-    fun clearAiChat() {
-        _aiState.value = AiUiState()
+    override fun onCleared() {
+        stopAuraVoiceSession()
+        super.onCleared()
+    }
+
+    fun sendAiMessage(message: String, screen: String = "shop") {
+        // Text fallback — voice session is primary; kept for compatibility.
+        if (message.isNotBlank()) {
+            _snackbarMessage.value = "Use voice mode — tap the orb to talk to Aura"
+        }
     }
 }
 

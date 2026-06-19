@@ -262,13 +262,54 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                     }
 
                     auraComposable("aura_ai") {
+                        val micPermissionLauncher = rememberLauncherForActivityResult(
+                            ActivityResultContracts.RequestPermission()
+                        ) { granted ->
+                            if (granted) {
+                                viewModel.startAuraVoiceSession()
+                            } else {
+                                viewModel.stopAuraVoiceSession()
+                            }
+                        }
+
+                        LaunchedEffect(Unit) {
+                            if (ContextCompat.checkSelfPermission(
+                                    this@MainActivity,
+                                    Manifest.permission.RECORD_AUDIO
+                                ) == PackageManager.PERMISSION_GRANTED
+                            ) {
+                                viewModel.startAuraVoiceSession()
+                            } else {
+                                micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                            }
+                        }
+
+                        DisposableEffect(Unit) {
+                            onDispose { viewModel.stopAuraVoiceSession() }
+                        }
+
                         AuraAiScreen(
                             state = aiState,
-                            onBack = { navController.popBackStack() },
-                            onSend = { viewModel.sendAiMessage(it, screen = "aura_ai") },
-                            onSpeak = { text ->
-                                textToSpeech?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "aura_ai_reply")
-                            }
+                            onBack = {
+                                viewModel.stopAuraVoiceSession()
+                                navController.popBackStack()
+                            },
+                            onStartSession = {
+                                if (ContextCompat.checkSelfPermission(
+                                        this@MainActivity,
+                                        Manifest.permission.RECORD_AUDIO
+                                    ) == PackageManager.PERMISSION_GRANTED
+                                ) {
+                                    viewModel.startAuraVoiceSession()
+                                } else {
+                                    micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                }
+                            },
+                            onEndSession = {
+                                viewModel.stopAuraVoiceSession()
+                                navController.popBackStack()
+                            },
+                            onToggleMute = viewModel::toggleAuraVoiceMute
                         )
                     }
 

@@ -53,6 +53,11 @@ const mobileToolDeclarations = [
             },
             required: ['query']
         }
+    },
+    {
+        name: 'calculate_cart_total',
+        description: 'Read the current cart subtotal, shipping, and grand total.',
+        parameters: { type: 'object', properties: {} }
     }
 ];
 

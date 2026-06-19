@@ -1567,6 +1567,8 @@ const { SYSTEM_PROMPT } = require('./ai/systemPrompt');
 const { toolDeclarations } = require('./ai/toolDeclarations');
 const { chatWithAura, buildSuggestions } = require('./ai/textChat');
 const { chatWithMobileAura } = require('./ai/mobileAi');
+const { buildMobileLiveInstruction, executeMobileLiveTool, MOBILE_LIVE_KICKOFF } = require('./ai/liveMobileHandler');
+const { mobileToolDeclarations } = require('./ai/mobileTools');
 const { registerToken, sendCartReminder } = require('./fcm');
 
 const AI_PUBLIC_DIR = path.join(__dirname, 'public');
@@ -1853,7 +1855,15 @@ const GEMINI_KICKOFF_TEXT = '[SYSTEM NOTE: The customer just opened Aura AI on t
 
 wss.on('connection', (clientWs, request) => {
     const clientIp = request?.socket?.remoteAddress || 'unknown';
-    console.log(`[WS] Aura AI client connected (${clientIp})`);
+    let isMobileClient = false;
+    try {
+        const host = request.headers.host || 'localhost';
+        const requestUrl = new URL(request.url || '/', `http://${host}`);
+        isMobileClient = requestUrl.searchParams.get('platform') === 'android';
+    } catch (_) {
+        isMobileClient = false;
+    }
+    console.log(`[WS] Aura AI client connected (${clientIp})${isMobileClient ? ' [android]' : ''}`);
 
     let geminiSession = null;
     let geminiReady = false;
@@ -1909,6 +1919,25 @@ wss.on('connection', (clientWs, request) => {
 
                                 console.log(`[AI_TOOL] ${fc.name} ${JSON.stringify(args)}`);
                                 let response = { result: 'ok' };
+
+                                if (isMobileClient) {
+                                    const mobileResult = await executeMobileLiveTool(fc, clientWs, {
+                                        getSellable,
+                                        resolveProductId,
+                                        lastViewedProduct,
+                                        requestCartTotalsFromClient,
+                                        formatCartTotalsMessage,
+                                        calculateCart,
+                                        sleep
+                                    });
+                                    if (mobileResult.lastViewedProduct) {
+                                        lastViewedProduct = mobileResult.lastViewedProduct;
+                                    }
+                                    response = mobileResult.response;
+                                    toolDedupe.set(dedupeKey, { ts: Date.now(), response });
+                                    functionResponses.push({ id: fc.id, name: fc.name, response });
+                                    continue;
+                                }
 
                                 if (fc.name === 'send_message') {
                                     response = await sendEmailNotification(
@@ -2142,8 +2171,12 @@ wss.on('connection', (clientWs, request) => {
             },
             config: {
                 responseModalities: [Modality.AUDIO],
-                systemInstruction: SYSTEM_PROMPT,
-                tools: [{ googleSearch: {} }, { functionDeclarations: toolDeclarations }],
+                systemInstruction: isMobileClient
+                    ? buildMobileLiveInstruction(getCatalog, getSite, getSettings)
+                    : SYSTEM_PROMPT,
+                tools: isMobileClient
+                    ? [{ functionDeclarations: mobileToolDeclarations }]
+                    : [{ googleSearch: {} }, { functionDeclarations: toolDeclarations }],
                 speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
                 thinkingLevel: 'minimal',
                 contextWindowCompression: { slidingWindow: {} }
@@ -2151,10 +2184,12 @@ wss.on('connection', (clientWs, request) => {
             });
 
             geminiReady = true;
-            console.log('[Gemini] Live session ready');
+            console.log(`[Gemini] Live session ready${isMobileClient ? ' (android)' : ''}`);
             clientWs.send(JSON.stringify({ type: 'status', status: 'connected' }));
             try {
-                geminiSession.sendRealtimeInput({ text: GEMINI_KICKOFF_TEXT });
+                geminiSession.sendRealtimeInput({
+                    text: isMobileClient ? MOBILE_LIVE_KICKOFF : GEMINI_KICKOFF_TEXT
+                });
             } catch (kickErr) {
                 console.warn('[Gemini] Kickoff message failed:', kickErr.message);
             }

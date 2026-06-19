@@ -1,238 +1,262 @@
 package com.auraboxedgifts.orders.ui.screens
 
-import android.app.Activity
-import android.content.Intent
-import android.speech.RecognizerIntent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.Send
-import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Mic
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.outlined.MicOff
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.auraboxedgifts.orders.AiChatMessage
-import com.auraboxedgifts.orders.AiUiState
-import com.auraboxedgifts.orders.ui.theme.Cream
+import com.auraboxedgifts.orders.AuraVoicePhase
+import com.auraboxedgifts.orders.AuraVoiceUiState
 import com.auraboxedgifts.orders.ui.theme.RoseGold
-import com.auraboxedgifts.orders.ui.theme.TextDark
-import com.auraboxedgifts.orders.ui.theme.TextMedium
+
+private val AuraDark = Color(0xFF2A1F1A)
+private val AuraDarkMid = Color(0xFF3A2A1F)
+private val AuraRose = Color(0xFFB76E79)
+private val AuraRoseLight = Color(0xFFD4919B)
+private val AuraGold = Color(0xFFC9A96E)
+private val EndRed = Color(0xFFFF6B6B)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuraAiScreen(
-    state: AiUiState,
+    state: AuraVoiceUiState,
     onBack: () -> Unit,
-    onSend: (String) -> Unit,
-    onSpeak: (String) -> Unit = {}
+    onStartSession: () -> Unit,
+    onEndSession: () -> Unit,
+    onToggleMute: () -> Unit
 ) {
-    var input by remember { mutableStateOf("") }
-    val listState = rememberLazyListState()
-    val context = LocalContext.current
+    val infinite = rememberInfiniteTransition(label = "auraOrb")
+    val pulse by infinite.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = when (state.phase) {
+                    AuraVoicePhase.Speaking -> 800
+                    AuraVoicePhase.Listening -> 2000
+                    else -> 1600
+                },
+                easing = LinearEasing
+            ),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
 
-    val speechLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val spoken = result.data
-                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                ?.firstOrNull()
-                ?.trim()
-            if (!spoken.isNullOrBlank()) {
-                onSend(spoken)
-            }
-        }
+    val orbScale = when (state.phase) {
+        AuraVoicePhase.Listening -> pulse * (1f + state.audioLevel * 0.25f)
+        AuraVoicePhase.Speaking -> pulse
+        AuraVoicePhase.Connecting -> pulse
+        else -> 1f
     }
 
-    LaunchedEffect(state.messages.size) {
-        if (state.messages.isNotEmpty()) {
-            listState.animateScrollToItem(state.messages.lastIndex)
-        }
-    }
-
-    LaunchedEffect(state.messages.lastOrNull()) {
-        val last = state.messages.lastOrNull()
-        if (last?.role == "assistant") onSpeak(last.text)
+    val orbBrush = when (state.phase) {
+        AuraVoicePhase.Speaking -> Brush.linearGradient(listOf(AuraGold, Color(0xFFE8D5B0), Color(0xFFB08D4F)))
+        else -> Brush.linearGradient(listOf(AuraRose, AuraRoseLight, Color(0xFF9C5A64)))
     }
 
     Scaffold(
-        containerColor = Cream,
+        containerColor = AuraDark,
         topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = RoseGold)
-                        Text("Aura AI", style = MaterialTheme.typography.titleLarge)
-                    }
+                    Text(
+                        "Aura Voice AI",
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleLarge
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Cream)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = AuraDark)
             )
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .imePadding()
+                .background(Brush.verticalGradient(listOf(AuraDark, AuraDarkMid, AuraDark)))
+                .navigationBarsPadding()
         ) {
-            if (state.messages.isEmpty()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
                 Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .padding(24.dp),
+                        .size(220.dp)
+                        .clickable(enabled = !state.isSessionActive) { onStartSession() },
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = RoseGold, modifier = Modifier.size(48.dp))
-                        Text("Your gift concierge", style = MaterialTheme.typography.titleMedium, color = TextDark)
-                        Text(
-                            "Ask about hampers, gifts, or say \"add to cart\" and \"open checkout\".",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextMedium
+                    if (state.phase == AuraVoicePhase.Listening || state.phase == AuraVoicePhase.Speaking) {
+                        Box(
+                            modifier = Modifier
+                                .size(200.dp)
+                                .scale(orbScale * 1.08f)
+                                .clip(CircleShape)
+                                .background(AuraRose.copy(alpha = 0.15f))
                         )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(140.dp)
+                            .scale(orbScale)
+                            .clip(CircleShape)
+                            .background(orbBrush)
+                            .border(2.dp, AuraRoseLight.copy(alpha = 0.45f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(96.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.18f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                if (state.isMicMuted) Icons.Outlined.MicOff else Icons.Outlined.Mic,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(42.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(28.dp))
+
+                Text(
+                    text = state.statusText,
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = when {
+                        !state.isSessionActive -> "Tap the orb to start a voice conversation"
+                        state.isMicMuted -> "Microphone is muted — tap mic to unmute"
+                        state.phase == AuraVoicePhase.Speaking -> "Aura is responding…"
+                        state.phase == AuraVoicePhase.Listening -> "Speak naturally about gifts & hampers"
+                        state.phase == AuraVoicePhase.Connecting -> "Connecting to Gemini Live 3.1…"
+                        else -> "Powered by Gemini Live on aura.devshubh.me"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AuraRoseLight.copy(alpha = 0.85f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+
+                state.error?.let { err ->
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = err,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = EndRed,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            if (state.isSessionActive) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = onToggleMute,
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = if (state.isMicMuted) 0.22f else 0.12f))
+                    ) {
+                        Icon(
+                            if (state.isMicMuted) Icons.Outlined.MicOff else Icons.Outlined.Mic,
+                            contentDescription = if (state.isMicMuted) "Unmute" else "Mute",
+                            tint = if (state.isMicMuted) EndRed else Color.White
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .border(2.dp, EndRed, RoundedCornerShape(50))
+                            .clickable { onEndSession() }
+                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = null, tint = EndRed, modifier = Modifier.size(18.dp))
+                        Text("End", color = EndRed, style = MaterialTheme.typography.labelLarge)
                     }
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    state = listState,
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 32.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(RoseGold)
+                        .clickable { onStartSession() }
+                        .padding(horizontal = 28.dp, vertical = 14.dp)
                 ) {
-                    items(state.messages) { msg ->
-                        ChatBubble(msg)
-                    }
-                    if (state.isLoading) {
-                        item {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-                                CircularProgressIndicator(modifier = Modifier.size(22.dp), color = RoseGold, strokeWidth = 2.dp)
-                            }
-                        }
-                    }
-                }
-            }
-
-            state.error?.let {
-                Text(
-                    it,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.Bottom
-            ) {
-                IconButton(
-                    onClick = {
-                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                            putExtra(RecognizerIntent.EXTRA_PROMPT, "Ask Aura about gifts…")
-                        }
-                        speechLauncher.launch(intent)
-                    },
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(Icons.Outlined.Mic, contentDescription = "Voice", tint = RoseGold)
-                }
-                OutlinedTextField(
-                    value = input,
-                    onValueChange = { input = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Ask Aura…") },
-                    shape = RoundedCornerShape(20.dp),
-                    maxLines = 3
-                )
-                FilledIconButton(
-                    onClick = {
-                        if (input.isNotBlank()) {
-                            onSend(input)
-                            input = ""
-                        }
-                    },
-                    modifier = Modifier.size(48.dp),
-                    enabled = !state.isLoading && input.isNotBlank()
-                ) {
-                    Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = "Send")
+                    Text("Start voice session", color = Color.White, style = MaterialTheme.typography.labelLarge)
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ChatBubble(message: AiChatMessage) {
-    val isUser = message.role == "user"
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
-    ) {
-        Text(
-            text = message.text,
-            modifier = Modifier
-                .background(
-                    color = if (isUser) RoseGold else Color.White,
-                    shape = RoundedCornerShape(
-                        topStart = 18.dp,
-                        topEnd = 18.dp,
-                        bottomStart = if (isUser) 18.dp else 4.dp,
-                        bottomEnd = if (isUser) 4.dp else 18.dp
-                    )
-                )
-                .padding(horizontal = 14.dp, vertical = 10.dp)
-                .fillMaxWidth(0.88f),
-            color = if (isUser) Color.White else TextDark,
-            style = MaterialTheme.typography.bodyMedium
-        )
     }
 }
