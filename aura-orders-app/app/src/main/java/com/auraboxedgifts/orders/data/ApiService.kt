@@ -86,6 +86,17 @@ interface AuraApiService {
     @POST("/api/auth/verify-otp")
     suspend fun verifyOtp(@Body body: VerifyOtpRequest): Response<AuthTokenResponse>
 
+    @POST("/api/auth/set-password")
+    suspend fun setPassword(
+        @Header("Authorization") auth: String,
+        @Body body: SetPasswordRequest
+    ): Response<AuthTokenResponse>
+
+    @POST("/api/auth/reset-password")
+    suspend fun resetPassword(
+        @Body body: ResetPasswordRequest
+    ): Response<AuthTokenResponse>
+
     @GET("/api/auth/me")
     suspend fun getMe(@Header("Authorization") auth: String): Response<ApiResponse<UserProfile>>
 
@@ -154,8 +165,8 @@ class AuraRepository(private val api: AuraApiService) {
         return body.token to body.user
     }
 
-    suspend fun sendOtp(email: String) {
-        val response = api.sendOtp(OtpRequest(email.trim().lowercase()))
+    suspend fun sendOtp(email: String, signUp: Boolean = false) {
+        val response = api.sendOtp(OtpRequest(email.trim().lowercase(), signUp))
         val body = response.body()
         if (!response.isSuccessful || body?.success != true) {
             throw ApiException(body?.error ?: body?.message ?: "Could not send OTP")
@@ -167,6 +178,24 @@ class AuraRepository(private val api: AuraApiService) {
         val body = response.body()
         if (!response.isSuccessful || body?.success != true || body.token.isNullOrBlank()) {
             throw ApiException(body?.error ?: "Invalid OTP")
+        }
+        return body.token to body.user
+    }
+
+    suspend fun setPassword(token: String, password: String, name: String?): UserProfile? {
+        val response = api.setPassword(bearer(token), SetPasswordRequest(password, name))
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) {
+            throw ApiException(body?.error ?: "Could not set password")
+        }
+        return body.user
+    }
+
+    suspend fun resetPassword(email: String, otp: String, newPassword: String): Pair<String, UserProfile?> {
+        val response = api.resetPassword(ResetPasswordRequest(email.trim().lowercase(), otp.trim(), newPassword))
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true || body.token.isNullOrBlank()) {
+            throw ApiException(body?.error ?: "Could not reset password")
         }
         return body.token to body.user
     }

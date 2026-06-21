@@ -1198,10 +1198,39 @@ app.post('/api/auth/set-password', requireAuth, (req, res) => {
     const user = users[email];
     if (!user) return jsonErr(res, 404, 'User not found');
     user.passwordHash = hashPassword(password);
+    // Accept optional name during initial password setup (sign-up flow)
+    const name = String(req.body?.name || '').trim();
+    if (name) user.name = name;
     user.updatedAt = new Date().toISOString();
     users[email] = user;
     writeJson(USERS_FILE, users);
     return jsonOk(res, sanitizeUser(user, email));
+});
+
+// Forgot Password — verify OTP and set new password in one step
+app.post('/api/auth/reset-password', (req, res) => {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const otp = String(req.body?.otp || '');
+    const newPassword = String(req.body?.newPassword || '');
+    if (!email || !otp || !newPassword) return jsonErr(res, 400, 'Email, OTP, and new password required');
+    if (newPassword.length < 6) return jsonErr(res, 400, 'Password must be at least 6 characters');
+    const record = otpStore.get(email);
+    if (!record) return jsonErr(res, 400, 'No OTP requested for this email');
+    if (Date.now() > record.expiresAt) {
+        otpStore.delete(email);
+        return jsonErr(res, 400, 'OTP has expired');
+    }
+    if (record.otp !== otp) return jsonErr(res, 400, 'Invalid OTP');
+    otpStore.delete(email);
+    const users = readJson(USERS_FILE, {});
+    const user = users[email];
+    if (!user) return jsonErr(res, 404, 'No account found for this email');
+    user.passwordHash = hashPassword(newPassword);
+    user.updatedAt = new Date().toISOString();
+    users[email] = user;
+    writeJson(USERS_FILE, users);
+    const token = jwt.sign({ email, role: isAdminEmail(email) ? 'admin' : 'user' }, JWT_SECRET, { expiresIn: '30d' });
+    return res.json({ success: true, token, email, user: sanitizeUser(user, email) });
 });
 
 async function handleSendOtp(req, res) {
@@ -1853,14 +1882,25 @@ function friendlyGeminiError(raw) {
 }
 
 const GEMINI_KICKOFF_TEXT = '[SYSTEM NOTE: The customer just opened Aura AI on the Aura Boxed Gifts website. Greet them warmly in one short sentence and ask how you can help with gifts or hampers.]';
+function buildKickoffText(userName) {
+    if (userName) {
+        return `[SYSTEM NOTE: The customer ${userName} just opened Aura AI on the Aura Boxed Gifts website. Their name is ${userName}. Greet them by name warmly in one short sentence and ask how you can help with gifts or hampers.]`;
+    }
+    return GEMINI_KICKOFF_TEXT;
+}
 
 wss.on('connection', (clientWs, request) => {
     const clientIp = request?.socket?.remoteAddress || 'unknown';
     let isMobileClient = false;
+    let clientUserName = null;
     try {
         const host = request.headers.host || 'localhost';
         const requestUrl = new URL(request.url || '/', `http://${host}`);
         isMobileClient = requestUrl.searchParams.get('platform') === 'android';
+        const nameParam = requestUrl.searchParams.get('name');
+        if (nameParam) {
+            clientUserName = decodeURIComponent(nameParam);
+        }
     } catch (_) {
         isMobileClient = false;
     }
@@ -2144,6 +2184,9 @@ wss.on('connection', (clientWs, request) => {
                                 } else if (fc.name === 'show_cart') {
                                     clientWs.send(JSON.stringify({ type: 'show_cart' }));
                                     response = { result: 'Opened cart' };
+                                } else if (fc.name === 'open_login') {
+                                    clientWs.send(JSON.stringify({ type: 'open_login' }));
+                                    response = { result: 'Opened login/signup modal for the user' };
                                 }
 
                                 toolDedupe.set(dedupeKey, { ts: Date.now(), response });
@@ -2190,8 +2233,13 @@ wss.on('connection', (clientWs, request) => {
             console.log(`[Gemini] Live session ready${isMobileClient ? ' (android)' : ''}`);
             clientWs.send(JSON.stringify({ type: 'status', status: 'connected' }));
             try {
+                for (const item of inboundQueue) {
+                    if (item && item.type === 'user_info' && item.name) {
+                        clientUserName = item.name;
+                    }
+                }
                 geminiSession.sendRealtimeInput({
-                    text: isMobileClient ? MOBILE_LIVE_KICKOFF : GEMINI_KICKOFF_TEXT
+                    text: buildKickoffText(clientUserName)
                 });
             } catch (kickErr) {
                 console.warn('[Gemini] Kickoff message failed:', kickErr.message);
@@ -2221,6 +2269,9 @@ wss.on('connection', (clientWs, request) => {
                 geminiSession.sendRealtimeInput({ audio: { data: message.data, mimeType: 'audio/pcm;rate=16000' } });
             } else if (message.type === 'text') {
                 geminiSession.sendRealtimeInput({ text: message.data });
+            } else if (message.type === 'user_info') {
+                // Receive user info before kickoff for personalized greeting
+                if (message.name) clientUserName = message.name;
             } else if (message.type === 'context_update') {
                 if (message.productId || message.productName) {
                     lastViewedProduct = {

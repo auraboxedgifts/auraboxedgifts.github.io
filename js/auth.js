@@ -28,11 +28,15 @@
     modal.querySelector('#authPasswordLoginBlock').style.display = step === 'password' ? '' : 'none';
     modal.querySelector('#authOtpBlock').style.display = step === 'otp' ? '' : 'none';
     modal.querySelector('#authSetPasswordBlock').style.display = step === 'setPassword' ? '' : 'none';
+    modal.querySelector('#authForgotOtpBlock').style.display = step === 'forgotOtp' ? '' : 'none';
+    modal.querySelector('#authResetPasswordBlock').style.display = step === 'resetPassword' ? '' : 'none';
     const subtitle = modal.querySelector('.aura-auth-subtitle');
     if (step === 'email') subtitle.textContent = 'Enter your email to continue.';
     if (step === 'password') subtitle.textContent = 'Welcome back — enter your password.';
     if (step === 'otp') subtitle.textContent = 'First time? Verify with the OTP sent to your email.';
-    if (step === 'setPassword') subtitle.textContent = 'Create a password for faster login next time.';
+    if (step === 'setPassword') subtitle.textContent = 'Create your account profile.';
+    if (step === 'forgotOtp') subtitle.textContent = 'Enter the OTP sent to your email to reset password.';
+    if (step === 'resetPassword') subtitle.textContent = 'Choose a new password for your account.';
   }
 
   function ensureAuthModal() {
@@ -56,7 +60,10 @@
         <div id="authPasswordLoginBlock" style="display:none;">
           <div class="ck-field"><input type="password" id="authPasswordInput" placeholder="Password" autocomplete="current-password"></div>
           <button class="ck-pay-now-btn" id="authPasswordLoginBtn">Login with password</button>
-          <button class="ck-back-btn aura-auth-resend" id="authUseOtpBtn">Use OTP instead</button>
+          <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+            <button class="ck-back-btn aura-auth-resend" id="authUseOtpBtn" style="margin: 0; padding: 4px 8px;">Use OTP instead</button>
+            <button class="ck-back-btn aura-auth-resend" id="authForgotBtn" style="margin: 0; padding: 4px 8px;">Forgot password?</button>
+          </div>
         </div>
         <div id="authOtpBlock" style="display:none;">
           <div class="ck-field"><input type="text" id="authOtpInput" placeholder="Enter 6-digit OTP" inputmode="numeric"></div>
@@ -64,9 +71,20 @@
           <button class="ck-back-btn aura-auth-resend" id="authResendBtn">Resend OTP</button>
         </div>
         <div id="authSetPasswordBlock" style="display:none;">
+          <div class="ck-field"><input type="text" id="authSetNameInput" placeholder="Full Name" autocomplete="name"></div>
           <div class="ck-field"><input type="password" id="authNewPasswordInput" placeholder="New password (min 6 chars)" autocomplete="new-password"></div>
           <div class="ck-field"><input type="password" id="authConfirmPasswordInput" placeholder="Confirm password" autocomplete="new-password"></div>
-          <button class="ck-pay-now-btn" id="authSetPasswordBtn">Save password</button>
+          <button class="ck-pay-now-btn" id="authSetPasswordBtn">Save & login</button>
+        </div>
+        <div id="authForgotOtpBlock" style="display:none;">
+          <div class="ck-field"><input type="text" id="authForgotOtpInput" placeholder="Enter 6-digit OTP" inputmode="numeric"></div>
+          <button class="ck-pay-now-btn" id="authVerifyForgotOtpBtn">Verify OTP</button>
+          <button class="ck-back-btn aura-auth-resend" id="authForgotResendBtn">Resend OTP</button>
+        </div>
+        <div id="authResetPasswordBlock" style="display:none;">
+          <div class="ck-field"><input type="password" id="authResetPasswordInput" placeholder="New password (min 6 chars)" autocomplete="new-password"></div>
+          <div class="ck-field"><input type="password" id="authResetConfirmPasswordInput" placeholder="Confirm new password" autocomplete="new-password"></div>
+          <button class="ck-pay-now-btn" id="authResetPasswordBtn">Reset password</button>
         </div>
       </div>`;
     document.body.appendChild(modal);
@@ -75,9 +93,13 @@
     modal.querySelector('#authContinueBtn').addEventListener('click', handleAuthContinue);
     modal.querySelector('#authPasswordLoginBtn').addEventListener('click', handlePasswordLogin);
     modal.querySelector('#authUseOtpBtn').addEventListener('click', handleSendOtpFromModal);
+    modal.querySelector('#authForgotBtn').addEventListener('click', handleForgotPasswordFlow);
     modal.querySelector('#authVerifyOtpBtn').addEventListener('click', handleVerifyOtp);
     modal.querySelector('#authResendBtn').addEventListener('click', handleResendOtp);
     modal.querySelector('#authSetPasswordBtn').addEventListener('click', handleSetPassword);
+    modal.querySelector('#authVerifyForgotOtpBtn').addEventListener('click', handleVerifyForgotOtp);
+    modal.querySelector('#authForgotResendBtn').addEventListener('click', handleResendOtp);
+    modal.querySelector('#authResetPasswordBtn').addEventListener('click', handleResetPasswordSubmit);
     modal.addEventListener('click', function (e) {
       if (e.target === modal) closeAuthModal();
     });
@@ -132,6 +154,24 @@
     }
   }
 
+  async function handleForgotPasswordFlow() {
+    const modal = ensureAuthModal();
+    const email = modal.querySelector('#authEmailInput').value.trim().toLowerCase();
+    if (!email) return;
+    const btn = modal.querySelector('#authForgotBtn');
+    try {
+      btn.disabled = true;
+      btn.textContent = 'Sending OTP...';
+      await AuraApi.apiFetch('/api/auth/send-otp', { method: 'POST', body: JSON.stringify({ email }) });
+      setAuthStep(modal, 'forgotOtp');
+    } catch (err) {
+      alert(`Failed to send OTP: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Forgot password?';
+    }
+  }
+
   async function handleSendOtpFromModal() {
     const modal = ensureAuthModal();
     const email = modal.querySelector('#authEmailInput').value.trim().toLowerCase();
@@ -172,6 +212,43 @@
     }
   }
 
+  async function handleVerifyForgotOtp() {
+    const modal = ensureAuthModal();
+    const otp = modal.querySelector('#authForgotOtpInput').value.trim();
+    if (!otp) return;
+    setAuthStep(modal, 'resetPassword');
+  }
+
+  async function handleResetPasswordSubmit() {
+    const modal = ensureAuthModal();
+    const email = modal.querySelector('#authEmailInput').value.trim().toLowerCase();
+    const otp = modal.querySelector('#authForgotOtpInput').value.trim();
+    const pw = modal.querySelector('#authResetPasswordInput').value;
+    const confirm = modal.querySelector('#authResetConfirmPasswordInput').value;
+    if (pw.length < 6) return alert('Password must be at least 6 characters.');
+    if (pw !== confirm) return alert('Passwords do not match.');
+    const btn = modal.querySelector('#authResetPasswordBtn');
+    try {
+      btn.disabled = true;
+      btn.textContent = 'Resetting...';
+      const response = await AuraApi.apiFetch('/api/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ email, otp, newPassword: pw })
+      });
+      if (!response.token) throw new Error('Token missing');
+      localStorage.setItem('auraAuthToken', response.token);
+      user = response.user || null;
+      await refreshUser();
+      renderAccountState();
+      closeAuthModal();
+    } catch (err) {
+      alert(`Could not reset password: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Reset password';
+    }
+  }
+
   async function handleResendOtp() {
     const modal = ensureAuthModal();
     const email = modal.querySelector('#authEmailInput').value.trim().toLowerCase();
@@ -186,15 +263,17 @@
 
   async function handleSetPassword() {
     const modal = ensureAuthModal();
+    const name = modal.querySelector('#authSetNameInput').value.trim();
     const pw = modal.querySelector('#authNewPasswordInput').value;
     const confirm = modal.querySelector('#authConfirmPasswordInput').value;
+    if (!name) return alert('Please enter your name.');
     if (pw.length < 6) return alert('Password must be at least 6 characters.');
     if (pw !== confirm) return alert('Passwords do not match.');
     const btn = modal.querySelector('#authSetPasswordBtn');
     try {
       btn.disabled = true;
       btn.textContent = 'Saving...';
-      await AuraApi.apiFetch('/api/auth/set-password', { method: 'POST', body: JSON.stringify({ password: pw }) });
+      await AuraApi.apiFetch('/api/auth/set-password', { method: 'POST', body: JSON.stringify({ password: pw, name }) });
       await refreshUser();
       renderAccountState();
       closeAuthModal();
@@ -202,7 +281,7 @@
       alert(`Could not save password: ${err.message}`);
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Save password';
+      btn.textContent = 'Save & login';
     }
   }
 

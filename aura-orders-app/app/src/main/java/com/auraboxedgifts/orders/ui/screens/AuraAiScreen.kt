@@ -34,12 +34,20 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Hearing
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.outlined.AddShoppingCart
 import androidx.compose.material.icons.outlined.CardGiftcard
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.MicOff
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -92,6 +100,7 @@ fun AuraAiScreen(
     onStartSession: () -> Unit,
     onEndSession: () -> Unit,
     onToggleMute: () -> Unit,
+    onToggleSpeaker: () -> Unit,
     onAddToCart: (String) -> Unit = {}
 ) {
     val isConnecting = state.phase == AuraVoicePhase.Connecting
@@ -148,6 +157,7 @@ fun AuraAiScreen(
                         onStartSession = onStartSession,
                         onEndSession = onEndSession,
                         onToggleMute = onToggleMute,
+                        onToggleSpeaker = onToggleSpeaker,
                         onAddToCart = onAddToCart
                     )
                 } else {
@@ -155,7 +165,8 @@ fun AuraAiScreen(
                         state = state,
                         onStartSession = onStartSession,
                         onEndSession = onEndSession,
-                        onToggleMute = onToggleMute
+                        onToggleMute = onToggleMute,
+                        onToggleSpeaker = onToggleSpeaker
                     )
                 }
             }
@@ -236,7 +247,8 @@ private fun CenteredVoiceLayout(
     state: AuraVoiceUiState,
     onStartSession: () -> Unit,
     onEndSession: () -> Unit,
-    onToggleMute: () -> Unit
+    onToggleMute: () -> Unit,
+    onToggleSpeaker: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -265,6 +277,7 @@ private fun CenteredVoiceLayout(
             onStartSession = onStartSession,
             onEndSession = onEndSession,
             onToggleMute = onToggleMute,
+            onToggleSpeaker = onToggleSpeaker,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
@@ -320,8 +333,10 @@ private fun ShowcaseVoiceLayout(
     onStartSession: () -> Unit,
     onEndSession: () -> Unit,
     onToggleMute: () -> Unit,
+    onToggleSpeaker: () -> Unit,
     onAddToCart: (String) -> Unit
 ) {
+    val scope = rememberCoroutineScope()
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
@@ -391,6 +406,7 @@ private fun ShowcaseVoiceLayout(
             onStartSession = onStartSession,
             onEndSession = onEndSession,
             onToggleMute = onToggleMute,
+            onToggleSpeaker = onToggleSpeaker,
             modifier = Modifier.fillMaxWidth()
         )
     }
@@ -401,6 +417,9 @@ private fun ShowcaseGiftCard(
     item: AuraShowcaseItem,
     onAddToCart: () -> Unit
 ) {
+    var isAdded by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
     Column(
         modifier = Modifier
             .width(200.dp)
@@ -467,15 +486,30 @@ private fun ShowcaseGiftCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(AuraRose.copy(alpha = 0.22f))
-                    .clickable(onClick = onAddToCart)
+                    .background(if (isAdded) Color(0xFF2E7D32).copy(alpha = 0.85f) else AuraRose.copy(alpha = 0.22f))
+                    .clickable {
+                        if (!isAdded) {
+                            onAddToCart()
+                            isAdded = true
+                            scope.launch {
+                                kotlinx.coroutines.delay(1500)
+                                isAdded = false
+                            }
+                        }
+                    }
                     .padding(vertical = 10.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Outlined.AddShoppingCart, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Add to cart", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold), color = Color.White)
+                if (isAdded) {
+                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Added", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold), color = Color.White)
+                } else {
+                    Icon(Icons.Outlined.AddShoppingCart, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Add to cart", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold), color = Color.White)
+                }
             }
         }
     }
@@ -601,6 +635,7 @@ private fun VoiceControlsBar(
     onStartSession: () -> Unit,
     onEndSession: () -> Unit,
     onToggleMute: () -> Unit,
+    onToggleSpeaker: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (state.isSessionActive) {
@@ -620,6 +655,19 @@ private fun VoiceControlsBar(
                     if (state.isMicMuted) Icons.Outlined.MicOff else Icons.Outlined.Mic,
                     contentDescription = if (state.isMicMuted) "Unmute" else "Mute",
                     tint = if (state.isMicMuted) EndRed else Color.White
+                )
+            }
+            IconButton(
+                onClick = onToggleSpeaker,
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = if (!state.isSpeakerphoneOn) 0.22f else 0.12f))
+            ) {
+                Icon(
+                    if (state.isSpeakerphoneOn) Icons.Default.VolumeUp else Icons.Default.Hearing,
+                    contentDescription = if (state.isSpeakerphoneOn) "Earpiece Mode" else "Speaker Mode",
+                    tint = Color.White
                 )
             }
             Row(

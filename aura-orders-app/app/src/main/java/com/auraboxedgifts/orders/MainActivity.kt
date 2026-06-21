@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -284,8 +285,9 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                             }
                         }
 
-                        DisposableEffect(Unit) {
-                            onDispose { viewModel.stopAuraVoiceSession() }
+                        BackHandler {
+                            viewModel.stopAuraVoiceSession()
+                            navController.popBackStack()
                         }
 
                         AuraAiScreen(
@@ -310,6 +312,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                                 navController.popBackStack()
                             },
                             onToggleMute = viewModel::toggleAuraVoiceMute,
+                            onToggleSpeaker = viewModel::toggleAuraVoiceSpeaker,
                             onAddToCart = viewModel::addToCart
                         )
                     }
@@ -438,6 +441,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                             onEmailChange = viewModel::updateCustomerAuthEmail,
                             onPasswordChange = viewModel::updateCustomerAuthPassword,
                             onOtpChange = viewModel::updateCustomerAuthOtp,
+                            onNameChange = viewModel::updateCustomerAuthName,
                             onSendOtp = viewModel::sendCustomerOtp,
                             onSignIn = {
                                 viewModel.customerSignIn {
@@ -455,6 +459,18 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                             },
                             onSignUp = {
                                 viewModel.customerSignUp {
+                                    if (redirect == "checkout") {
+                                        viewModel.prepareCheckout()
+                                        navController.navigate("checkout") {
+                                            popUpTo("shop")
+                                        }
+                                    } else {
+                                        navController.popBackStack()
+                                    }
+                                }
+                            },
+                            onResetPassword = {
+                                viewModel.resetCustomerPassword {
                                     if (redirect == "checkout") {
                                         viewModel.prepareCheckout()
                                         navController.navigate("checkout") {

@@ -4,6 +4,7 @@ const {
     buildGiftsShowcase,
     buildProductShowcase,
     buildSearchShowcase,
+    buildCartShowcase,
     showcaseMobileAction
 } = require('./mobileShowcase');
 
@@ -152,6 +153,39 @@ async function executeMobileLiveTool(fc, clientWs, ctx) {
             }
             break;
         }
+        case 'decrease_cart_qty': {
+            const productId = String(args.productId || resolveProductId(args, lastViewedProduct) || '');
+            const sellable = productId ? getSellable(productId) : null;
+            const qty = Math.max(1, Number(args.qty || 1));
+            clientWs.send(JSON.stringify({
+                type: 'mobile_action',
+                action: {
+                    type: 'decrease_cart_qty',
+                    productId,
+                    productName: args.productName || sellable?.name || '',
+                    qty
+                }
+            }));
+            try {
+                await sleep(450);
+                const payload = await requestCartTotalsFromClient(clientWs);
+                const cart = payload?.cart || calculateCart(payload?.items || []);
+                const showcase = buildCartShowcase(cart.lines);
+                sendShowcase(clientWs, showcase);
+                response = {
+                    result: `Decreased quantity of ${args.productName || sellable?.name || 'item'} by ${qty}. ${formatCartTotalsMessage(cart)}`,
+                    productId,
+                    grandTotal: cart.grandTotal
+                };
+            } catch (err) {
+                response = {
+                    result: `Decreased quantity of ${args.productName || sellable?.name || 'item'}.`,
+                    productId,
+                    error: err.message
+                };
+            }
+            break;
+        }
         case 'search_products': {
             const showcase = buildSearchShowcase(getCatalog, getSite, args.query);
             sendShowcase(clientWs, showcase);
@@ -166,6 +200,8 @@ async function executeMobileLiveTool(fc, clientWs, ctx) {
             try {
                 const payload = await requestCartTotalsFromClient(clientWs);
                 const cart = payload?.cart || calculateCart(payload?.items || []);
+                const showcase = buildCartShowcase(cart.lines);
+                sendShowcase(clientWs, showcase);
                 response = {
                     result: formatCartTotalsMessage(cart),
                     subtotal: cart.subtotal,

@@ -109,6 +109,9 @@
         localCart = e.data.cart || [];
         updateAllQtyButtons(localCart);
       }
+      if (e.data.type === 'append_collection') {
+        appendCollection(e.data.url);
+      }
     });
   }
 
@@ -233,7 +236,12 @@
   function updateLocalBadgeCount(cart) {
     var count = cart.reduce(function(s, i) { return s + (i.qty || 1); }, 0);
     document.querySelectorAll('#navCartBadge, .nav-cart-badge').forEach(function(b) {
-      b.textContent = count;
+      if (count > 0) {
+        b.textContent = count;
+        b.style.display = 'flex';
+      } else {
+        b.style.display = 'none';
+      }
     });
     if (lastBadgeCount !== count) {
       bounceBadge();
@@ -293,6 +301,101 @@
       e.stopPropagation();
       sendQtyUpdate(product, productId, 1);
     });
+  }
+
+  const appendedUrls = new Set([window.location.pathname.split('/').pop()]);
+  async function appendCollection(url) {
+    const filename = url.split('/').pop();
+    if (appendedUrls.has(filename)) {
+      const existingTitle = Array.from(document.querySelectorAll('.appended-collection h2, .col-hero-title')).find(function(el) {
+        return el.textContent.trim().toLowerCase() === filename.replace('.html', '').replace('-', ' ').trim().toLowerCase();
+      });
+      if (existingTitle) {
+        existingTitle.scrollIntoView({ behavior: 'smooth' });
+      }
+      return;
+    }
+    appendedUrls.add(filename);
+
+    try {
+      let fetchUrl = url;
+      if (window.location.pathname.indexOf('/collections/') !== -1) {
+        fetchUrl = url.replace(/^collections\//, '');
+      }
+
+      const response = await fetch(fetchUrl);
+      if (!response.ok) return;
+      const htmlText = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlText, 'text/html');
+
+      const newTitle = doc.querySelector('.col-hero-title')?.textContent || '';
+      const newItems = Array.from(doc.querySelectorAll('.col-item'));
+      if (newItems.length === 0) return;
+
+      const section = document.createElement('section');
+      section.className = 'col-gallery appended-collection';
+      section.style.padding = '20px 40px';
+
+      const titleEl = document.createElement('h2');
+      titleEl.className = 'col-cta-title';
+      titleEl.style.cssText = 'text-align: left; margin-bottom: 20px; border-bottom: 2px solid var(--rose-gold); padding-bottom: 8px; font-family: "Playfair Display", serif;';
+      titleEl.textContent = newTitle;
+      section.appendChild(titleEl);
+
+      const grid = document.createElement('div');
+      grid.className = 'col-grid';
+      section.appendChild(grid);
+
+      const ctaSection = document.querySelector('.col-cta');
+      if (ctaSection) {
+        ctaSection.parentNode.insertBefore(section, ctaSection);
+      } else {
+        document.body.appendChild(section);
+      }
+
+      const startIdx = images.length;
+      newItems.forEach(function(item, i) {
+        const itemIdx = startIdx + i;
+        item.dataset.idx = itemIdx;
+        item.classList.add('col-item-reveal');
+        item.style.animationDelay = (i * 0.1) + 's';
+        
+        const newItem = item.cloneNode(true);
+        grid.appendChild(newItem);
+
+        images.push({
+          src: newItem.querySelector('img').src,
+          name: newItem.dataset.name || '',
+          price: parseInt(newItem.dataset.price) || 0,
+          img: newItem.dataset.img || newItem.querySelector('img').getAttribute('src')
+        });
+
+        newItem.addEventListener('click', function(e) {
+          if (e.target.closest('.btn-add-cart') || e.target.closest('.btn-qty-control')) return;
+          openLightbox(itemIdx);
+        });
+
+        const btn = newItem.querySelector('.btn-add-cart');
+        if (btn) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var productId = newItem.dataset.id;
+            var product = images[itemIdx];
+            if (product) {
+              sendQtyUpdate(product, productId, 1);
+              replaceWithQtyControl(btn, newItem, product, productId, 1);
+            }
+          });
+        }
+      });
+
+      updateAllQtyButtons(getCartItems());
+      titleEl.scrollIntoView({ behavior: 'smooth' });
+
+    } catch (err) {
+      console.error('[Lightbox] Append collection error:', err);
+    }
   }
 
   function bounceBadge() {

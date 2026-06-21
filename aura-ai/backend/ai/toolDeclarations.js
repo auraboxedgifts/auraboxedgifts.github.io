@@ -110,7 +110,8 @@ const toolDeclarations = [
         description: 'Read cart subtotal, shipping (₹120 when cart not empty), and grand total from the browser cart. Use only when the user asks for totals — not after add_to_cart (that response already includes totals).'
     },
     { name: 'show_cart', description: 'Open shopping cart.' },
-    { name: 'open_checkout', description: 'Open checkout page for the user.' }
+    { name: 'open_checkout', description: 'Open checkout page for the user.' },
+    { name: 'open_login', description: 'Open the login/signup popup modal for the user.' }
 ];
 
 module.exports = { toolDeclarations };

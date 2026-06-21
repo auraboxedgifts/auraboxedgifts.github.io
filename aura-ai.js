@@ -7,11 +7,27 @@ const _auraHost = window.location.hostname;
 const _auraIsLocalHost = _auraHost === 'localhost' || _auraHost === '127.0.0.1';
 
 function getAuraWsUrl() {
-    if (window.AURA_AI_WS_URL) return window.AURA_AI_WS_URL;
-    if (window.AuraApi && window.AuraApi.API_BASE) {
-        return window.AuraApi.API_BASE.replace(/^https:/i, 'wss:').replace(/^http:/i, 'ws:');
+    let base = '';
+    if (window.AURA_AI_WS_URL) {
+        base = window.AURA_AI_WS_URL;
+    } else if (window.AuraApi && window.AuraApi.API_BASE) {
+        base = window.AuraApi.API_BASE.replace(/^https:/i, 'wss:').replace(/^http:/i, 'ws:');
+    } else {
+        base = _auraIsLocalHost ? 'ws://localhost:5013' : 'wss://aura.devshubh.me';
     }
-    return _auraIsLocalHost ? 'ws://localhost:5013' : 'wss://aura.devshubh.me';
+    const params = [];
+    if (window.AuraAuth && typeof window.AuraAuth.getUser === 'function') {
+        const u = window.AuraAuth.getUser();
+        if (u) {
+            if (u.name) params.push('name=' + encodeURIComponent(u.name));
+            if (u.email) params.push('email=' + encodeURIComponent(u.email));
+        }
+    }
+    if (params.length > 0) {
+        const joiner = base.indexOf('?') !== -1 ? '&' : '?';
+        base += joiner + params.join('&');
+    }
+    return base;
 }
 
 let auraWs = null;
@@ -37,8 +53,61 @@ let auraScheduledSources = [];
 
 const auraIsMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-let auraWidgetPanel, auraWidgetText, auraMuteBtn, auraEndBtn, auraOrb, auraVisualizer;
+let auraWidgetPanel, auraWidgetText, auraMuteBtn, auraSpeakerBtn, auraEndBtn, auraOrb, auraVisualizer;
 let auraPendingCollectionCommand = null;
+
+let auraAudioDevices = [];
+let auraCurrentDeviceIndex = 0;
+
+async function initAuraAudioDevices() {
+    try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        auraAudioDevices = devices.filter(d => d.kind === 'audiooutput');
+    } catch (err) {
+        console.warn('[AuraAI] enumerateDevices error:', err);
+    }
+}
+
+async function handleAuraSpeakerToggle(e) {
+    e.stopPropagation();
+    if (!auraPlaybackContext) return;
+    if (auraAudioDevices.length === 0) {
+        await initAuraAudioDevices();
+    }
+    if (auraAudioDevices.length <= 1) {
+        const spkDefault = auraSpeakerBtn.querySelector('.speaker-default');
+        const spkAlt = auraSpeakerBtn.querySelector('.speaker-alternative');
+        if (spkDefault.style.display === 'none') {
+            spkDefault.style.display = 'block';
+            spkAlt.style.display = 'none';
+        } else {
+            spkDefault.style.display = 'none';
+            spkAlt.style.display = 'block';
+        }
+        return;
+    }
+    auraCurrentDeviceIndex = (auraCurrentDeviceIndex + 1) % auraAudioDevices.length;
+    const device = auraAudioDevices[auraCurrentDeviceIndex];
+    try {
+        if (auraPlaybackContext.setSinkId) {
+            await auraPlaybackContext.setSinkId(device.deviceId);
+            console.log('[AuraAI] Switched audio output sink to:', device.label || device.deviceId);
+        }
+    } catch (err) {
+        console.error('[AuraAI] Failed to set sink ID:', err);
+    }
+    
+    const spkDefault = auraSpeakerBtn.querySelector('.speaker-default');
+    const spkAlt = auraSpeakerBtn.querySelector('.speaker-alternative');
+    if (auraCurrentDeviceIndex === 0) {
+        spkDefault.style.display = 'block';
+        spkAlt.style.display = 'none';
+    } else {
+        spkDefault.style.display = 'none';
+        spkAlt.style.display = 'block';
+    }
+}
 
 function createAuraAIWidget() {
     const widgetHTML = `
@@ -76,6 +145,16 @@ function createAuraAIWidget() {
                         <line x1="8" y1="23" x2="16" y2="23"></line>
                     </svg>
                 </button>
+                <button class="aura-speaker-btn" id="auraSpeakerBtn" style="display: none;" title="Switch audio source">
+                    <svg class="speaker-default" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                    <svg class="speaker-alternative" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                        <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                        <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+                    </svg>
+                </button>
                 <button class="aura-end-btn" id="auraEndBtn" style="display: none;">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -92,6 +171,7 @@ function createAuraAIWidget() {
     auraWidgetPanel = document.getElementById('auraWidgetPanel');
     auraWidgetText = document.getElementById('auraWidgetText');
     auraMuteBtn = document.getElementById('auraMuteBtn');
+    auraSpeakerBtn = document.getElementById('auraSpeakerBtn');
     auraEndBtn = document.getElementById('auraEndBtn');
     auraOrb = document.getElementById('auraOrb');
     auraVisualizer = document.getElementById('auraVisualizer');
@@ -112,6 +192,7 @@ function setupAuraVisualizerCanvas() {
 function setupAuraEventListeners() {
     auraWidgetPanel.addEventListener('click', handleAuraWidgetClick);
     auraMuteBtn.addEventListener('click', handleAuraMuteToggle);
+    auraSpeakerBtn.addEventListener('click', handleAuraSpeakerToggle);
     auraEndBtn.addEventListener('click', handleAuraEndClick);
 }
 
@@ -171,6 +252,16 @@ async function connectToAuraBackend() {
             auraWs.onopen = () => {
                 console.log('[AuraAI] WebSocket open — waiting for Gemini Live…');
                 updateAuraStatus('Starting Aura AI…');
+                if (window.AuraAuth && typeof window.AuraAuth.getUser === 'function') {
+                    const u = window.AuraAuth.getUser();
+                    if (u) {
+                        auraWs.send(JSON.stringify({
+                            type: 'user_info',
+                            name: u.name || '',
+                            email: u.email || ''
+                        }));
+                    }
+                }
             };
 
             auraWs.onmessage = async (event) => {
@@ -262,7 +353,18 @@ function handleAuraBackendMessage(message) {
         case 'navigate':
             // Open collection page in overlay so AI doesn't disconnect
             if (message.url) {
-                openCollectionOverlay(message.url);
+                const overlay = document.getElementById('collection-overlay');
+                const iframe = document.getElementById('collection-iframe');
+                if (overlay && overlay.style.display === 'block' && iframe && iframe.src) {
+                    try {
+                        iframe.contentWindow.postMessage({ type: 'append_collection', url: message.url }, '*');
+                    } catch (err) {
+                        console.error('[AuraAI] Failed to post append_collection:', err);
+                        openCollectionOverlay(message.url);
+                    }
+                } else {
+                    openCollectionOverlay(message.url);
+                }
             }
             break;
         case 'navigate_home':
@@ -321,6 +423,11 @@ function handleAuraBackendMessage(message) {
             } else if (typeof openCartPage === 'function') openCartPage();
             break;
         }
+        case 'open_login':
+            if (window.AuraAuth && typeof window.AuraAuth.openAuthModal === 'function') {
+                window.AuraAuth.openAuthModal();
+            }
+            break;
         case 'view_hamper':
             closeCollectionOverlay();
             setTimeout(() => openAuraHamperFromMessage(message), 350);
@@ -572,17 +679,20 @@ async function handleAuraStartClick() {
     try {
         updateAuraStatus('Connecting...');
         auraMuteBtn.style.display = 'none';
+        auraSpeakerBtn.style.display = 'none';
         auraEndBtn.style.display = 'none';
         await initAuraPlaybackContext();
         await connectToAuraBackend();
         await startAuraMicrophone();
         updateAuraStatus('Listening...');
         auraMuteBtn.style.display = 'flex';
+        auraSpeakerBtn.style.display = 'flex';
         auraEndBtn.style.display = 'flex';
     } catch (error) {
         console.error('Failed to start Aura AI:', error);
         updateAuraStatus('Error - Try again');
         auraMuteBtn.style.display = 'none';
+        auraSpeakerBtn.style.display = 'none';
         auraEndBtn.style.display = 'none';
     }
 }
@@ -600,6 +710,7 @@ function handleAuraEndClick(e) {
     auraOrb.classList.remove('listening', 'speaking');
     auraWidgetText.innerHTML = 'Talk to <span>Aura AI</span>';
     auraMuteBtn.style.display = 'none';
+    auraSpeakerBtn.style.display = 'none';
     auraEndBtn.style.display = 'none';
     auraIsConnected = false;
     auraIsMuted = false;

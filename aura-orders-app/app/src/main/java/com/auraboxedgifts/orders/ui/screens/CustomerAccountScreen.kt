@@ -26,8 +26,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.auraboxedgifts.orders.CustomerOrdersUiState
 import com.auraboxedgifts.orders.data.formatRupee
+import com.auraboxedgifts.orders.data.isPaid
 import com.auraboxedgifts.orders.formatOrderDate
 import com.auraboxedgifts.orders.ui.components.BrandLogo
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.font.FontWeight
+import com.auraboxedgifts.orders.ui.theme.Gold
+import com.auraboxedgifts.orders.ui.theme.RoseLight
 import com.auraboxedgifts.orders.ui.theme.CreamDark
 import com.auraboxedgifts.orders.ui.theme.RoseGold
 import com.auraboxedgifts.orders.ui.theme.TextDark
@@ -85,26 +95,88 @@ fun CustomerAccountScreen(
         if (isLoggedIn) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Signed in", style = MaterialTheme.typography.labelMedium, color = TextLight)
-                    Text(name?.ifBlank { email } ?: email.orEmpty(), style = MaterialTheme.typography.titleLarge, color = TextDark)
-                    if (!name.isNullOrBlank()) {
-                        Text(email.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = TextMedium)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(RoseGold, Gold.copy(alpha = 0.9f))
+                            )
+                        )
+                        .padding(24.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        val initials = (name?.takeIf { it.isNotBlank() } ?: email.orEmpty())
+                            .split(" ")
+                            .mapNotNull { it.firstOrNull()?.uppercaseChar() }
+                            .take(2)
+                            .joinToString("")
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(Color.White.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = initials.ifEmpty { "A" },
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Aura Member",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = name?.ifBlank { email } ?: email.orEmpty(),
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                            if (!name.isNullOrBlank()) {
+                                Text(
+                                    text = email.orEmpty(),
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        color = Color.White.copy(alpha = 0.8f)
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
             }
 
-            Text("Your orders", style = MaterialTheme.typography.titleLarge, modifier = Modifier.fillMaxWidth())
+            Text(
+                text = "Your orders",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                modifier = Modifier.fillMaxWidth()
+            )
 
             when {
                 ordersState.isLoading -> CircularProgressIndicator(color = RoseGold)
                 ordersState.orders.isEmpty() -> {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = CreamDark)
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, RoseGold.copy(alpha = 0.12f))
                     ) {
                         Text(
                             "No orders yet. Your purchases will appear here.",
@@ -119,18 +191,36 @@ fun CustomerAccountScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White)
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, RoseGold.copy(alpha = 0.1f))
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(formatOrderDate(order.createdAt), style = MaterialTheme.typography.labelMedium)
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = formatOrderDate(order.createdAt),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = TextLight
+                                    )
+                                    val statusText = order.status?.replaceFirstChar { it.uppercase() } ?: "Pending"
+                                    Text(
+                                        text = statusText,
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = if (statusText.equals("paid", ignoreCase = true) || order.isPaid()) Color(0xFF2E7D32) else RoseGold
+                                    )
+                                }
                                 Text(
-                                    formatRupee(order.cart?.grandTotal ?: 0.0),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = RoseGold
+                                    text = formatRupee(order.cart?.grandTotal ?: 0.0),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = TextDark
                                 )
                                 Text(
-                                    order.status?.replaceFirstChar { it.uppercase() } ?: "Pending",
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    text = "Order ID: ${order.id}",
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = TextMedium
                                 )
                             }
@@ -143,7 +233,9 @@ fun CustomerAccountScreen(
                 OutlinedButton(
                     onClick = onLogout,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = RoseGold),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RoseGold)
                 ) {
                     Text("Sign out")
                 }
@@ -151,18 +243,19 @@ fun CustomerAccountScreen(
         } else if (!isAdminLoggedIn) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = CreamDark.copy(alpha = 0.5f))
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, RoseGold.copy(alpha = 0.15f))
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
+                    modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
                         "Sign in to track orders and pay at checkout.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextMedium,
+                        style = MaterialTheme.typography.bodyLarge.copy(color = TextDark),
                         textAlign = TextAlign.Center
                     )
                     Button(
@@ -170,10 +263,10 @@ fun CustomerAccountScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(26.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = RoseGold)
                     ) {
-                        Text("Sign in / Sign up")
+                        Text("Sign in / Sign up", style = MaterialTheme.typography.titleMedium.copy(color = Color.White, fontWeight = FontWeight.Bold))
                     }
                 }
             }

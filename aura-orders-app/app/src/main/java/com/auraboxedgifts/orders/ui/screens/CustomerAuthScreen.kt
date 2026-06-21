@@ -33,9 +33,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -58,15 +60,25 @@ fun CustomerAuthScreen(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onOtpChange: (String) -> Unit,
+    onNameChange: (String) -> Unit,
     onSendOtp: () -> Unit,
     onSignIn: () -> Unit,
-    onSignUp: () -> Unit
+    onSignUp: () -> Unit,
+    onResetPassword: () -> Unit
 ) {
     Scaffold(
         containerColor = Cream,
         topBar = {
             TopAppBar(
-                title = { Text(if (state.mode == AuthMode.SIGN_IN) "Sign in" else "Sign up") },
+                title = {
+                    Text(
+                        when (state.mode) {
+                            AuthMode.SIGN_IN -> "Sign in"
+                            AuthMode.SIGN_UP -> "Sign up"
+                            AuthMode.FORGOT_PASSWORD -> "Reset Password"
+                        }
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -87,7 +99,11 @@ fun CustomerAuthScreen(
         ) {
             StaggeredFadeIn(index = 0, modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    "Sign in to checkout and track your orders.",
+                    when (state.mode) {
+                        AuthMode.SIGN_IN -> "Sign in to checkout and track your orders."
+                        AuthMode.SIGN_UP -> "Create an account to track orders and save your information."
+                        AuthMode.FORGOT_PASSWORD -> "Verify your email and set a new password."
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextMedium
                 )
@@ -123,6 +139,7 @@ fun CustomerAuthScreen(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Email") },
                     singleLine = true,
+                    enabled = !state.otpSent,
                     shape = RoundedCornerShape(16.dp),
                     colors = authFieldColors()
                 )
@@ -147,19 +164,95 @@ fun CustomerAuthScreen(
                             shape = RoundedCornerShape(16.dp),
                             colors = authFieldColors()
                         )
-                    } else if (state.otpSent) {
-                        OutlinedTextField(
-                            value = state.otp,
-                            onValueChange = onOtpChange,
+                        Row(
                             modifier = Modifier.fillMaxWidth(),
-                            label = { Text("OTP from email") },
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
-                            colors = authFieldColors()
-                        )
-                    } else {
-                        OutlinedButton(onClick = onSendOtp, modifier = Modifier.fillMaxWidth()) {
-                            Text("Send OTP to email")
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(
+                                onClick = { onModeChange(AuthMode.FORGOT_PASSWORD) }
+                            ) {
+                                Text("Forgot password?", color = RoseGold)
+                            }
+                        }
+                    } else if (mode == AuthMode.SIGN_UP) {
+                        if (!state.otpSent && !state.isOtpVerified) {
+                            OutlinedButton(
+                                onClick = onSendOtp,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = RoseGold),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                if (state.isLoading) {
+                                    CircularProgressIndicator(color = RoseGold, modifier = Modifier.height(20.dp))
+                                } else {
+                                    Text("Send OTP to email")
+                                }
+                            }
+                        } else if (state.otpSent && !state.isOtpVerified) {
+                            OutlinedTextField(
+                                value = state.otp,
+                                onValueChange = onOtpChange,
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("OTP from email") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(16.dp),
+                                colors = authFieldColors()
+                            )
+                        } else if (state.isOtpVerified) {
+                            OutlinedTextField(
+                                value = state.name,
+                                onValueChange = onNameChange,
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Full Name") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(16.dp),
+                                colors = authFieldColors()
+                            )
+                            OutlinedTextField(
+                                value = state.password,
+                                onValueChange = onPasswordChange,
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Create Password") },
+                                singleLine = true,
+                                visualTransformation = PasswordVisualTransformation(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = authFieldColors()
+                            )
+                        }
+                    } else if (mode == AuthMode.FORGOT_PASSWORD) {
+                        if (!state.otpSent) {
+                            OutlinedButton(
+                                onClick = onSendOtp,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = RoseGold),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                if (state.isLoading) {
+                                    CircularProgressIndicator(color = RoseGold, modifier = Modifier.height(20.dp))
+                                } else {
+                                    Text("Send OTP to email")
+                                }
+                            }
+                        } else {
+                            OutlinedTextField(
+                                value = state.otp,
+                                onValueChange = onOtpChange,
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("OTP from email") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(16.dp),
+                                colors = authFieldColors()
+                            )
+                            OutlinedTextField(
+                                value = state.password,
+                                onValueChange = onPasswordChange,
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("New Password") },
+                                singleLine = true,
+                                visualTransformation = PasswordVisualTransformation(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = authFieldColors()
+                            )
                         }
                     }
                 }
@@ -176,9 +269,21 @@ fun CustomerAuthScreen(
                 }
             }
 
-            StaggeredFadeIn(index = 4, modifier = Modifier.fillMaxWidth()) {
+            val isMainButtonVisible = when (state.mode) {
+                AuthMode.SIGN_IN -> true
+                AuthMode.SIGN_UP -> state.otpSent || state.isOtpVerified
+                AuthMode.FORGOT_PASSWORD -> state.otpSent
+            }
+
+            AnimatedVisibility(visible = isMainButtonVisible, modifier = Modifier.fillMaxWidth()) {
                 Button(
-                    onClick = { if (state.mode == AuthMode.SIGN_IN) onSignIn() else onSignUp() },
+                    onClick = {
+                        when (state.mode) {
+                            AuthMode.SIGN_IN -> onSignIn()
+                            AuthMode.SIGN_UP -> onSignUp()
+                            AuthMode.FORGOT_PASSWORD -> onResetPassword()
+                        }
+                    },
                     enabled = !state.isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -189,7 +294,12 @@ fun CustomerAuthScreen(
                     if (state.isLoading) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.height(22.dp))
                     } else {
-                        Text(if (state.mode == AuthMode.SIGN_IN) "Sign in" else "Verify & create account")
+                        val text = when (state.mode) {
+                            AuthMode.SIGN_IN -> "Sign in"
+                            AuthMode.SIGN_UP -> if (state.isOtpVerified) "Complete Registration" else "Verify OTP"
+                            AuthMode.FORGOT_PASSWORD -> "Reset Password"
+                        }
+                        Text(text)
                     }
                 }
             }

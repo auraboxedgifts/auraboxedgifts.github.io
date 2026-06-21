@@ -8,7 +8,15 @@ function saveCart() { localStorage.setItem('aura_cart', JSON.stringify(cart)); }
 function getTotalItems() { return cart.reduce(function(s,i){ return s+(i.qty||1); },0); }
 function getTotalPrice() { return cart.reduce(function(s,i){ return s+i.price*(i.qty||1); },0); }
 function updateBadge() {
-    document.querySelectorAll('#navCartBadge, .nav-cart-badge').forEach(function(b){ b.textContent = getTotalItems(); });
+    var count = getTotalItems();
+    document.querySelectorAll('#navCartBadge, .nav-cart-badge').forEach(function(b){
+        if (count > 0) {
+            b.textContent = count;
+            b.style.display = 'flex';
+        } else {
+            b.style.display = 'none';
+        }
+    });
 }
 
 // ─── CART PAGE OVERLAY ───

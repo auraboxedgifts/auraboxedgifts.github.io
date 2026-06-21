@@ -104,6 +104,20 @@ function buildSearchShowcase(getCatalog, getSite, query) {
     };
 }
 
+function buildCartShowcase(cartLines) {
+    return {
+        title: 'Your shopping cart',
+        items: (cartLines || []).map((line) => ({
+            id: String(line.productId || ''),
+            title: String(line.name || ''),
+            subtitle: `Qty: ${line.qty} | Price: ₹${line.unitPrice || 0}`,
+            price: Number(line.lineTotal) || 0,
+            image: String(line.image || ''),
+            isHamper: String(line.productId).startsWith('hamper_')
+        }))
+    };
+}
+
 function showcaseMobileAction(showcase) {
     return {
         type: 'showcase',
@@ -117,5 +131,6 @@ module.exports = {
     buildGiftsShowcase,
     buildProductShowcase,
     buildSearchShowcase,
+    buildCartShowcase,
     showcaseMobileAction
 };

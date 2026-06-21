@@ -80,6 +80,19 @@ const mobileToolDeclarations = [
         }
     },
     {
+        name: 'decrease_cart_qty',
+        description: 'Decrease the quantity of a product in the cart or remove it entirely. Use when the customer wants to reduce the quantity of or remove a specific item from the cart.',
+        parameters: {
+            type: 'object',
+            properties: {
+                productId: { type: 'string', description: 'Product ID' },
+                productName: { type: 'string', description: 'Product name' },
+                qty: { type: 'number', description: 'Quantity to decrease by, default 1' }
+            },
+            required: ['productId']
+        }
+    },
+    {
         name: 'calculate_cart_total',
         description: 'Read the current cart subtotal, shipping, and grand total.',
         parameters: { type: 'object', properties: {} }

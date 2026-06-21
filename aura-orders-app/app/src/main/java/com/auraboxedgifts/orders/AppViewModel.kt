@@ -72,7 +72,7 @@ enum class CustomerTab(val label: String) {
     ACCOUNT("Account")
 }
 
-enum class AuthMode { SIGN_IN, SIGN_UP }
+enum class AuthMode { SIGN_IN, SIGN_UP, FORGOT_PASSWORD }
 
 data class OrdersUiState(
     val isLoading: Boolean = false,
@@ -97,10 +97,13 @@ data class LoginUiState(
 
 data class CustomerAuthUiState(
     val mode: AuthMode = AuthMode.SIGN_IN,
+    val name: String = "",
     val email: String = "",
     val password: String = "",
     val otp: String = "",
     val otpSent: Boolean = false,
+    val isOtpVerified: Boolean = false,
+    val tempToken: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
     val successMessage: String? = null
@@ -192,6 +195,7 @@ data class AuraVoiceUiState(
     val statusText: String = "Talk to Aura AI",
     val isSessionActive: Boolean = false,
     val isMicMuted: Boolean = false,
+    val isSpeakerphoneOn: Boolean = true,
     val audioLevel: Float = 0f,
     val error: String? = null,
     val showcaseTitle: String? = null,
@@ -383,6 +387,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         _customerAuthState.value = _customerAuthState.value.copy(otp = v, error = null)
     }
 
+    fun updateCustomerAuthName(v: String) {
+        _customerAuthState.value = _customerAuthState.value.copy(name = v, error = null)
+    }
+
     fun setCustomerAuthMode(mode: AuthMode) {
         _customerAuthState.value = CustomerAuthUiState(mode = mode)
     }
@@ -393,10 +401,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             _customerAuthState.value = _customerAuthState.value.copy(error = "Enter your email")
             return
         }
+        val isSignUp = _customerAuthState.value.mode == AuthMode.SIGN_UP
         viewModelScope.launch {
             _customerAuthState.value = _customerAuthState.value.copy(isLoading = true, error = null)
             try {
-                repository.sendOtp(email)
+                repository.sendOtp(email, signUp = isSignUp)
                 _customerAuthState.value = _customerAuthState.value.copy(
                     isLoading = false,
                     otpSent = true,
@@ -444,22 +453,68 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun customerSignUp(onSuccess: () -> Unit) {
         val s = _customerAuthState.value
-        if (s.email.isBlank() || s.otp.isBlank()) {
-            _customerAuthState.value = s.copy(error = "Enter email and OTP")
+        if (!s.isOtpVerified) {
+            if (s.email.isBlank() || s.otp.isBlank()) {
+                _customerAuthState.value = s.copy(error = "Enter email and OTP")
+                return
+            }
+            viewModelScope.launch {
+                _customerAuthState.value = s.copy(isLoading = true, error = null)
+                try {
+                    val (token, _) = repository.verifyOtp(s.email, s.otp)
+                    _customerAuthState.value = s.copy(
+                        isLoading = false,
+                        isOtpVerified = true,
+                        tempToken = token,
+                        successMessage = "OTP verified! Enter your name and set a password."
+                    )
+                } catch (e: ApiException) {
+                    _customerAuthState.value = s.copy(isLoading = false, error = e.message)
+                } catch (_: Exception) {
+                    _customerAuthState.value = s.copy(isLoading = false, error = "Could not verify OTP")
+                }
+            }
+        } else {
+            if (s.name.isBlank() || s.password.length < 6) {
+                _customerAuthState.value = s.copy(error = "Enter a name and choosing a password of at least 6 characters")
+                return
+            }
+            viewModelScope.launch {
+                _customerAuthState.value = s.copy(isLoading = true, error = null)
+                try {
+                    val user = repository.setPassword(s.tempToken, s.password, s.name)
+                    tokenStore.saveCustomerSession(s.tempToken, s.email.trim().lowercase(), user?.name ?: s.name)
+                    _customerAuthState.value = CustomerAuthUiState()
+                    registerPushTokenIfAvailable()
+                    onSuccess()
+                } catch (e: ApiException) {
+                    _customerAuthState.value = s.copy(isLoading = false, error = e.message)
+                } catch (_: Exception) {
+                    _customerAuthState.value = s.copy(isLoading = false, error = "Could not complete registration")
+                }
+            }
+        }
+    }
+
+    fun resetCustomerPassword(onSuccess: () -> Unit) {
+        val s = _customerAuthState.value
+        if (s.email.isBlank() || s.otp.isBlank() || s.password.length < 6) {
+            _customerAuthState.value = s.copy(error = "Enter email, OTP, and a new password (min 6 chars)")
             return
         }
         viewModelScope.launch {
             _customerAuthState.value = s.copy(isLoading = true, error = null)
             try {
-                val (token, user) = repository.verifyOtp(s.email, s.otp)
+                val (token, user) = repository.resetPassword(s.email, s.otp, s.password)
                 tokenStore.saveCustomerSession(token, s.email.trim().lowercase(), user?.name.orEmpty())
                 _customerAuthState.value = CustomerAuthUiState()
                 registerPushTokenIfAvailable()
+                loadCustomerOrders()
                 onSuccess()
             } catch (e: ApiException) {
                 _customerAuthState.value = s.copy(isLoading = false, error = e.message)
             } catch (_: Exception) {
-                _customerAuthState.value = s.copy(isLoading = false, error = "Could not verify OTP")
+                _customerAuthState.value = s.copy(isLoading = false, error = "Could not reset password")
             }
         }
     }
@@ -1120,9 +1175,22 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             statusText = "Connecting to Aura AI…",
             isSessionActive = true
         )
-        val wsUrl = BuildConfig.API_BASE_URL.trimEnd('/')
+        var wsUrl = BuildConfig.API_BASE_URL.trimEnd('/')
             .replace("https://", "wss://")
             .replace("http://", "ws://") + "?platform=android"
+
+        val name = customerName.value
+        val email = customerEmail.value
+        if (!name.isNullOrBlank()) {
+            try {
+                wsUrl += "&name=" + java.net.URLEncoder.encode(name, "UTF-8")
+            } catch (_: Exception) {}
+        }
+        if (!email.isNullOrBlank()) {
+            try {
+                wsUrl += "&email=" + java.net.URLEncoder.encode(email, "UTF-8")
+            } catch (_: Exception) {}
+        }
 
         liveAudioPlayer = AuraLiveAudioPlayer().also { it.startPlayback() }
         liveVoiceClient = AuraLiveVoiceClient(wsUrl, voiceListener()).also { it.connect() }
@@ -1164,6 +1232,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 "Mic muted"
             }
         )
+    }
+
+    fun toggleAuraVoiceSpeaker() {
+        val am = getApplication<Application>().getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val newSpeakerState = !_aiState.value.isSpeakerphoneOn
+        am.isSpeakerphoneOn = newSpeakerState
+        _aiState.value = _aiState.value.copy(isSpeakerphoneOn = newSpeakerState)
     }
 
     private fun voiceListener() = object : AuraLiveVoiceClient.Listener {
@@ -1295,6 +1370,23 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             }
             "add_to_cart" -> action.get("productId")?.asString?.takeIf { it.isNotBlank() }?.let { id ->
                 addToCart(id, action.get("qty")?.asInt ?: 1)
+            }
+            "decrease_cart_qty" -> action.get("productId")?.asString?.takeIf { it.isNotBlank() }?.let { id ->
+                val qtyToDecrease = action.get("qty")?.asInt ?: 1
+                val current = cartStore.getCart().toMutableList()
+                val idx = current.indexOfFirst { it.productId == id }
+                if (idx >= 0) {
+                    val newQty = current[idx].qty - qtyToDecrease
+                    if (newQty <= 0) {
+                        current.removeAt(idx)
+                    } else {
+                        current[idx] = current[idx].copy(qty = newQty)
+                    }
+                    cartStore.saveCart(current)
+                    scheduleCartReminderIfNeeded(current)
+                    val name = sellableName(id)
+                    _snackbarMessage.value = "Decreased $name quantity in cart"
+                }
             }
         }
     }

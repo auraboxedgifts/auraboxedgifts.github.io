@@ -156,7 +156,7 @@ data class EmailCheckData(
     val isAdmin: Boolean = false
 )
 
-data class OtpRequest(val email: String)
+data class OtpRequest(val email: String, val signUp: Boolean = false)
 data class VerifyOtpRequest(val email: String, val otp: String)
 
 data class ProductPayload(
@@ -280,4 +280,15 @@ data class FcmRegisterRequest(
     val token: String,
     val role: String,
     val email: String? = null
+)
+
+data class SetPasswordRequest(
+    val password: String,
+    val name: String? = null
+)
+
+data class ResetPasswordRequest(
+    val email: String,
+    val otp: String,
+    val newPassword: String
 )

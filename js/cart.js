@@ -114,13 +114,19 @@
   }
 
   function updateBadge() {
+    const count = itemCount();
     document.querySelectorAll('#navCartBadge, .nav-cart-badge').forEach(function (b) {
-      b.textContent = itemCount();
-      // Bounce animation
-      b.classList.remove('bounce');
-      void b.offsetWidth;
-      b.classList.add('bounce');
-      setTimeout(function () { b.classList.remove('bounce'); }, 600);
+      if (count > 0) {
+        b.textContent = count;
+        b.style.display = 'flex';
+        // Bounce animation
+        b.classList.remove('bounce');
+        void b.offsetWidth;
+        b.classList.add('bounce');
+        setTimeout(function () { b.classList.remove('bounce'); }, 600);
+      } else {
+        b.style.display = 'none';
+      }
     });
   }
 
@@ -205,6 +211,8 @@
     await renderCartPage();
     getOverlay().classList.add('active');
     document.body.style.overflow = 'hidden';
+    const w = document.getElementById('auraAIWidget');
+    if (w) w.classList.add('aura-docked');
     if (window.location.hash !== '#cart') history.pushState({ auraOverlay: 'cart' }, '', '#cart');
   }
 
@@ -212,6 +220,8 @@
     const overlay = document.getElementById('cartPageOverlay');
     if (overlay) overlay.classList.remove('active');
     document.body.style.overflow = '';
+    const w = document.getElementById('auraAIWidget');
+    if (w) w.classList.remove('aura-docked');
     if (window.location.hash === '#cart') history.back();
   }
 
@@ -270,6 +280,8 @@
     if (window.location.hash !== '#cart') {
       const overlay = document.getElementById('cartPageOverlay');
       if (overlay) overlay.classList.remove('active');
+      const w = document.getElementById('auraAIWidget');
+      if (w) w.classList.remove('aura-docked');
     }
   });
 

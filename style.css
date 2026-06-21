@@ -1172,7 +1172,7 @@ button { cursor: pointer; border: none; font-family: inherit; }
   min-width: 16px;
   height: 16px;
   border-radius: 50%;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   transition: var(--transition);

@@ -132,6 +132,24 @@
 .aura-mute-btn.muted svg { stroke: #ff4b4b; }
 .aura-mute-btn.muted:hover { background: rgba(255, 75, 75, 0.2); }
 
+.aura-speaker-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    border-radius: 50%;
+}
+.aura-speaker-btn svg {
+    width: 18px; height: 18px;
+    stroke: #ffffff;
+    transition: all 0.3s ease;
+}
+.aura-speaker-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
 .aura-end-btn {
     background: transparent;
     color: #ff6b6b;

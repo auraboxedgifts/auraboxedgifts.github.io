@@ -125,6 +125,8 @@
     const overlay = document.createElement('div');
     overlay.id = 'checkoutPageOverlay';
     overlay.className = 'checkout-page-overlay active';
+    const w = document.getElementById('auraAIWidget');
+    if (w) w.classList.add('aura-docked');
     const lineHtml = calc.data.lines.map((line) => `<div class="ck-order-line"><span>${line.name} x${line.qty}</span><span>₹${line.lineTotal}.00</span></div>`).join('');
     overlay.innerHTML = `
       <div class="checkout-page">
@@ -274,7 +276,7 @@
             })
           });
           localStorage.setItem('aura_cart_v2', '[]');
-          overlay.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;"><div><h2>Order Confirmed</h2><p>Thanks for shopping with Aura Boxed Gifts.</p><button class="cart-page-shop-btn" onclick="this.closest('.checkout-page-overlay').remove()">Continue shopping</button></div></div>`;
+          overlay.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;"><div><h2>Order Confirmed</h2><p>Thanks for shopping with Aura Boxed Gifts.</p><button class="cart-page-shop-btn" onclick="const w=document.getElementById('auraAIWidget'); if(w)w.classList.remove('aura-docked'); this.closest('.checkout-page-overlay').remove()">Continue shopping</button></div></div>`;
         }
       };
       const rzp = new window.Razorpay(options);
@@ -286,6 +288,8 @@
     const overlay = document.getElementById('checkoutPageOverlay');
     if (overlay) overlay.remove();
     document.body.style.overflow = '';
+    const w = document.getElementById('auraAIWidget');
+    if (w) w.classList.remove('aura-docked');
     if (window.location.hash === '#checkout') history.back();
   }
 
@@ -293,6 +297,8 @@
     if (window.location.hash !== '#checkout') {
       const overlay = document.getElementById('checkoutPageOverlay');
       if (overlay) overlay.remove();
+      const w = document.getElementById('auraAIWidget');
+      if (w) w.classList.remove('aura-docked');
     }
   });
 
