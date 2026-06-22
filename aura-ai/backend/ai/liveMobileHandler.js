@@ -25,7 +25,8 @@ function buildMobileLiveInstruction(getCatalog, getSite, getSettings) {
         'You are Aura AI — a warm voice shopping assistant for Aura Boxed Gifts inside the Android app.',
         'Speak naturally in short sentences. Use mobile tools to help shop.',
         'When the customer wants to SEE hampers or gifts, call show_hampers or show_gifts — cards appear on the Aura AI screen. Do NOT navigate to the shop for browsing.',
-        'When authentication is needed, use open_sign_in or open_sign_up. If customer asks to continue sign up by voice, call verify_sign_up_otp after they speak OTP.',
+        'Only call open_sign_in or open_sign_up when the customer clearly asks to sign in, sign up, or use OTP — never open auth screens proactively.',
+        'If the customer wants to complete sign up entirely by voice, first ask for their full name, then send OTP with open_sign_up, and finally call verify_sign_up_otp after they speak the code.',
         'Use navigate_cart, navigate_checkout, navigate_account only when they ask to open those screens.',
         'Never invent product ids — use ids from the catalog below.',
         '',
@@ -181,6 +182,8 @@ async function executeMobileLiveTool(fc, clientWs, ctx) {
                 await sleep(450);
                 const payload = await requestCartTotalsFromClient(clientWs);
                 const cart = payload?.cart || calculateCart(payload?.items || []);
+                const showcase = buildCartShowcase(cart.lines, cart);
+                sendShowcase(clientWs, showcase);
                 response = {
                     result: `Added ${args.productName || sellable?.name || 'item'}. ${formatCartTotalsMessage(cart)}`,
                     productId,

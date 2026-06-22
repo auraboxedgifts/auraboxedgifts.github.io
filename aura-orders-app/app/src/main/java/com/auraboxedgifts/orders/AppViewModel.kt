@@ -98,6 +98,7 @@ data class LoginUiState(
 
 data class CustomerAuthUiState(
     val mode: AuthMode = AuthMode.SIGN_IN,
+    val signInWithOtp: Boolean = false,
     val name: String = "",
     val email: String = "",
     val password: String = "",
@@ -420,6 +421,15 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         _customerAuthState.value = CustomerAuthUiState(mode = mode)
     }
 
+    fun setSignInWithOtp(useOtp: Boolean) {
+        val email = _customerAuthState.value.email
+        _customerAuthState.value = CustomerAuthUiState(
+            mode = AuthMode.SIGN_IN,
+            email = email,
+            signInWithOtp = useOtp
+        )
+    }
+
     private fun openCustomerAuthFromAi(mode: AuthMode, email: String?) {
         val normalizedEmail = email?.trim().orEmpty()
         _customerAuthState.value = CustomerAuthUiState(
@@ -434,16 +444,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private fun verifyOtpFromAi(email: String, otp: String) {
         viewModelScope.launch {
             try {
-                val (token, _) = repository.verifyOtp(email, otp)
-                _customerAuthState.value = _customerAuthState.value.copy(
-                    email = email.trim().lowercase(),
-                    otp = otp.trim(),
-                    isOtpVerified = true,
-                    tempToken = token,
-                    successMessage = "OTP verified. Please set your name and password.",
-                    error = null
-                )
-                _aiNavigation.emit(AiNavigationEvent.CustomerAuth(AuthMode.SIGN_UP))
+                val (token, user) = repository.verifyOtp(email, otp)
+                val normalizedEmail = email.trim().lowercase()
+                tokenStore.saveCustomerSession(token, normalizedEmail, user?.name.orEmpty())
+                _customerAuthState.value = CustomerAuthUiState()
+                registerPushTokenIfAvailable()
+                loadCustomerOrders()
+                _snackbarMessage.value = "Signed in with OTP as $normalizedEmail"
             } catch (e: ApiException) {
                 _snackbarMessage.value = e.message ?: "Invalid OTP"
             } catch (_: Exception) {
@@ -472,6 +479,33 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 _customerAuthState.value = _customerAuthState.value.copy(isLoading = false, error = e.message)
             } catch (_: Exception) {
                 _customerAuthState.value = _customerAuthState.value.copy(isLoading = false, error = "Could not send OTP")
+            }
+        }
+    }
+
+    fun customerSignInWithOtp(onSuccess: () -> Unit) {
+        val s = _customerAuthState.value
+        if (!s.otpSent) {
+            sendCustomerOtp()
+            return
+        }
+        if (s.email.isBlank() || s.otp.isBlank()) {
+            _customerAuthState.value = s.copy(error = "Enter email and OTP")
+            return
+        }
+        viewModelScope.launch {
+            _customerAuthState.value = s.copy(isLoading = true, error = null)
+            try {
+                val (token, user) = repository.verifyOtp(s.email, s.otp)
+                tokenStore.saveCustomerSession(token, s.email.trim().lowercase(), user?.name.orEmpty())
+                _customerAuthState.value = CustomerAuthUiState()
+                registerPushTokenIfAvailable()
+                loadCustomerOrders()
+                onSuccess()
+            } catch (e: ApiException) {
+                _customerAuthState.value = s.copy(isLoading = false, error = e.message)
+            } catch (_: Exception) {
+                _customerAuthState.value = s.copy(isLoading = false, error = "Could not verify OTP")
             }
         }
     }

@@ -489,6 +489,19 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                                     }
                                 }
                             },
+                            onSignInWithOtp = {
+                                viewModel.customerSignInWithOtp {
+                                    if (redirect == "checkout") {
+                                        viewModel.prepareCheckout()
+                                        navController.navigate("checkout") {
+                                            popUpTo("shop")
+                                        }
+                                    } else {
+                                        navController.popBackStack()
+                                    }
+                                }
+                            },
+                            onUseOtpSignIn = viewModel::setSignInWithOtp,
                             onSignUp = {
                                 viewModel.customerSignUp {
                                     if (redirect == "checkout") {

@@ -63,6 +63,8 @@ fun CustomerAuthScreen(
     onNameChange: (String) -> Unit,
     onSendOtp: () -> Unit,
     onSignIn: () -> Unit,
+    onSignInWithOtp: () -> Unit,
+    onUseOtpSignIn: (Boolean) -> Unit,
     onSignUp: () -> Unit,
     onResetPassword: () -> Unit
 ) {
@@ -154,24 +156,56 @@ fun CustomerAuthScreen(
             ) { mode ->
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     if (mode == AuthMode.SIGN_IN) {
-                        OutlinedTextField(
-                            value = state.password,
-                            onValueChange = onPasswordChange,
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Password") },
-                            singleLine = true,
-                            visualTransformation = PasswordVisualTransformation(),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = authFieldColors()
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            TextButton(
-                                onClick = { onModeChange(AuthMode.FORGOT_PASSWORD) }
+                        if (!state.signInWithOtp) {
+                            OutlinedTextField(
+                                value = state.password,
+                                onValueChange = onPasswordChange,
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Password") },
+                                singleLine = true,
+                                visualTransformation = PasswordVisualTransformation(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = authFieldColors()
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Forgot password?", color = RoseGold)
+                                TextButton(onClick = { onUseOtpSignIn(true) }) {
+                                    Text("Sign in with OTP", color = RoseGold)
+                                }
+                                TextButton(onClick = { onModeChange(AuthMode.FORGOT_PASSWORD) }) {
+                                    Text("Forgot password?", color = RoseGold)
+                                }
+                            }
+                        } else {
+                            if (!state.otpSent) {
+                                OutlinedButton(
+                                    onClick = onSignInWithOtp,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = RoseGold),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    if (state.isLoading) {
+                                        CircularProgressIndicator(color = RoseGold, modifier = Modifier.height(20.dp))
+                                    } else {
+                                        Text("Send OTP to email")
+                                    }
+                                }
+                            } else {
+                                OutlinedTextField(
+                                    value = state.otp,
+                                    onValueChange = onOtpChange,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = { Text("OTP from email") },
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = authFieldColors()
+                                )
+                            }
+                            TextButton(onClick = { onUseOtpSignIn(false) }) {
+                                Text("Sign in with password instead", color = RoseGold)
                             }
                         }
                     } else if (mode == AuthMode.SIGN_UP) {
@@ -270,7 +304,7 @@ fun CustomerAuthScreen(
             }
 
             val isMainButtonVisible = when (state.mode) {
-                AuthMode.SIGN_IN -> true
+                AuthMode.SIGN_IN -> !state.signInWithOtp || state.otpSent
                 AuthMode.SIGN_UP -> state.otpSent || state.isOtpVerified
                 AuthMode.FORGOT_PASSWORD -> state.otpSent
             }
@@ -279,7 +313,7 @@ fun CustomerAuthScreen(
                 Button(
                     onClick = {
                         when (state.mode) {
-                            AuthMode.SIGN_IN -> onSignIn()
+                            AuthMode.SIGN_IN -> if (state.signInWithOtp) onSignInWithOtp() else onSignIn()
                             AuthMode.SIGN_UP -> onSignUp()
                             AuthMode.FORGOT_PASSWORD -> onResetPassword()
                         }
@@ -295,7 +329,7 @@ fun CustomerAuthScreen(
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.height(22.dp))
                     } else {
                         val text = when (state.mode) {
-                            AuthMode.SIGN_IN -> "Sign in"
+                            AuthMode.SIGN_IN -> if (state.signInWithOtp) "Verify OTP & sign in" else "Sign in"
                             AuthMode.SIGN_UP -> if (state.isOtpVerified) "Complete Registration" else "Verify OTP"
                             AuthMode.FORGOT_PASSWORD -> "Reset Password"
                         }
