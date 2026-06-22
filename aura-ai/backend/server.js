@@ -306,14 +306,18 @@ const emailTransporter = nodemailer.createTransport({
     }
 });
 
-async function sendEmailNotification(message, senderInfo = '', inquiryType = 'General') {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD || !process.env.RECIPIENT_EMAIL) {
-        return { success: false, error: 'Email credentials not configured on server.' };
+async function sendEmailNotification(message, senderInfo = '', inquiryType = 'General', toAddress = null) {
+    const to = String(toAddress || process.env.RECIPIENT_EMAIL || '').trim();
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
+        return { success: false, error: 'Email credentials not configured on server.', to };
+    }
+    if (!to) {
+        return { success: false, error: 'No recipient email configured.', to };
     }
     try {
         const info = await emailTransporter.sendMail({
             from: process.env.EMAIL_USER,
-            to: process.env.RECIPIENT_EMAIL,
+            to,
             subject: `Aura Inquiry - ${inquiryType}`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
@@ -325,9 +329,9 @@ async function sendEmailNotification(message, senderInfo = '', inquiryType = 'Ge
                 </div>
             `
         });
-        return { success: true, messageId: info.messageId };
+        return { success: true, messageId: info.messageId, to };
     } catch (error) {
-        return { success: false, error: error.message };
+        return { success: false, error: error.message, to };
     }
 }
 
@@ -936,9 +940,13 @@ app.post('/api/admin/test-whatsapp', requireAdmin, async (req, res) => {
 app.post('/api/admin/test-order', requireAdmin, async (req, res) => {
     const body = req.body || {};
     const amount = Math.max(1, Number(body.amount) || 1);
+    const customerEmail = String(body.email || '').trim();
+    if (!customerEmail) {
+        return jsonErr(res, 400, 'Customer email is required for test orders.');
+    }
     const customer = {
         name: String(body.name || 'Test Customer').trim(),
-        email: String(body.email || process.env.RECIPIENT_EMAIL || '').trim(),
+        email: customerEmail,
         phone: String(body.phone || '').trim(),
         address: String(body.address || 'Test address, India').trim(),
         city: String(body.city || '').trim(),
@@ -976,21 +984,30 @@ app.post('/api/admin/test-order', requireAdmin, async (req, res) => {
     orders.unshift(order);
     writeJson(ORDERS_FILE, orders);
 
-    const results = { order: order.id, adminEmail: null, customerEmail: null, whatsapp: null };
+    const results = {
+        order: order.id,
+        adminEmail: null,
+        adminEmailTo: customer.email,
+        customerEmail: null,
+        customerEmailTo: customer.email,
+        whatsapp: null,
+        fcm: null
+    };
 
     const lineHtml = cart.lines.map((l) => `- ${l.name} x${l.qty}: ₹${l.lineTotal}`).join('<br>');
     try {
         const r = await sendEmailNotification(
             `🧪 TEST ORDER (not a real purchase).<br><strong>Order:</strong> ${order.id}<br><br>${lineHtml}<br><br>Total: ₹${cart.grandTotal}`,
             `${customer.name} (${customer.email})`,
-            'Order Request'
+            'Order Request',
+            customer.email
         );
-        results.adminEmail = r.success ? 'sent' : (r.error || 'failed');
+        results.adminEmail = r.success ? `sent to ${r.to}` : (r.error || 'failed');
     } catch (err) { results.adminEmail = err.message; }
 
     try {
         await sendCustomerOrderEmail(customer, order);
-        results.customerEmail = customer.email ? 'sent' : 'skipped (no email)';
+        results.customerEmail = `sent to ${customer.email}`;
     } catch (err) { results.customerEmail = err.message; }
 
     const waMessage = `🧪 *TEST ORDER* (not real)\n\n` +
@@ -1005,6 +1022,14 @@ app.post('/api/admin/test-order', requireAdmin, async (req, res) => {
         const r = await sendWhatsAppNotification(waMessage);
         results.whatsapp = r.success ? 'sent' : (r.error || 'not configured');
     } catch (err) { results.whatsapp = err.message; }
+
+    try {
+        const { notifyAdminsNewOrder } = require('./fcm');
+        results.fcm = await notifyAdminsNewOrder(order);
+    } catch (err) {
+        results.fcm = { error: err.message };
+        console.error('[FCM] Test order admin notify failed:', err.message);
+    }
 
     return jsonOk(res, results);
 });
@@ -1611,8 +1636,12 @@ app.post('/api/verify-payment', async (req, res) => {
         });
 
         const { notifyAdminsNewOrder, notifyCustomerOrderConfirmed } = require('./fcm');
-        notifyAdminsNewOrder(order).catch((err) => console.error('[FCM] Admin notify failed:', err.message));
-        notifyCustomerOrderConfirmed(customer?.email, order).catch((err) => console.error('[FCM] Customer notify failed:', err.message));
+        notifyAdminsNewOrder(order)
+            .then((r) => console.log(`[FCM] Admin notify for ${order.id}:`, JSON.stringify(r)))
+            .catch((err) => console.error('[FCM] Admin notify failed:', err.message));
+        notifyCustomerOrderConfirmed(customer?.email, order)
+            .then((r) => console.log(`[FCM] Customer notify for ${order.id}:`, JSON.stringify(r)))
+            .catch((err) => console.error('[FCM] Customer notify failed:', err.message));
 
         return jsonOk(res, { order });
     } catch (err) {
@@ -1636,7 +1665,7 @@ const { chatWithAura, buildSuggestions } = require('./ai/textChat');
 const { chatWithMobileAura } = require('./ai/mobileAi');
 const { buildMobileLiveInstruction, executeMobileLiveTool, MOBILE_LIVE_KICKOFF } = require('./ai/liveMobileHandler');
 const { mobileToolDeclarations } = require('./ai/mobileTools');
-const { registerToken, sendCartReminder } = require('./fcm');
+const { registerToken, sendCartReminder, readTokens } = require('./fcm');
 
 const AI_PUBLIC_DIR = path.join(__dirname, 'public');
 if (!fs.existsSync(AI_PUBLIC_DIR)) {
@@ -1729,7 +1758,8 @@ app.post('/api/fcm/register', (req, res) => {
         }
     }
     registerToken({ token, role, email });
-    return jsonOk(res, { registered: true });
+    const store = readTokens();
+    return jsonOk(res, { registered: true, role, email, adminTokenCount: store.admin.length });
 });
 
 app.post('/api/fcm/cart-reminder', requireAuth, async (req, res) => {

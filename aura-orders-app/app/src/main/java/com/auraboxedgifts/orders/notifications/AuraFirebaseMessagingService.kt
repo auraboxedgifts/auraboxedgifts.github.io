@@ -14,8 +14,9 @@ class AuraFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        val title = message.notification?.title ?: message.data["title"] ?: "Aura Boxed Gift"
+        val title = message.notification?.title ?: message.data["title"] ?: "Aura Boxed Gifts"
         val body = message.notification?.body ?: message.data["body"] ?: return
+        Log.i(TAG, "FCM received type=${message.data["type"]} orderId=${message.data["orderId"]}")
         OrderNotificationManager.ensureChannel(this)
         OrderNotificationManager.showGenericNotification(
             context = this,

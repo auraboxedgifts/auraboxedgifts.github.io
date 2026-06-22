@@ -23,6 +23,7 @@ class TokenStore(private val context: Context) {
     private val customerNameKey = stringPreferencesKey("customer_name")
     private val knownOrderIdsKey = stringSetPreferencesKey("known_order_ids")
     private val notificationsSeededKey = booleanPreferencesKey("notifications_seeded")
+    private val fcmTokenKey = stringPreferencesKey("fcm_token")
 
     val adminTokenFlow: Flow<String?> = context.dataStore.data.map { it[adminTokenKey] }
     val adminEmailFlow: Flow<String?> = context.dataStore.data.map { it[adminEmailKey] }
@@ -38,6 +39,13 @@ class TokenStore(private val context: Context) {
     suspend fun getCustomerToken(): String? = context.dataStore.data.first()[customerTokenKey]
     suspend fun getAdminEmail(): String? = context.dataStore.data.first()[adminEmailKey]
     suspend fun getCustomerEmail(): String? = context.dataStore.data.first()[customerEmailKey]
+    suspend fun getFcmToken(): String? = context.dataStore.data.first()[fcmTokenKey]
+
+    suspend fun saveFcmToken(token: String) {
+        context.dataStore.edit { prefs ->
+            prefs[fcmTokenKey] = token
+        }
+    }
 
     suspend fun saveAdminSession(token: String, email: String) {
         context.dataStore.edit { prefs ->

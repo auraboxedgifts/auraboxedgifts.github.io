@@ -1239,6 +1239,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun registerPushToken(fcmToken: String) {
         viewModelScope.launch {
             try {
+                TokenStore(getApplication()).saveFcmToken(fcmToken)
                 when {
                     !adminToken.value.isNullOrBlank() -> repository.registerFcmToken(
                         adminToken.value,
@@ -1252,14 +1253,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         customerEmail.value,
                         fcmToken
                     )
+                    else -> return@launch
                 }
             } catch (_: Exception) { }
         }
     }
 
     fun registerPushTokenIfAvailable() {
-        val pending = pendingFcmToken
-        if (!pending.isNullOrBlank()) registerPushToken(pending)
+        viewModelScope.launch {
+            val token = pendingFcmToken ?: TokenStore(getApplication()).getFcmToken()
+            if (!token.isNullOrBlank()) registerPushToken(token)
+        }
     }
 
     fun setPendingFcmToken(token: String) {

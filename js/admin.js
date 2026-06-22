@@ -1819,6 +1819,12 @@
       try {
         const res = await adminFetch('/api/admin/test-order', { method: 'POST', body: JSON.stringify(payload) });
         const d = res.data;
+        let fcmLine = '';
+        if (d.fcm) {
+          const f = d.fcm;
+          const fcmText = f.error ? f.error : (f.skipped ? (f.reason || 'skipped') : `sent to ${f.sent || 0} device(s)`);
+          fcmLine = `<li>FCM push: <strong>${escapeHtml(fcmText)}</strong></li>`;
+        }
         resultEl.innerHTML = `
           <div class="aap-tool-result">
             <p><i class="fas fa-check-circle" style="color:#3ba35a;"></i> Test order <strong>${escapeHtml(d.order)}</strong> created.</p>
@@ -1826,6 +1832,7 @@
               <li>Admin email: <strong>${escapeHtml(String(d.adminEmail))}</strong></li>
               <li>Customer email: <strong>${escapeHtml(String(d.customerEmail))}</strong></li>
               <li>WhatsApp: <strong>${escapeHtml(String(d.whatsapp))}</strong></li>
+              ${fcmLine}
             </ul>
           </div>`;
         toast('Test order placed', 'success');
