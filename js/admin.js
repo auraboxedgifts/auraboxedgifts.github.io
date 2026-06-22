@@ -1727,6 +1727,28 @@
       <div class="aap-section-block">
         <div class="aap-block-head">
           <div>
+            <h3><i class="fas fa-bell"></i> Customer push notifications (FCM)</h3>
+            <p class="aap-hint" style="margin:4px 0 0;">Send a push to every logged-in customer who has the Android app. Optional image URL (product photo or banner).</p>
+          </div>
+        </div>
+        <form class="aap-form" id="aapFcmBroadcastForm">
+          <label class="aap-label">Title</label>
+          <input class="aap-input" id="aapFcmTitle" type="text" placeholder="New at Aura Boxed Gifts">
+          <label class="aap-label">Message</label>
+          <textarea class="aap-input" id="aapFcmBody" rows="3" placeholder="Discover our latest curated gifts and hampers…"></textarea>
+          <label class="aap-label">Image URL <span class="aap-label-sub">(optional)</span></label>
+          <input class="aap-input" id="aapFcmImage" type="url" placeholder="https://aura.devshubh.me/uploads/…">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+            <button type="button" class="aap-btn-primary" id="aapFcmSend"><i class="fas fa-paper-plane"></i> Send push</button>
+            <button type="button" class="aap-btn-secondary" id="aapFcmDigest"><i class="fas fa-gift"></i> Send new-products digest</button>
+          </div>
+        </form>
+        <div id="aapFcmResult"></div>
+      </div>
+
+      <div class="aap-section-block">
+        <div class="aap-block-head">
+          <div>
             <h3><i class="fas fa-vial"></i> Place a test order (₹1)</h3>
             <p class="aap-hint" style="margin:4px 0 0;">Creates a real order record for ₹1 and fires the same email + WhatsApp alerts a customer order would, so you can see exactly what happens. Marked as a test.</p>
           </div>
@@ -1804,6 +1826,63 @@
         toast('Test WhatsApp message sent', 'success');
       } catch (err) { toast(err.message, 'error'); }
       this.disabled = false; this.innerHTML = orig;
+    });
+
+    function renderFcmResult(result, label) {
+      const el = content.querySelector('#aapFcmResult');
+      if (!el) return;
+      if (!result) {
+        el.innerHTML = '';
+        return;
+      }
+      const text = result.error
+        ? result.error
+        : (result.skipped
+          ? (result.reason || 'skipped')
+          : `sent to ${result.sent || 0} device(s)${result.failed ? ` (${result.failed} failed)` : ''}`);
+      el.innerHTML = `<div class="aap-tool-result"><p><i class="fas fa-bell" style="color:#b76e79;"></i> ${escapeHtml(label)}: <strong>${escapeHtml(String(text))}</strong></p></div>`;
+    }
+
+    content.querySelector('#aapFcmSend')?.addEventListener('click', async function () {
+      const title = content.querySelector('#aapFcmTitle')?.value.trim();
+      const body = content.querySelector('#aapFcmBody')?.value.trim();
+      const imageUrl = content.querySelector('#aapFcmImage')?.value.trim();
+      if (!title || !body) {
+        toast('Enter a title and message', 'error');
+        return;
+      }
+      this.disabled = true;
+      const orig = this.innerHTML;
+      this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending…';
+      try {
+        const res = await adminFetch('/api/admin/fcm/broadcast', {
+          method: 'POST',
+          body: JSON.stringify({ title, body, imageUrl })
+        });
+        renderFcmResult(res.data, 'Customer push');
+        toast('Customer push sent', 'success');
+      } catch (err) {
+        toast(err.message, 'error');
+        renderFcmResult({ error: err.message }, 'Customer push');
+      }
+      this.disabled = false;
+      this.innerHTML = orig;
+    });
+
+    content.querySelector('#aapFcmDigest')?.addEventListener('click', async function () {
+      this.disabled = true;
+      const orig = this.innerHTML;
+      this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending…';
+      try {
+        const res = await adminFetch('/api/admin/fcm/digest', { method: 'POST', body: '{}' });
+        renderFcmResult(res.data, 'New-products digest');
+        toast('Digest push sent', 'success');
+      } catch (err) {
+        toast(err.message, 'error');
+        renderFcmResult({ error: err.message }, 'New-products digest');
+      }
+      this.disabled = false;
+      this.innerHTML = orig;
     });
 
     content.querySelector('#aapPlaceTestOrder').addEventListener('click', async function () {

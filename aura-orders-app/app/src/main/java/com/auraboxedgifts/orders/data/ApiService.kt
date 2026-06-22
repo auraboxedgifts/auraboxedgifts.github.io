@@ -144,6 +144,12 @@ interface AuraApiService {
         @Header("Authorization") auth: String,
         @Body body: Map<String, @JvmSuppressWildcards Number>
     ): Response<ApiResponse<Map<String, Any>>>
+
+    @POST("/api/admin/fcm/broadcast")
+    suspend fun adminFcmBroadcast(
+        @Header("Authorization") auth: String,
+        @Body body: FcmBroadcastRequest
+    ): Response<ApiResponse<Map<String, Any>>>
 }
 
 class AuraRepository(private val api: AuraApiService) {
@@ -407,6 +413,23 @@ class AuraRepository(private val api: AuraApiService) {
         if (!response.isSuccessful || body?.success != true) {
             throw ApiException(body?.error ?: "Cart reminder failed")
         }
+    }
+
+    suspend fun sendCustomerFcmBroadcast(
+        adminToken: String,
+        title: String,
+        body: String,
+        imageUrl: String?
+    ): Map<String, Any> {
+        val response = api.adminFcmBroadcast(
+            bearer(adminToken),
+            FcmBroadcastRequest(title = title, body = body, imageUrl = imageUrl?.takeIf { it.isNotBlank() })
+        )
+        val payload = response.body()
+        if (!response.isSuccessful || payload?.success != true) {
+            throw ApiException(payload?.error ?: "FCM broadcast failed")
+        }
+        return payload.data ?: emptyMap()
     }
 }
 

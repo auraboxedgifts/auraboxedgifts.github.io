@@ -79,6 +79,7 @@ enum class OrderStatus(val label: String, val apiValue: String) {
     CREATED("New", "created"),
     CONFIRMED("Confirmed", "confirmed"),
     PROCESSING("Processing", "processing"),
+    PACKED("Packed", "packed"),
     SHIPPED("Shipped", "shipped"),
     DELIVERED("Delivered", "delivered"),
     CANCELLED("Cancelled", "cancelled");
@@ -289,6 +290,12 @@ data class FcmRegisterRequest(
     val token: String,
     val role: String,
     val email: String? = null
+)
+
+data class FcmBroadcastRequest(
+    val title: String,
+    val body: String,
+    val imageUrl: String? = null
 )
 
 data class SetPasswordRequest(

@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LocalShipping
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Store
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -62,10 +63,16 @@ fun ProfileScreen(
     stats: DashboardStats,
     shippingRate: Double = 120.0,
     onShippingRateChange: (Double, () -> Unit, (String) -> Unit) -> Unit = { _, _, _ -> },
+    onSendCustomerPush: (String, String, String?, (String) -> Unit, (String) -> Unit) -> Unit = { _, _, _, _, _ -> },
     onLogout: () -> Unit
 ) {
     var rateInput by remember { mutableStateOf("") }
     var shippingMessage by remember { mutableStateOf<String?>(null) }
+    var pushTitle by remember { mutableStateOf("") }
+    var pushBody by remember { mutableStateOf("") }
+    var pushImageUrl by remember { mutableStateOf("") }
+    var pushMessage by remember { mutableStateOf<String?>(null) }
+    var pushSending by remember { mutableStateOf(false) }
 
     LaunchedEffect(shippingRate) {
         rateInput = shippingRate.toLong().toString()
@@ -189,6 +196,102 @@ fun ProfileScreen(
                     Text("Save shipping rate")
                 }
                 shippingMessage?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = RoseGold)
+                }
+            }
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(Icons.Outlined.Notifications, contentDescription = null, tint = RoseGold)
+                    Text("Customer push (FCM)", style = MaterialTheme.typography.titleMedium, color = TextDark)
+                }
+                Text(
+                    "Send a notification to logged-in customers with the Aura app. Image URL is optional.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextMedium
+                )
+                OutlinedTextField(
+                    value = pushTitle,
+                    onValueChange = { pushTitle = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Title") },
+                    placeholder = { Text("New at Aura Boxed Gifts") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = RoseGold,
+                        unfocusedBorderColor = RoseLight
+                    )
+                )
+                OutlinedTextField(
+                    value = pushBody,
+                    onValueChange = { pushBody = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Message") },
+                    placeholder = { Text("Discover our latest curated gifts…") },
+                    minLines = 2,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = RoseGold,
+                        unfocusedBorderColor = RoseLight
+                    )
+                )
+                OutlinedTextField(
+                    value = pushImageUrl,
+                    onValueChange = { pushImageUrl = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Image URL (optional)") },
+                    placeholder = { Text("https://…") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = RoseGold,
+                        unfocusedBorderColor = RoseLight
+                    )
+                )
+                Button(
+                    onClick = {
+                        if (pushTitle.isBlank() || pushBody.isBlank()) {
+                            pushMessage = "Enter a title and message"
+                            return@Button
+                        }
+                        pushSending = true
+                        pushMessage = null
+                        onSendCustomerPush(
+                            pushTitle.trim(),
+                            pushBody.trim(),
+                            pushImageUrl.trim().ifBlank { null },
+                            { msg ->
+                                pushSending = false
+                                pushMessage = msg
+                            },
+                            { err ->
+                                pushSending = false
+                                pushMessage = err
+                            }
+                        )
+                    },
+                    enabled = !pushSending,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = RoseGold)
+                ) {
+                    Text(if (pushSending) "Sending…" else "Send customer push")
+                }
+                pushMessage?.let {
                     Text(it, style = MaterialTheme.typography.bodySmall, color = RoseGold)
                 }
             }

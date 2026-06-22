@@ -362,6 +362,7 @@ const ORDER_STATUS_LABELS = {
     created: 'Order received',
     confirmed: 'Order confirmed',
     processing: 'Being prepared',
+    packed: 'Packed',
     shipped: 'Shipped',
     delivered: 'Delivered',
     cancelled: 'Cancelled'
@@ -392,6 +393,7 @@ async function sendCustomerStatusUpdateEmail(order, newStatus, previousStatus) {
         created: 'We have received your order and will update you soon.',
         confirmed: 'Your order is confirmed and we are getting it ready for you.',
         processing: 'Your gift hamper is being carefully prepared by our team.',
+        packed: 'Your order has been packed and is almost ready to ship.',
         shipped: 'Great news — your order is on its way to you!',
         delivered: 'Your order has been delivered. We hope you love it!',
         cancelled: 'Your order has been cancelled. If you have questions, please reply to this email.'
@@ -1558,6 +1560,10 @@ app.patch('/api/admin/orders/:id', requireAdmin, async (req, res) => {
         sendCustomerStatusUpdateEmail(updated, status, previousStatus).catch((err) => {
             console.error('[Email] Status update error:', err.message);
         });
+        const { notifyCustomerOrderStatus } = require('./fcm');
+        notifyCustomerOrderStatus(updated, status, previousStatus)
+            .then((r) => console.log(`[FCM] Customer status push for ${updated.id}:`, JSON.stringify(r)))
+            .catch((err) => console.error('[FCM] Customer status push failed:', err.message));
     }
     return jsonOk(res, updated);
 });
@@ -1665,7 +1671,7 @@ const { chatWithAura, buildSuggestions } = require('./ai/textChat');
 const { chatWithMobileAura } = require('./ai/mobileAi');
 const { buildMobileLiveInstruction, executeMobileLiveTool, MOBILE_LIVE_KICKOFF } = require('./ai/liveMobileHandler');
 const { mobileToolDeclarations } = require('./ai/mobileTools');
-const { registerToken, sendCartReminder, readTokens } = require('./fcm');
+const { registerToken, sendCartReminder, readTokens, broadcastToCustomers, sendNewProductsDigest, getFcmStats } = require('./fcm');
 
 const AI_PUBLIC_DIR = path.join(__dirname, 'public');
 if (!fs.existsSync(AI_PUBLIC_DIR)) {
@@ -1767,6 +1773,39 @@ app.post('/api/fcm/cart-reminder', requireAuth, async (req, res) => {
     if (itemCount <= 0) return jsonOk(res, { sent: false, reason: 'empty_cart' });
     try {
         const result = await sendCartReminder(req.auth.email, itemCount);
+        return jsonOk(res, result);
+    } catch (err) {
+        return jsonErr(res, 500, err.message);
+    }
+});
+
+app.get('/api/admin/fcm/stats', requireAdmin, (req, res) => {
+    return jsonOk(res, getFcmStats());
+});
+
+app.post('/api/admin/fcm/broadcast', requireAdmin, async (req, res) => {
+    const title = String(req.body?.title || '').trim();
+    const body = String(req.body?.body || '').trim();
+    const imageUrl = String(req.body?.imageUrl || req.body?.image || '').trim();
+    if (!title || !body) {
+        return jsonErr(res, 400, 'title and body are required');
+    }
+    try {
+        const result = await broadcastToCustomers({ title, body, imageUrl, type: 'broadcast' });
+        return jsonOk(res, result);
+    } catch (err) {
+        return jsonErr(res, 500, err.message);
+    }
+});
+
+app.post('/api/admin/fcm/digest', requireAdmin, async (req, res) => {
+    try {
+        const products = getCatalog();
+        const result = await sendNewProductsDigest(products, {
+            title: req.body?.title,
+            body: req.body?.body,
+            imageUrl: req.body?.imageUrl
+        });
         return jsonOk(res, result);
     } catch (err) {
         return jsonErr(res, 500, err.message);

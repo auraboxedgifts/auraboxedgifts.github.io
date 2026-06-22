@@ -9,7 +9,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 class AuraOrdersApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        OrderNotificationManager.ensureChannel(this)
+        OrderNotificationManager.ensureAllChannels(this)
         OrderPollWorker.schedule(this)
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (task.isSuccessful) {

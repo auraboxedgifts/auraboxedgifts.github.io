@@ -62,7 +62,8 @@ fun MainShell(
     onAddProduct: () -> Unit,
     onLogout: () -> Unit,
     shippingRate: Double = 120.0,
-    onShippingRateChange: (Double, () -> Unit, (String) -> Unit) -> Unit = { _, _, _ -> }
+    onShippingRateChange: (Double, () -> Unit, (String) -> Unit) -> Unit = { _, _, _ -> },
+    onSendCustomerPush: (String, String, String?, (String) -> Unit, (String) -> Unit) -> Unit = { _, _, _, _, _ -> }
 ) {
     Scaffold(
         containerColor = Cream,
@@ -146,6 +147,7 @@ fun MainShell(
                 stats = dashboardStats,
                 shippingRate = shippingRate,
                 onShippingRateChange = onShippingRateChange,
+                onSendCustomerPush = onSendCustomerPush,
                 onLogout = onLogout
             )
         }

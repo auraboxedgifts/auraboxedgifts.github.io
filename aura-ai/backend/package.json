@@ -5,7 +5,10 @@
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
-        "dev": "node server.js"
+        "dev": "node server.js",
+        "fcm:announce": "node scripts/fcm-announce.js",
+        "fcm:digest": "node scripts/fcm-announce.js --digest",
+        "fcm:stats": "node scripts/fcm-announce.js --stats"
     },
     "dependencies": {
         "@google/genai": "^1.51.0",

@@ -101,6 +101,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
         initTextToSpeech()
 
         val deepLinkOrderId = intent?.getStringExtra("order_id")
+        val openCustomerOrders = intent?.getBooleanExtra("open_customer_orders", false) == true
 
         setContent {
             AuraOrdersTheme {
@@ -157,6 +158,18 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                     ActivityResultContracts.GetContent()
                 ) { uri: Uri? ->
                     if (uri != null) vm.uploadProductImage(uri)
+                }
+
+                LaunchedEffect(openCustomerOrders, customerToken) {
+                    if (openCustomerOrders) {
+                        viewModel.selectCustomerTab(CustomerTab.ACCOUNT)
+                        if (navController.currentDestination?.route != "shop") {
+                            navController.navigate("shop") {
+                                popUpTo("shop") { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    }
                 }
 
                 LaunchedEffect(deepLinkOrderId, adminToken) {
@@ -426,7 +439,10 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                                 }
                             },
                             shippingRate = storeSettings.shippingFlatRate,
-                            onShippingRateChange = viewModel::updateShippingRate
+                            onShippingRateChange = viewModel::updateShippingRate,
+                            onSendCustomerPush = { title, body, image, onDone, onError ->
+                                viewModel.sendCustomerFcmBroadcast(title, body, image, onDone, onError)
+                            }
                         )
                     }
 

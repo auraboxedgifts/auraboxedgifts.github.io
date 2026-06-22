@@ -1271,6 +1271,38 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         registerPushTokenIfAvailable()
     }
 
+    fun sendCustomerFcmBroadcast(
+        title: String,
+        body: String,
+        imageUrl: String?,
+        onDone: (String) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val token = adminToken.value
+        if (token.isNullOrBlank()) {
+            onError("Admin sign-in required")
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val result = repository.sendCustomerFcmBroadcast(token, title.trim(), body.trim(), imageUrl)
+                val sent = (result["sent"] as? Number)?.toInt() ?: 0
+                val skipped = result["skipped"] == true
+                val reason = result["reason"]?.toString()
+                val message = when {
+                    skipped -> reason ?: "No customer devices registered"
+                    sent > 0 -> "Push sent to $sent device(s)"
+                    else -> "No devices received the push"
+                }
+                onDone(message)
+            } catch (e: ApiException) {
+                onError(e.message ?: "Could not send push")
+            } catch (_: Exception) {
+                onError("Could not send push")
+            }
+        }
+    }
+
     fun startAuraVoiceSession() {
         if (_aiState.value.isSessionActive) return
         liveMicSending = true
