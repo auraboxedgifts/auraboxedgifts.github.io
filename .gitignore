@@ -33,7 +33,6 @@ Thumbs.db
 aura-ai/backend/data/users.json
 aura-ai/backend/data/orders.json
 aura-ai/backend/data/fcm-tokens.json
-aura-ai/backend/data/site.json
 
 # Android build artifacts
 aura-orders-app/.gradle/

@@ -1,0 +1,120 @@
+{
+  "hero": {
+    "slides": [
+      {
+        "id": "hero_1",
+        "image": "https://aura.devshubh.me/images/web/1000067082-mpz7f23v75645f.jpg",
+        "alt": "Aura Boxed Gifts - Curated Gift Hampers"
+      },
+      {
+        "id": "hero_2",
+        "image": "https://aura.devshubh.me/images/web/1000067102-mpz1jit7bc03c3.png",
+        "alt": "Birthday Hamper Gift"
+      },
+      {
+        "id": "hero_3",
+        "image": "https://aura.devshubh.me/images/web/1000063203-mq4ihtxb6d2f61.png",
+        "alt": "Pregnancy Hamper Gift"
+      },
+      {
+        "id": "hero_1780547765965_b1580a",
+        "image": "https://aura.devshubh.me/images/web/1000065874-mpz34idx2be3f5.png",
+        "alt": "Bouquet Hamper Gift"
+      }
+    ]
+  },
+  "hampers": [
+    {
+      "id": "hamper_mom_to_be",
+      "title": "Birthday hamper",
+      "subtitle": "",
+      "image": "https://aura.devshubh.me/images/web/inbound8603746722936798695-mpzcbwe59c1ab6.png",
+      "price": 1599
+    },
+    {
+      "id": "hamper_wedding_gift",
+      "title": "Wedding Hamper for Bride",
+      "subtitle": "",
+      "image": "https://aura.devshubh.me/images/web/inbound2313379694683726455-mpzcdifm70f346.jpg",
+      "price": 1899
+    },
+    {
+      "id": "hamper_birthday",
+      "title": "Makeup lover Hamper Gift",
+      "subtitle": "",
+      "image": "https://aura.devshubh.me/images/web/1000065232-mpzcit3o726f4e.png",
+      "price": 2399
+    },
+    {
+      "id": "hamper_mothers_day",
+      "title": "Customised Virat Kohli fangirl Hamper",
+      "subtitle": "",
+      "image": "https://aura.devshubh.me/images/web/1000063190-mpzcle25d48c87.png",
+      "price": 2599
+    },
+    {
+      "id": "hamper_wedding_bride",
+      "title": "1st Birthday Hamper for Babygirl",
+      "subtitle": "",
+      "image": "https://aura.devshubh.me/images/web/1000034899-mpzcorou7ee0db.jpg",
+      "price": 2699
+    },
+    {
+      "id": "hamper_virat_kohli",
+      "title": "Customised Wedding Hamper Gift",
+      "subtitle": "Customised",
+      "image": "https://aura.devshubh.me/images/web/1000063192-mpzct06va848bd.png",
+      "price": 2799
+    },
+    {
+      "id": "hamper_mens_birthday",
+      "title": "Customised Men's Birthday Hamper",
+      "subtitle": "",
+      "image": "/images/hampers/mens-birthday.jpeg",
+      "price": 3750
+    },
+    {
+      "id": "hamper_babygirl_1st_birthday",
+      "title": "Mom-to-be Hamper Gift",
+      "subtitle": "",
+      "image": "https://aura.devshubh.me/images/web/1000063234-mpzcw72j1d1f9b.jpg",
+      "price": 3899
+    },
+    {
+      "id": "hamper_1780236081879_d85a22",
+      "title": "Customised Mother's day Hamper",
+      "subtitle": "",
+      "image": "https://aura.devshubh.me/images/web/1000063236-mpzcya6j4060ec.jpg",
+      "price": 5999
+    },
+    {
+      "id": "hamper_1780569506359_a98000",
+      "title": "Ocean theme Birthday Hamper",
+      "subtitle": "",
+      "image": "https://aura.devshubh.me/images/web/1000067336-mpzd3cruaa53d7.png",
+      "price": 4399
+    },
+    {
+      "id": "hamper_1780569748261_3204af",
+      "title": "Men's gift hamper",
+      "subtitle": "Customised",
+      "image": "https://aura.devshubh.me/images/web/1000056371-mpzd8p5n8e2ea2.webp",
+      "price": 2799
+    },
+    {
+      "id": "hamper_1780880755545_0dd60d",
+      "title": "1st Birthday Hamper gift for baby girl-2",
+      "subtitle": "",
+      "image": "https://aura.devshubh.me/images/web/1000068432-mq4ie8la1877ce.jpg",
+      "price": 1699
+    }
+  ],
+  "about": {
+    "label": "Our Story",
+    "title": "Crafted with Love, Delivered with Care",
+    "image": "https://aura.devshubh.me/images/web/sunflower_sky_backdrop-mqdkvx57fe861a.jpg",
+    "body": "Aura Boxed Gifts is a custom gift hamper business that focuses on creating beautifully curated, personalized gift boxes for different occasions.\n\n💝 What we do:\n• Create customized hamper boxes (you can choose items, theme, colors)\n• Design aesthetic packaging with lights, shredded paper, ribbons, etc.\n• Offer occasion-based gifting like Birthdays, Mother's Day, Weddings, Anniversaries, and Corporate gifts.\n\nWe provide pan-India delivery and take orders via our website or Instagram DMs! 🎁",
+    "ctaText": "Visit Our Store",
+    "ctaLink": "https://www.instagram.com/aura_boxedgifts?utm_source=qr&igsh=MTYwbTYzNjJ6anUwdA=="
+  }
+}
