@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -62,7 +63,8 @@ fun CartScreen(
     onBack: (() -> Unit)? = null,
     onUpdateQty: (String, Int) -> Unit,
     onProceedToPay: () -> Unit,
-    onSignIn: () -> Unit
+    onSignIn: () -> Unit,
+    onClearCart: () -> Unit = {}
 ) {
     Scaffold(
         modifier = modifier,
@@ -158,6 +160,18 @@ fun CartScreen(
                                 SummaryRow("Total", total, bold = true)
                             }
                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedButton(
+                        onClick = onClearCart,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(Icons.Outlined.DeleteOutline, contentDescription = null, tint = RoseGold)
+                        Spacer(modifier = Modifier.size(8.dp))
+                        Text("Clear cart", color = TextMedium)
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))

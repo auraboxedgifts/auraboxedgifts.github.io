@@ -17,8 +17,10 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material.icons.outlined.AdminPanelSettings
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -42,13 +44,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.auraboxedgifts.orders.CatalogUiState
 import com.auraboxedgifts.orders.CustomerOrdersUiState
 import com.auraboxedgifts.orders.CustomerTab
@@ -92,11 +98,17 @@ fun CustomerShell(
     onAdminPanel: () -> Unit,
     onCustomerLogout: () -> Unit,
     onDeleteAccount: () -> Unit,
-    onOpenAuraAi: () -> Unit
+    onOpenAuraAi: () -> Unit,
+    onClearCart: () -> Unit = {}
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showAboutDialog by remember { mutableStateOf(false) }
+
+    if (showAboutDialog) {
+        CustomerAboutDialog(onDismiss = { showAboutDialog = false })
+    }
 
     val drawerProgress by animateFloatAsState(
         targetValue = if (drawerState.targetValue == DrawerValue.Open) 1f else 0f,
@@ -158,6 +170,14 @@ fun CustomerShell(
                 onCustomerLogout = {
                     closeDrawer()
                     onCustomerLogout()
+                },
+                onAbout = {
+                    closeDrawer()
+                    showAboutDialog = true
+                },
+                onClearCart = {
+                    closeDrawer()
+                    onClearCart()
                 }
             )
         }
@@ -165,13 +185,20 @@ fun CustomerShell(
         Box(modifier = Modifier.drawerBackdropEffect(drawerProgress)) {
             Scaffold(
                 containerColor = Cream,
-                snackbarHost = { SnackbarHost(snackbarHostState) },
+                snackbarHost = {
+                    SnackbarHost(
+                        hostState = snackbarHostState,
+                        modifier = Modifier.padding(bottom = 96.dp)
+                    )
+                },
                 floatingActionButton = {
                     FloatingActionButton(
                         onClick = onOpenAuraAi,
                         containerColor = RoseGold,
                         contentColor = Cream,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        modifier = Modifier
+                            .padding(bottom = 72.dp)
+                            .navigationBarsPadding()
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_aura_hamper),
@@ -209,41 +236,37 @@ fun CustomerShell(
                         actions = {
                             Box(
                                 modifier = Modifier
-                                    .padding(end = 12.dp)
-                                    .size(48.dp),
+                                    .padding(end = 8.dp)
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .clickable(onClick = onOpenCart)
+                                    .scale(cartIconScale),
                                 contentAlignment = Alignment.Center
                             ) {
-                                IconButton(
-                                    onClick = onOpenCart,
-                                    modifier = Modifier.scale(cartIconScale)
-                                ) {
-                                    if (cartItemCount > 0) {
-                                        BadgedBox(
-                                            badge = {
-                                                Badge(
-                                                    containerColor = RoseGold,
-                                                    modifier = Modifier.padding(end = 2.dp)
-                                                ) {
-                                                    Text(
-                                                        if (cartItemCount > 99) "99+" else "$cartItemCount",
-                                                        style = MaterialTheme.typography.labelSmall
-                                                    )
-                                                }
-                                            }
-                                        ) {
-                                            Icon(
-                                                Icons.Outlined.ShoppingCart,
-                                                contentDescription = "Cart",
-                                                tint = TextDark,
-                                                modifier = Modifier.size(24.dp)
-                                            )
-                                        }
-                                    } else {
-                                        Icon(
-                                            Icons.Outlined.ShoppingCart,
-                                            contentDescription = "Cart",
-                                            tint = TextDark,
-                                            modifier = Modifier.size(24.dp)
+                                Icon(
+                                    Icons.Outlined.ShoppingCart,
+                                    contentDescription = "Cart",
+                                    tint = TextDark,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                                if (cartItemCount > 0) {
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .offset(x = 8.dp, y = (-4).dp)
+                                            .size(18.dp)
+                                            .background(RoseGold, CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = if (cartItemCount > 99) "99+" else "$cartItemCount",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                lineHeight = 10.sp
+                                            ),
+                                            color = Color.White,
+                                            maxLines = 1
                                         )
                                     }
                                 }

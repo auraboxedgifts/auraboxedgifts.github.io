@@ -231,6 +231,31 @@ async function executeMobileLiveTool(fc, clientWs, ctx) {
             }
             break;
         }
+        case 'clear_cart': {
+            clientWs.send(JSON.stringify({
+                type: 'mobile_action',
+                action: { type: 'clear_cart' }
+            }));
+            try {
+                await sleep(450);
+                const payload = await requestCartTotalsFromClient(clientWs);
+                const cart = payload?.cart || calculateCart(payload?.items || []);
+                const showcase = buildCartShowcase(cart.lines, cart);
+                sendShowcase(clientWs, showcase);
+                response = {
+                    result: cart.lines?.length
+                        ? `Cart still has items. ${formatCartTotalsMessage(cart)}`
+                        : 'Your cart has been cleared.',
+                    grandTotal: cart.grandTotal
+                };
+            } catch (err) {
+                response = {
+                    result: 'Your cart has been cleared.',
+                    error: err.message
+                };
+            }
+            break;
+        }
         case 'search_products': {
             const showcase = buildSearchShowcase(getCatalog, getSite, args.query);
             sendShowcase(clientWs, showcase);

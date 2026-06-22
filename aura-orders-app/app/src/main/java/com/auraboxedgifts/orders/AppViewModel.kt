@@ -665,6 +665,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             cartStore.clear()
             CartReminderWorker.cancel(getApplication())
+            _aiState.value = _aiState.value.copy(
+                cartSubtotal = null,
+                cartShipping = null,
+                cartGrandTotal = null
+            )
+            _snackbarMessage.value = "Cart cleared"
         }
     }
 
@@ -1566,6 +1572,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     _snackbarMessage.value = "Decreased $name quantity in cart"
                 }
             }
+            "clear_cart" -> clearCart()
         }
     }
 

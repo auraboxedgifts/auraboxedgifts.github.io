@@ -126,6 +126,11 @@ const mobileToolDeclarations = [
         }
     },
     {
+        name: 'clear_cart',
+        description: 'Remove all items from the shopping cart. Use when the customer wants to empty or clear their entire cart.',
+        parameters: { type: 'object', properties: {} }
+    },
+    {
         name: 'calculate_cart_total',
         description: 'Read the current cart subtotal, shipping, and grand total.',
         parameters: { type: 'object', properties: {} }

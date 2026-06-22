@@ -292,6 +292,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                                 }
                             },
                             onOpenAuraAi = { navController.navigate("aura_ai") },
+                            onClearCart = viewModel::clearCart,
                         )
                     }
 
@@ -346,7 +347,8 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                             },
                             onToggleMute = viewModel::toggleAuraVoiceMute,
                             onToggleSpeaker = viewModel::toggleAuraVoiceSpeaker,
-                            onAddToCart = viewModel::addToCart
+                            onAddToCart = viewModel::addToCart,
+                            onClearCart = viewModel::clearCart
                         )
                     }
 
@@ -372,7 +374,8 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                                     navController.navigate("checkout")
                                 }
                             },
-                            onSignIn = { navController.navigate("customer_auth?redirect=checkout") }
+                            onSignIn = { navController.navigate("customer_auth?redirect=checkout") },
+                            onClearCart = viewModel::clearCart
                         )
                     }
 

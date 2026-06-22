@@ -15,11 +15,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.automirrored.outlined.Login
 import androidx.compose.material.icons.outlined.AdminPanelSettings
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material.icons.outlined.ShoppingBag
@@ -33,13 +36,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.auraboxedgifts.orders.ui.components.BrandLogo
 import com.auraboxedgifts.orders.ui.components.StaggeredFadeIn
 import com.auraboxedgifts.orders.ui.theme.Cream
 import com.auraboxedgifts.orders.ui.theme.CreamDark
 import com.auraboxedgifts.orders.ui.theme.RoseGold
-import com.auraboxedgifts.orders.ui.theme.RoseLight
 import com.auraboxedgifts.orders.ui.theme.TextDark
 import com.auraboxedgifts.orders.ui.theme.TextLight
 import com.auraboxedgifts.orders.ui.theme.TextMedium
@@ -55,8 +63,12 @@ fun CustomerDrawerContent(
     onAccount: () -> Unit,
     onSignIn: () -> Unit,
     onAdminPanel: () -> Unit,
-    onCustomerLogout: () -> Unit
+    onCustomerLogout: () -> Unit,
+    onAbout: () -> Unit,
+    onClearCart: () -> Unit
 ) {
+    val uriHandler = LocalUriHandler.current
+
     Column(
         modifier = Modifier
             .fillMaxHeight()
@@ -111,24 +123,32 @@ fun CustomerDrawerContent(
                 badge = if (cartItemCount > 0) cartItemCount.toString() else null,
                 onClick = onCart
             )
-            DrawerItem(index = 3, icon = Icons.Outlined.Person, label = "My account", onClick = onAccount)
-
-            if (isCustomerLoggedIn) {
-                DrawerItem(index = 4, icon = Icons.Outlined.Receipt, label = "My orders", onClick = onAccount)
+            if (cartItemCount > 0) {
+                DrawerItem(
+                    index = 3,
+                    icon = Icons.Outlined.DeleteOutline,
+                    label = "Clear cart",
+                    onClick = onClearCart
+                )
             }
+            DrawerItem(index = 4, icon = Icons.Outlined.Person, label = "My account", onClick = onAccount)
+            if (isCustomerLoggedIn) {
+                DrawerItem(index = 5, icon = Icons.Outlined.Receipt, label = "My orders", onClick = onAccount)
+            }
+            DrawerItem(index = 6, icon = Icons.Outlined.Info, label = "About", onClick = onAbout)
         }
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 8.dp)
+                .padding(bottom = 12.dp)
         ) {
             HorizontalDivider(color = CreamDark)
 
             when {
                 isAdminLoggedIn -> {
                     DrawerItem(
-                        index = 6,
+                        index = 7,
                         icon = Icons.Outlined.AdminPanelSettings,
                         label = "Admin dashboard",
                         highlight = true,
@@ -137,7 +157,7 @@ fun CustomerDrawerContent(
                 }
                 !isCustomerLoggedIn -> {
                     DrawerItem(
-                        index = 6,
+                        index = 7,
                         icon = Icons.AutoMirrored.Outlined.Login,
                         label = "Sign in / Sign up",
                         highlight = true,
@@ -148,12 +168,36 @@ fun CustomerDrawerContent(
 
             if (isCustomerLoggedIn && !isAdminLoggedIn) {
                 DrawerItem(
-                    index = 7,
+                    index = 8,
                     icon = Icons.AutoMirrored.Outlined.Logout,
                     label = "Sign out",
                     onClick = onCustomerLogout
                 )
             }
+
+            val footer = buildAnnotatedString {
+                append("App created by ")
+                pushStringAnnotation(tag = "URL", annotation = "https://devshubh.me")
+                withStyle(SpanStyle(color = RoseGold, fontWeight = FontWeight.SemiBold)) {
+                    append("SS")
+                }
+                pop()
+            }
+            ClickableText(
+                text = footer,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                style = MaterialTheme.typography.labelMedium.copy(
+                    color = TextLight,
+                    textAlign = TextAlign.Center
+                ),
+                onClick = { offset ->
+                    footer.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                        .firstOrNull()
+                        ?.let { uriHandler.openUri(it.item) }
+                }
+            )
         }
     }
 }

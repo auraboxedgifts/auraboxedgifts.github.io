@@ -33,6 +33,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -41,6 +43,7 @@ import androidx.compose.material.icons.filled.Hearing
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.outlined.AddShoppingCart
 import androidx.compose.material.icons.outlined.CardGiftcard
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.MicOff
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -56,6 +59,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -104,7 +108,8 @@ fun AuraAiScreen(
     onEndSession: () -> Unit,
     onToggleMute: () -> Unit,
     onToggleSpeaker: () -> Unit,
-    onAddToCart: (String) -> Unit = {}
+    onAddToCart: (String) -> Unit = {},
+    onClearCart: () -> Unit = {}
 ) {
     val isConnecting = state.phase == AuraVoicePhase.Connecting
     val hasShowcase = state.showcaseSections.isNotEmpty() || state.showcaseItems.isNotEmpty()
@@ -161,7 +166,8 @@ fun AuraAiScreen(
                         onEndSession = onEndSession,
                         onToggleMute = onToggleMute,
                         onToggleSpeaker = onToggleSpeaker,
-                        onAddToCart = onAddToCart
+                        onAddToCart = onAddToCart,
+                        onClearCart = onClearCart
                     )
                 } else {
                     CenteredVoiceLayout(
@@ -169,7 +175,8 @@ fun AuraAiScreen(
                         onStartSession = onStartSession,
                         onEndSession = onEndSession,
                         onToggleMute = onToggleMute,
-                        onToggleSpeaker = onToggleSpeaker
+                        onToggleSpeaker = onToggleSpeaker,
+                        onClearCart = onClearCart
                     )
                 }
             }
@@ -251,13 +258,17 @@ private fun CenteredVoiceLayout(
     onStartSession: () -> Unit,
     onEndSession: () -> Unit,
     onToggleMute: () -> Unit,
-    onToggleSpeaker: () -> Unit
+    onToggleSpeaker: () -> Unit,
+    onClearCart: () -> Unit
 ) {
+    val scrollState = rememberScrollState()
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp),
+                .verticalScroll(scrollState)
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 108.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(12.dp))
@@ -270,10 +281,15 @@ private fun CenteredVoiceLayout(
             )
             Spacer(modifier = Modifier.height(20.dp))
             VoiceStatusCopy(state = state, compact = false)
+            if ((state.cartGrandTotal ?: 0.0) > 0.0) {
+                Spacer(modifier = Modifier.height(16.dp))
+                AuraCartSummaryCard(state = state, onClearCart = onClearCart)
+            }
             if (state.isSessionActive && state.phase == AuraVoicePhase.Listening) {
                 Spacer(modifier = Modifier.height(28.dp))
                 AuraTrySayingSection()
             }
+            Spacer(modifier = Modifier.height(16.dp))
         }
         VoiceControlsBar(
             state = state,
@@ -281,7 +297,9 @@ private fun CenteredVoiceLayout(
             onEndSession = onEndSession,
             onToggleMute = onToggleMute,
             onToggleSpeaker = onToggleSpeaker,
-            modifier = Modifier.align(Alignment.BottomCenter)
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
         )
     }
 }
@@ -337,7 +355,8 @@ private fun ShowcaseVoiceLayout(
     onEndSession: () -> Unit,
     onToggleMute: () -> Unit,
     onToggleSpeaker: () -> Unit,
-    onAddToCart: (String) -> Unit
+    onAddToCart: (String) -> Unit,
+    onClearCart: () -> Unit
 ) {
     val sections = if (state.showcaseSections.isNotEmpty()) {
         state.showcaseSections
@@ -383,25 +402,11 @@ private fun ShowcaseVoiceLayout(
         }
 
         if ((state.cartGrandTotal ?: 0.0) > 0.0) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = CardSurface)
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text("Cart summary", color = Color.White, style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        "Subtotal ₹${"%.0f".format(state.cartSubtotal ?: 0.0)} · Shipping ₹${"%.0f".format(state.cartShipping ?: 0.0)} · Total ₹${"%.0f".format(state.cartGrandTotal ?: 0.0)}",
-                        color = AuraRoseLight.copy(alpha = 0.85f),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
+            AuraCartSummaryCard(
+                state = state,
+                onClearCart = onClearCart,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+            )
         }
 
         LazyColumn(
@@ -451,8 +456,54 @@ private fun ShowcaseVoiceLayout(
             onEndSession = onEndSession,
             onToggleMute = onToggleMute,
             onToggleSpeaker = onToggleSpeaker,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
         )
+    }
+}
+
+@Composable
+private fun AuraCartSummaryCard(
+    state: AuraVoiceUiState,
+    onClearCart: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = CardSurface)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Cart summary", color = Color.White, style = MaterialTheme.typography.titleSmall)
+                TextButton(
+                    onClick = onClearCart,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                ) {
+                    Icon(
+                        Icons.Outlined.DeleteOutline,
+                        contentDescription = null,
+                        tint = EndRed,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Clear", color = EndRed, style = MaterialTheme.typography.labelMedium)
+                }
+            }
+            Text(
+                "Subtotal ₹${"%.0f".format(state.cartSubtotal ?: 0.0)} · Shipping ₹${"%.0f".format(state.cartShipping ?: 0.0)} · Total ₹${"%.0f".format(state.cartGrandTotal ?: 0.0)}",
+                color = AuraRoseLight.copy(alpha = 0.85f),
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
     }
 }
 
@@ -684,7 +735,9 @@ private fun VoiceControlsBar(
 ) {
     if (state.isSessionActive) {
         Row(
-            modifier = modifier.padding(horizontal = 20.dp, vertical = 26.dp),
+            modifier = modifier
+                .padding(horizontal = 20.dp)
+                .padding(top = 8.dp, bottom = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -730,7 +783,8 @@ private fun VoiceControlsBar(
     } else {
         Box(
             modifier = modifier
-                .padding(bottom = 42.dp)
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp)
                 .clip(RoundedCornerShape(50))
                 .background(RoseGold)
                 .clickable { onStartSession() }
