@@ -1,3 +1,7 @@
 node_modules
 .env
 data/snapshots/
+data/fcm-tokens.json
+data/orders.json
+data/users.json
+data/site.json
