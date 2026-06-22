@@ -52,11 +52,50 @@ function getAllCustomerTokens() {
 }
 
 let firebaseReady = false;
+let lastFcmInitError = null;
+
+function isFirebaseAdminInstalled() {
+    try {
+        require.resolve('firebase-admin');
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+function resolveCredentialSource() {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+        return { ok: true, source: 'env_json' };
+    }
+    const filePath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+    if (filePath) {
+        const resolved = path.isAbsolute(filePath) ? filePath : path.join(__dirname, filePath);
+        if (fs.existsSync(resolved)) {
+            return { ok: true, source: 'env_path', path: resolved };
+        }
+        return { ok: false, source: 'env_path_missing', path: resolved };
+    }
+    const defaultPath = path.join(__dirname, 'firebase-service-account.json');
+    if (fs.existsSync(defaultPath)) {
+        return { ok: true, source: 'default_file', path: defaultPath };
+    }
+    return { ok: false, source: 'missing', path: defaultPath };
+}
 
 function initFirebase() {
     if (firebaseReady) return true;
+    if (!isFirebaseAdminInstalled()) {
+        lastFcmInitError = 'firebase-admin package not installed — run npm install in aura-ai/backend';
+        console.error(`[FCM] ${lastFcmInitError}`);
+        return false;
+    }
     const json = loadServiceAccountJson();
-    if (!json) return false;
+    if (!json) {
+        const cred = resolveCredentialSource();
+        lastFcmInitError = `Firebase service account not found (expected ${cred.path || 'FIREBASE_SERVICE_ACCOUNT_JSON'})`;
+        console.error(`[FCM] ${lastFcmInitError}`);
+        return false;
+    }
     try {
         const admin = require('firebase-admin');
         const cred = JSON.parse(json);
@@ -64,9 +103,11 @@ function initFirebase() {
             admin.initializeApp({ credential: admin.credential.cert(cred) });
         }
         firebaseReady = true;
+        lastFcmInitError = null;
         console.log('[FCM] Firebase Admin initialized for project:', cred.project_id || '(unknown)');
         return true;
     } catch (err) {
+        lastFcmInitError = err.message;
         console.error('[FCM] Init failed:', err.message);
         return false;
     }
@@ -176,8 +217,12 @@ async function sendPush(tokens, notification, data = {}, logContext = 'push', op
         return { sent: 0, failed: 0, skipped: true, reason: 'no_tokens' };
     }
     if (!initFirebase()) {
-        console.log(`[FCM] ${logContext}: Firebase not configured — skipping (${unique.length} token(s) waiting)`);
-        return { sent: 0, failed: 0, skipped: true, reason: 'firebase_not_configured' };
+        const reason = !isFirebaseAdminInstalled()
+            ? 'firebase_admin_missing'
+            : (!resolveCredentialSource().ok ? 'credentials_missing' : 'firebase_not_configured');
+        const hint = lastFcmInitError || reason;
+        console.log(`[FCM] ${logContext}: ${hint} — skipping (${unique.length} token(s) waiting)`);
+        return { sent: 0, failed: 0, skipped: true, reason, hint };
     }
 
     const admin = require('firebase-admin');
@@ -374,6 +419,28 @@ function getFcmStats() {
     };
 }
 
+function getFcmConfigStatus() {
+    const cred = resolveCredentialSource();
+    const firebaseAdminInstalled = isFirebaseAdminInstalled();
+    const ready = firebaseReady || (cred.ok && firebaseAdminInstalled && initFirebase());
+    let projectId = null;
+    if (cred.ok) {
+        try {
+            const json = loadServiceAccountJson();
+            if (json) projectId = JSON.parse(json).project_id || null;
+        } catch (_) { }
+    }
+    return {
+        configured: Boolean(ready),
+        firebaseAdminInstalled,
+        credentialSource: cred.source,
+        credentialPath: cred.path || null,
+        projectId,
+        lastError: lastFcmInitError,
+        ...getFcmStats()
+    };
+}
+
 module.exports = {
     registerToken,
     notifyAdminsNewOrder,
@@ -385,6 +452,7 @@ module.exports = {
     initFirebase,
     readTokens,
     getFcmStats,
+    getFcmConfigStatus,
     getAllCustomerTokens,
     ORDER_STATUS_LABELS
 };

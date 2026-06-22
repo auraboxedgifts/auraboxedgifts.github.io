@@ -898,7 +898,8 @@ app.get('/api/admin/integrations', requireAdmin, (req, res) => {
         },
         maps: {
             configured: Boolean(process.env.GOOGLE_MAPS_API_KEY)
-        }
+        },
+        fcm: getFcmConfigStatus()
     });
 });
 
@@ -1681,7 +1682,7 @@ const { chatWithAura, buildSuggestions } = require('./ai/textChat');
 const { chatWithMobileAura } = require('./ai/mobileAi');
 const { buildMobileLiveInstruction, executeMobileLiveTool, MOBILE_LIVE_KICKOFF } = require('./ai/liveMobileHandler');
 const { mobileToolDeclarations } = require('./ai/mobileTools');
-const { registerToken, sendCartReminder, readTokens, broadcastToCustomers, sendNewProductsDigest, getFcmStats } = require('./fcm');
+const { registerToken, sendCartReminder, readTokens, broadcastToCustomers, sendNewProductsDigest, getFcmStats, getFcmConfigStatus } = require('./fcm');
 
 const AI_PUBLIC_DIR = path.join(__dirname, 'public');
 if (!fs.existsSync(AI_PUBLIC_DIR)) {

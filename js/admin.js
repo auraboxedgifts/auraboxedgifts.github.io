@@ -1680,6 +1680,15 @@
 
     const dot = (ok) => `<span class="aap-status-dot ${ok ? 'on' : 'off'}"></span>${ok ? 'Configured' : 'Not configured'}`;
 
+    const fcm = status.fcm || {};
+    const fcmHint = fcm.configured
+      ? `Ready · project ${escapeHtml(fcm.projectId || '—')} · ${fcm.customerDevices || 0} customer device(s)`
+      : escapeHtml(fcm.lastError || (
+          !fcm.firebaseAdminInstalled
+            ? 'Run npm install in aura-ai/backend, then pm2 restart aura-ai'
+            : 'Add firebase-service-account.json on the server'
+        ));
+
     content.innerHTML = `
       <div class="aap-tools-grid">
         <div class="aap-tool-card">
@@ -1729,6 +1738,7 @@
           <div>
             <h3><i class="fas fa-bell"></i> Customer push notifications (FCM)</h3>
             <p class="aap-hint" style="margin:4px 0 0;">Send a push to every logged-in customer who has the Android app. Optional image URL (product photo or banner).</p>
+            <p class="aap-tool-status" id="aapFcmStatus" style="margin-top:8px;">${dot(fcm.configured)} ${fcmHint}</p>
           </div>
         </div>
         <form class="aap-form" id="aapFcmBroadcastForm">
@@ -1838,7 +1848,7 @@
       const text = result.error
         ? result.error
         : (result.skipped
-          ? (result.reason || 'skipped')
+          ? (result.hint || result.reason || 'skipped')
           : `sent to ${result.sent || 0} device(s)${result.failed ? ` (${result.failed} failed)` : ''}`);
       el.innerHTML = `<div class="aap-tool-result"><p><i class="fas fa-bell" style="color:#b76e79;"></i> ${escapeHtml(label)}: <strong>${escapeHtml(String(text))}</strong></p></div>`;
     }
