@@ -9,6 +9,7 @@ yarn-error.log
 .env.development
 .env.production
 !.env.example
+aura-ai/backend/firebase-service-account.json
 
 # OS generated files
 .DS_Store

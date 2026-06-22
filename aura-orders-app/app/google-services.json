@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "000000000000",
-    "project_id": "aura-boxed-gifts-orders",
-    "storage_bucket": "aura-boxed-gifts-orders.appspot.com"
+    "project_number": "823431273864",
+    "project_id": "aura-boxed-gifts",
+    "storage_bucket": "aura-boxed-gifts.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "mobilesdk_app_id": "1:823431273864:android:ca233fd912fb74e1a62e3d",
         "android_client_info": {
           "package_name": "com.auraboxedgifts.orders"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "REPLACE_WITH_FIREBASE_ANDROID_API_KEY"
+          "current_key": "AIzaSyDXFI91iY4vt2e5-8giyPbX4Yc5bK9xZjk"
         }
       ],
       "services": {

@@ -50,6 +50,14 @@ function loadServiceAccountJson() {
             console.error('[FCM] Could not read service account file:', err.message);
         }
     }
+    const defaultPath = path.join(__dirname, 'firebase-service-account.json');
+    if (fs.existsSync(defaultPath)) {
+        try {
+            return fs.readFileSync(defaultPath, 'utf8');
+        } catch (err) {
+            console.error('[FCM] Could not read default service account file:', err.message);
+        }
+    }
     return null;
 }
 
