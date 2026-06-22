@@ -43,6 +43,39 @@ const mobileToolDeclarations = [
         parameters: { type: 'object', properties: {} }
     },
     {
+        name: 'open_sign_in',
+        description: 'Open sign in screen inside the app. Use when customer wants to login.',
+        parameters: {
+            type: 'object',
+            properties: {
+                email: { type: 'string', description: 'Optional email to pre-fill' }
+            }
+        }
+    },
+    {
+        name: 'open_sign_up',
+        description: 'Open sign up screen inside the app and optionally send OTP.',
+        parameters: {
+            type: 'object',
+            properties: {
+                email: { type: 'string', description: 'Email for OTP' },
+                sendOtp: { type: 'boolean', description: 'Send OTP immediately when email is available' }
+            }
+        }
+    },
+    {
+        name: 'verify_sign_up_otp',
+        description: 'Verify OTP for sign up after customer speaks the code.',
+        parameters: {
+            type: 'object',
+            properties: {
+                email: { type: 'string' },
+                otp: { type: 'string' }
+            },
+            required: ['email', 'otp']
+        }
+    },
+    {
         name: 'view_product',
         description:
             'Highlight a product or hamper in the Aura AI showcase (stay on voice screen). Use after the customer picks an item or asks about a specific id.',

@@ -1319,6 +1319,20 @@ app.put('/api/auth/profile', requireAuth, (req, res) => {
     return jsonOk(res, sanitizeUser(user, email));
 });
 
+app.delete('/api/auth/account', requireAuth, (req, res) => {
+    const users = readJson(USERS_FILE, {});
+    const email = req.auth.email;
+    if (!users[email]) return jsonErr(res, 404, 'User not found');
+    delete users[email];
+    writeJson(USERS_FILE, users);
+    const orders = readJson(ORDERS_FILE, []);
+    const filtered = orders.filter((o) => o.userEmail !== email);
+    if (filtered.length !== orders.length) {
+        writeJson(ORDERS_FILE, filtered);
+    }
+    return jsonOk(res, { deleted: true });
+});
+
 app.get('/api/auth/checkout-info', requireAuth, (req, res) => {
     const users = readJson(USERS_FILE, {});
     const user = users[req.auth.email] || null;
@@ -1994,6 +2008,7 @@ wss.on('connection', (clientWs, request) => {
                                         requestCartTotalsFromClient,
                                         formatCartTotalsMessage,
                                         calculateCart,
+                                        createOtp,
                                         sleep
                                     });
                                     if (mobileResult.lastViewedProduct) {

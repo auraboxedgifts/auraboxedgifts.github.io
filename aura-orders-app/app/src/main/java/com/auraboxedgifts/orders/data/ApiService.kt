@@ -100,6 +100,9 @@ interface AuraApiService {
     @GET("/api/auth/me")
     suspend fun getMe(@Header("Authorization") auth: String): Response<ApiResponse<UserProfile>>
 
+    @DELETE("/api/auth/account")
+    suspend fun deleteCustomerAccount(@Header("Authorization") auth: String): Response<ApiResponse<DeleteResult>>
+
     @GET("/api/orders")
     suspend fun getCustomerOrders(@Header("Authorization") auth: String): Response<ApiResponse<List<Order>>>
 
@@ -207,6 +210,14 @@ class AuraRepository(private val api: AuraApiService) {
             throw ApiException(body?.error ?: "Could not load orders")
         }
         return body.data ?: emptyList()
+    }
+
+    suspend fun deleteCustomerAccount(token: String) {
+        val response = api.deleteCustomerAccount(bearer(token))
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) {
+            throw ApiException(body?.error ?: "Could not delete account")
+        }
     }
 
     suspend fun fetchOrders(token: String): List<Order> {

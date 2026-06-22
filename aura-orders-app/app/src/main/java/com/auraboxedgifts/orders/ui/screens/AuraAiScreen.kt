@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -43,6 +44,7 @@ import androidx.compose.material.icons.outlined.CardGiftcard
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.MicOff
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Card
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
@@ -73,6 +75,7 @@ import androidx.compose.ui.unit.sp
 import com.auraboxedgifts.orders.AuraVoicePhase
 import com.auraboxedgifts.orders.AuraVoiceUiState
 import com.auraboxedgifts.orders.data.AuraShowcaseItem
+import com.auraboxedgifts.orders.data.AuraShowcaseSection
 import com.auraboxedgifts.orders.data.formatRupee
 import com.auraboxedgifts.orders.ui.components.ProductImage
 import com.auraboxedgifts.orders.ui.theme.RoseGold
@@ -104,7 +107,7 @@ fun AuraAiScreen(
     onAddToCart: (String) -> Unit = {}
 ) {
     val isConnecting = state.phase == AuraVoicePhase.Connecting
-    val hasShowcase = state.showcaseItems.isNotEmpty()
+    val hasShowcase = state.showcaseSections.isNotEmpty() || state.showcaseItems.isNotEmpty()
 
     Scaffold(
         containerColor = AuraDark,
@@ -336,7 +339,16 @@ private fun ShowcaseVoiceLayout(
     onToggleSpeaker: () -> Unit,
     onAddToCart: (String) -> Unit
 ) {
-    val scope = rememberCoroutineScope()
+    val sections = if (state.showcaseSections.isNotEmpty()) {
+        state.showcaseSections
+    } else {
+        listOf(
+            AuraShowcaseSection(
+                title = state.showcaseTitle ?: "Picked for you",
+                items = state.showcaseItems
+            )
+        )
+    }
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
@@ -370,34 +382,66 @@ private fun ShowcaseVoiceLayout(
             }
         }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(Icons.Outlined.CardGiftcard, contentDescription = null, tint = AuraGold, modifier = Modifier.size(20.dp))
-            Text(
-                text = state.showcaseTitle ?: "Picked for you",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = Color.White,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = "${state.showcaseItems.size}",
-                style = MaterialTheme.typography.labelMedium,
-                color = AuraRoseLight.copy(alpha = 0.75f)
-            )
+        if ((state.cartGrandTotal ?: 0.0) > 0.0) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = CardSurface)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text("Cart summary", color = Color.White, style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "Subtotal ₹${"%.0f".format(state.cartSubtotal ?: 0.0)} · Shipping ₹${"%.0f".format(state.cartShipping ?: 0.0)} · Total ₹${"%.0f".format(state.cartGrandTotal ?: 0.0)}",
+                        color = AuraRoseLight.copy(alpha = 0.85f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
         }
 
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            modifier = Modifier.weight(1f)
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(state.showcaseItems, key = { it.id }) { item ->
-                ShowcaseGiftCard(item = item, onAddToCart = { onAddToCart(item.id) })
+            sections.forEachIndexed { sectionIndex, section ->
+                item(key = "title_${section.title}_$sectionIndex") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Outlined.CardGiftcard, contentDescription = null, tint = AuraGold, modifier = Modifier.size(20.dp))
+                        Text(
+                            text = section.title,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "${section.items.size}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = AuraRoseLight.copy(alpha = 0.75f)
+                        )
+                    }
+                }
+                item(key = "row_${section.title}_$sectionIndex") {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        items(section.items, key = { "${section.title}_${it.id}" }) { item ->
+                            ShowcaseGiftCard(item = item, onAddToCart = { onAddToCart(item.id) })
+                        }
+                    }
+                }
             }
         }
 
@@ -640,7 +684,7 @@ private fun VoiceControlsBar(
 ) {
     if (state.isSessionActive) {
         Row(
-            modifier = modifier.padding(horizontal = 20.dp, vertical = 20.dp),
+            modifier = modifier.padding(horizontal = 20.dp, vertical = 26.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -686,7 +730,7 @@ private fun VoiceControlsBar(
     } else {
         Box(
             modifier = modifier
-                .padding(bottom = 28.dp)
+                .padding(bottom = 42.dp)
                 .clip(RoundedCornerShape(50))
                 .background(RoseGold)
                 .clickable { onStartSession() }

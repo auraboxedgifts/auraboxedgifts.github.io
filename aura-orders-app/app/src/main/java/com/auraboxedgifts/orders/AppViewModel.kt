@@ -12,6 +12,7 @@ import com.auraboxedgifts.orders.data.AppConfig
 import com.auraboxedgifts.orders.data.IndianLocations
 import com.auraboxedgifts.orders.data.AuraRepository
 import com.auraboxedgifts.orders.data.AuraShowcaseItem
+import com.auraboxedgifts.orders.data.AuraShowcaseSection
 import com.auraboxedgifts.orders.data.Cart
 import com.auraboxedgifts.orders.data.CartItemRequest
 import com.auraboxedgifts.orders.data.CartStore
@@ -199,7 +200,11 @@ data class AuraVoiceUiState(
     val audioLevel: Float = 0f,
     val error: String? = null,
     val showcaseTitle: String? = null,
-    val showcaseItems: List<AuraShowcaseItem> = emptyList()
+    val showcaseItems: List<AuraShowcaseItem> = emptyList(),
+    val showcaseSections: List<AuraShowcaseSection> = emptyList(),
+    val cartSubtotal: Double? = null,
+    val cartShipping: Double? = null,
+    val cartGrandTotal: Double? = null
 )
 
 sealed class AiNavigationEvent {
@@ -207,6 +212,7 @@ sealed class AiNavigationEvent {
     data object Cart : AiNavigationEvent()
     data object Account : AiNavigationEvent()
     data object Checkout : AiNavigationEvent()
+    data class CustomerAuth(val mode: AuthMode) : AiNavigationEvent()
     data class Product(val productId: String) : AiNavigationEvent()
     data class AddToCart(val productId: String) : AiNavigationEvent()
     data class Search(val query: String) : AiNavigationEvent()
@@ -375,6 +381,25 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun deleteCustomerAccount(onSuccess: () -> Unit) {
+        val token = customerToken.value ?: return
+        viewModelScope.launch {
+            try {
+                repository.deleteCustomerAccount(token)
+                tokenStore.clearCustomer()
+                cartStore.clear()
+                _customerOrdersState.value = CustomerOrdersUiState()
+                _checkoutState.value = CheckoutUiState()
+                _snackbarMessage.value = "Your account has been deleted"
+                onSuccess()
+            } catch (e: ApiException) {
+                _snackbarMessage.value = e.message ?: "Could not delete account"
+            } catch (_: Exception) {
+                _snackbarMessage.value = "Could not delete account"
+            }
+        }
+    }
+
     fun updateCustomerAuthEmail(v: String) {
         _customerAuthState.value = _customerAuthState.value.copy(email = v, error = null)
     }
@@ -393,6 +418,38 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setCustomerAuthMode(mode: AuthMode) {
         _customerAuthState.value = CustomerAuthUiState(mode = mode)
+    }
+
+    private fun openCustomerAuthFromAi(mode: AuthMode, email: String?) {
+        val normalizedEmail = email?.trim().orEmpty()
+        _customerAuthState.value = CustomerAuthUiState(
+            mode = mode,
+            email = normalizedEmail
+        )
+        viewModelScope.launch {
+            _aiNavigation.emit(AiNavigationEvent.CustomerAuth(mode))
+        }
+    }
+
+    private fun verifyOtpFromAi(email: String, otp: String) {
+        viewModelScope.launch {
+            try {
+                val (token, _) = repository.verifyOtp(email, otp)
+                _customerAuthState.value = _customerAuthState.value.copy(
+                    email = email.trim().lowercase(),
+                    otp = otp.trim(),
+                    isOtpVerified = true,
+                    tempToken = token,
+                    successMessage = "OTP verified. Please set your name and password.",
+                    error = null
+                )
+                _aiNavigation.emit(AiNavigationEvent.CustomerAuth(AuthMode.SIGN_UP))
+            } catch (e: ApiException) {
+                _snackbarMessage.value = e.message ?: "Invalid OTP"
+            } catch (_: Exception) {
+                _snackbarMessage.value = "Could not verify OTP"
+            }
+        }
     }
 
     fun sendCustomerOtp() {
@@ -1358,12 +1415,34 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun dispatchMobileAction(action: JsonObject) {
         when (action.get("type")?.asString) {
             "showcase" -> {
-                val (title, items) = parseShowcaseAction(action)
-                applyShowcase(title, items)
+                val showcase = parseShowcaseAction(action)
+                applyShowcase(
+                    title = showcase.title,
+                    items = showcase.items,
+                    append = showcase.append,
+                    subtotal = showcase.subtotal,
+                    shipping = showcase.shipping,
+                    grandTotal = showcase.grandTotal
+                )
             }
             "navigate_shop" -> _aiNavigation.emit(AiNavigationEvent.Shop)
             "navigate_cart" -> _aiNavigation.emit(AiNavigationEvent.Cart)
             "navigate_account" -> _aiNavigation.emit(AiNavigationEvent.Account)
+            "navigate_auth" -> {
+                val mode = when (action.get("mode")?.asString?.lowercase()) {
+                    "signup" -> AuthMode.SIGN_UP
+                    "forgot_password", "forgot" -> AuthMode.FORGOT_PASSWORD
+                    else -> AuthMode.SIGN_IN
+                }
+                openCustomerAuthFromAi(mode, action.get("email")?.asString)
+            }
+            "verify_otp" -> {
+                val email = action.get("email")?.asString.orEmpty()
+                val otp = action.get("otp")?.asString.orEmpty()
+                if (email.isNotBlank() && otp.isNotBlank()) {
+                    verifyOtpFromAi(email, otp)
+                }
+            }
             "navigate_checkout" -> {
                 prepareCheckout()
                 _aiNavigation.emit(AiNavigationEvent.Checkout)
@@ -1392,17 +1471,53 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun clearAuraShowcase() {
-        _aiState.value = _aiState.value.copy(showcaseTitle = null, showcaseItems = emptyList())
-    }
-
-    private fun applyShowcase(title: String?, items: List<AuraShowcaseItem>) {
         _aiState.value = _aiState.value.copy(
-            showcaseTitle = title,
-            showcaseItems = items
+            showcaseTitle = null,
+            showcaseItems = emptyList(),
+            showcaseSections = emptyList(),
+            cartSubtotal = null,
+            cartShipping = null,
+            cartGrandTotal = null
         )
     }
 
-    private fun parseShowcaseAction(action: JsonObject): Pair<String?, List<AuraShowcaseItem>> {
+    private fun applyShowcase(
+        title: String?,
+        items: List<AuraShowcaseItem>,
+        append: Boolean,
+        subtotal: Double?,
+        shipping: Double?,
+        grandTotal: Double?
+    ) {
+        val sectionTitle = title?.takeIf { it.isNotBlank() } ?: "Picked for you"
+        val newSection = AuraShowcaseSection(sectionTitle, items)
+        val currentSections = _aiState.value.showcaseSections
+        val updatedSections = if (append && currentSections.isNotEmpty()) {
+            listOf(newSection) + currentSections.filterNot { it.title.equals(sectionTitle, ignoreCase = true) }
+        } else {
+            listOf(newSection)
+        }
+        val flattened = updatedSections.flatMap { it.items }
+        _aiState.value = _aiState.value.copy(
+            showcaseTitle = title,
+            showcaseItems = flattened,
+            showcaseSections = updatedSections,
+            cartSubtotal = subtotal ?: _aiState.value.cartSubtotal,
+            cartShipping = shipping ?: _aiState.value.cartShipping,
+            cartGrandTotal = grandTotal ?: _aiState.value.cartGrandTotal
+        )
+    }
+
+    private data class ParsedShowcaseAction(
+        val title: String?,
+        val items: List<AuraShowcaseItem>,
+        val append: Boolean,
+        val subtotal: Double?,
+        val shipping: Double?,
+        val grandTotal: Double?
+    )
+
+    private fun parseShowcaseAction(action: JsonObject): ParsedShowcaseAction {
         val title = action.get("title")?.asString
         val items = action.getAsJsonArray("items")?.mapNotNull { element ->
             if (!element.isJsonObject) return@mapNotNull null
@@ -1417,7 +1532,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 isHamper = obj.get("isHamper")?.asBoolean ?: false
             )
         }.orEmpty()
-        return title to items
+        val append = action.get("append")?.asBoolean ?: false
+        val subtotal = action.get("subtotal")?.asDouble
+        val shipping = action.get("shipping")?.asDouble
+        val grandTotal = action.get("grandTotal")?.asDouble
+        return ParsedShowcaseAction(title, items, append, subtotal, shipping, grandTotal)
     }
 
     override fun onCleared() {

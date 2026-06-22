@@ -54,7 +54,8 @@ fun CustomerAccountScreen(
     ordersState: CustomerOrdersUiState,
     onSignIn: () -> Unit,
     onAdminPanel: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onDeleteAccount: () -> Unit
 ) {
     Column(
         modifier = modifier
@@ -238,6 +239,15 @@ fun CustomerAccountScreen(
                     border = androidx.compose.foundation.BorderStroke(1.dp, RoseGold)
                 ) {
                     Text("Sign out")
+                }
+                OutlinedButton(
+                    onClick = onDeleteAccount,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFB3261E)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFB3261E).copy(alpha = 0.65f))
+                ) {
+                    Text("Delete account")
                 }
             }
         } else if (!isAdminLoggedIn) {

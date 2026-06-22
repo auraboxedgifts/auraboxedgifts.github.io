@@ -25,6 +25,7 @@ function buildMobileLiveInstruction(getCatalog, getSite, getSettings) {
         'You are Aura AI — a warm voice shopping assistant for Aura Boxed Gifts inside the Android app.',
         'Speak naturally in short sentences. Use mobile tools to help shop.',
         'When the customer wants to SEE hampers or gifts, call show_hampers or show_gifts — cards appear on the Aura AI screen. Do NOT navigate to the shop for browsing.',
+        'When authentication is needed, use open_sign_in or open_sign_up. If customer asks to continue sign up by voice, call verify_sign_up_otp after they speak OTP.',
         'Use navigate_cart, navigate_checkout, navigate_account only when they ask to open those screens.',
         'Never invent product ids — use ids from the catalog below.',
         '',
@@ -57,6 +58,7 @@ async function executeMobileLiveTool(fc, clientWs, ctx) {
         requestCartTotalsFromClient,
         formatCartTotalsMessage,
         calculateCart,
+        createOtp,
         sleep
     } = ctx;
     const args = fc.args || {};
@@ -101,6 +103,46 @@ async function executeMobileLiveTool(fc, clientWs, ctx) {
             clientWs.send(JSON.stringify({ type: 'mobile_action', action: { type: 'navigate_checkout' } }));
             response = { result: 'Opened checkout' };
             break;
+        case 'open_sign_in': {
+            clientWs.send(
+                JSON.stringify({
+                    type: 'mobile_action',
+                    action: { type: 'navigate_auth', mode: 'signin', email: String(args.email || '') }
+                })
+            );
+            response = { result: 'Opened sign in screen' };
+            break;
+        }
+        case 'open_sign_up': {
+            const email = String(args.email || '').trim().toLowerCase();
+            if (email && Boolean(args.sendOtp)) {
+                await createOtp(email, false);
+            }
+            clientWs.send(
+                JSON.stringify({
+                    type: 'mobile_action',
+                    action: { type: 'navigate_auth', mode: 'signup', email }
+                })
+            );
+            response = {
+                result: email && Boolean(args.sendOtp)
+                    ? `Opened sign up and sent OTP to ${email}`
+                    : 'Opened sign up screen'
+            };
+            break;
+        }
+        case 'verify_sign_up_otp': {
+            const email = String(args.email || '').trim().toLowerCase();
+            const otp = String(args.otp || '').trim();
+            clientWs.send(
+                JSON.stringify({
+                    type: 'mobile_action',
+                    action: { type: 'verify_otp', email, otp }
+                })
+            );
+            response = { result: 'Verifying OTP in app' };
+            break;
+        }
         case 'view_product': {
             const productId = String(args.productId || resolveProductId(args, lastViewedProduct) || '');
             if (productId) {
@@ -170,7 +212,7 @@ async function executeMobileLiveTool(fc, clientWs, ctx) {
                 await sleep(450);
                 const payload = await requestCartTotalsFromClient(clientWs);
                 const cart = payload?.cart || calculateCart(payload?.items || []);
-                const showcase = buildCartShowcase(cart.lines);
+                const showcase = buildCartShowcase(cart.lines, cart);
                 sendShowcase(clientWs, showcase);
                 response = {
                     result: `Decreased quantity of ${args.productName || sellable?.name || 'item'} by ${qty}. ${formatCartTotalsMessage(cart)}`,
@@ -200,7 +242,7 @@ async function executeMobileLiveTool(fc, clientWs, ctx) {
             try {
                 const payload = await requestCartTotalsFromClient(clientWs);
                 const cart = payload?.cart || calculateCart(payload?.items || []);
-                const showcase = buildCartShowcase(cart.lines);
+                const showcase = buildCartShowcase(cart.lines, cart);
                 sendShowcase(clientWs, showcase);
                 response = {
                     result: formatCartTotalsMessage(cart),

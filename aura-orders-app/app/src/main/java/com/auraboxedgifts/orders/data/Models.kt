@@ -253,14 +253,23 @@ data class AuraShowcaseItem(
     val isHamper: Boolean = false
 )
 
+data class AuraShowcaseSection(
+    val title: String,
+    val items: List<AuraShowcaseItem> = emptyList()
+)
+
 data class MobileAiAction(
     val type: String,
     val productId: String? = null,
     val productName: String? = null,
     val qty: Int? = null,
     val query: String? = null,
+    val mode: String? = null,
+    val email: String? = null,
+    val otp: String? = null,
     val title: String? = null,
-    val items: List<AuraShowcaseItem>? = null
+    val items: List<AuraShowcaseItem>? = null,
+    val append: Boolean? = null
 )
 
 data class MobileAiChatResult(

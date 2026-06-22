@@ -16,6 +16,7 @@ import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DrawerValue
@@ -90,6 +91,7 @@ fun CustomerShell(
     onSignIn: () -> Unit,
     onAdminPanel: () -> Unit,
     onCustomerLogout: () -> Unit,
+    onDeleteAccount: () -> Unit,
     onOpenAuraAi: () -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -272,6 +274,15 @@ fun CustomerShell(
                             label = { Text("Account") },
                             colors = navColors()
                         )
+                        if (isAdminLoggedIn) {
+                            NavigationBarItem(
+                                selected = false,
+                                onClick = onAdminPanel,
+                                icon = { Icon(Icons.Outlined.AdminPanelSettings, contentDescription = "Admin") },
+                                label = { Text("Admin") },
+                                colors = navColors()
+                            )
+                        }
                     }
                 }
             ) { padding ->
@@ -309,7 +320,8 @@ fun CustomerShell(
                             ordersState = customerOrdersState,
                             onSignIn = onSignIn,
                             onAdminPanel = onAdminPanel,
-                            onLogout = onCustomerLogout
+                            onLogout = onCustomerLogout,
+                            onDeleteAccount = onDeleteAccount
                         )
                     }
                 }

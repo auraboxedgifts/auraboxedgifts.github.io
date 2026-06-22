@@ -32,6 +32,7 @@ function buildHampersShowcase(getSite, query) {
     }
     return {
         title: q ? `Hampers for “${query.trim()}”` : 'Curated gift hampers',
+        append: true,
         items: hampers.slice(0, 12).map(hamperToShowcaseItem)
     };
 }
@@ -56,6 +57,7 @@ function buildGiftsShowcase(getCatalog, query, collection) {
     else if (col) title = `${collection} collection`;
     return {
         title,
+        append: true,
         items: products.slice(0, 12).map(productToShowcaseItem)
     };
 }
@@ -66,6 +68,7 @@ function buildProductShowcase(getSellable, productId, productName) {
     const isHamper = String(productId).startsWith('hamper_');
     return {
         title: productName || sellable.name || 'Featured gift',
+        append: false,
         items: [
             productToShowcaseItem({
                 id: sellable.id,
@@ -100,13 +103,18 @@ function buildSearchShowcase(getCatalog, getSite, query) {
     const items = [...hamperItems, ...productItems].slice(0, 12);
     return {
         title: items.length ? `Results for “${query.trim()}”` : `No matches for “${query.trim()}”`,
+        append: true,
         items
     };
 }
 
-function buildCartShowcase(cartLines) {
+function buildCartShowcase(cartLines, totals = {}) {
     return {
         title: 'Your shopping cart',
+        append: false,
+        subtotal: Number(totals.subtotal) || 0,
+        shipping: Number(totals.shipping) || 0,
+        grandTotal: Number(totals.grandTotal) || 0,
         items: (cartLines || []).map((line) => ({
             id: String(line.productId || ''),
             title: String(line.name || ''),
@@ -122,7 +130,11 @@ function showcaseMobileAction(showcase) {
     return {
         type: 'showcase',
         title: showcase.title,
-        items: showcase.items
+        items: showcase.items,
+        append: Boolean(showcase.append),
+        subtotal: Number(showcase.subtotal) || 0,
+        shipping: Number(showcase.shipping) || 0,
+        grandTotal: Number(showcase.grandTotal) || 0
     };
 }
 

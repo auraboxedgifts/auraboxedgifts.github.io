@@ -195,8 +195,20 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                                 }
                             }
                             AiNavigationEvent.Checkout -> {
-                                viewModel.prepareCheckout()
-                                navController.navigate("checkout")
+                                if (customerToken.isNullOrBlank()) {
+                                    navController.navigate("customer_auth?redirect=checkout&mode=signin")
+                                } else {
+                                    viewModel.prepareCheckout()
+                                    navController.navigate("checkout")
+                                }
+                            }
+                            is AiNavigationEvent.CustomerAuth -> {
+                                val mode = when (event.mode) {
+                                    AuthMode.SIGN_UP -> "signup"
+                                    AuthMode.FORGOT_PASSWORD -> "forgot"
+                                    else -> "signin"
+                                }
+                                navController.navigate("customer_auth?redirect=&mode=$mode")
                             }
                             is AiNavigationEvent.Product -> {
                                 viewModel.loadProductDetail(event.productId)
@@ -258,6 +270,14 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                                 }
                             },
                             onCustomerLogout = viewModel::logoutCustomer,
+                            onDeleteAccount = {
+                                viewModel.deleteCustomerAccount {
+                                    navController.navigate("shop") {
+                                        popUpTo("shop") { inclusive = true }
+                                        launchSingleTop = true
+                                    }
+                                }
+                            },
                             onOpenAuraAi = { navController.navigate("aura_ai") },
                         )
                     }
@@ -425,15 +445,27 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                     }
 
                     auraComposable(
-                        route = "customer_auth?redirect={redirect}",
+                        route = "customer_auth?redirect={redirect}&mode={mode}",
                         arguments = listOf(
                             navArgument("redirect") {
                                 type = NavType.StringType
                                 defaultValue = ""
+                            },
+                            navArgument("mode") {
+                                type = NavType.StringType
+                                defaultValue = "signin"
                             }
                         )
                     ) { entry ->
                         val redirect = entry.arguments?.getString("redirect").orEmpty()
+                        val modeArg = entry.arguments?.getString("mode").orEmpty()
+                        LaunchedEffect(modeArg) {
+                            when (modeArg.lowercase()) {
+                                "signup" -> viewModel.setCustomerAuthMode(AuthMode.SIGN_UP)
+                                "forgot" -> viewModel.setCustomerAuthMode(AuthMode.FORGOT_PASSWORD)
+                                else -> viewModel.setCustomerAuthMode(AuthMode.SIGN_IN)
+                            }
+                        }
                         CustomerAuthScreen(
                             state = customerAuthState,
                             onBack = { navController.popBackStack() },
