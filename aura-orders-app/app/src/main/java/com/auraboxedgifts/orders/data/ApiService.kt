@@ -42,6 +42,12 @@ interface AuraApiService {
         @Body body: UpdateOrderRequest
     ): Response<ApiResponse<Order>>
 
+    @DELETE("/api/admin/orders/{id}")
+    suspend fun deleteOrder(
+        @Header("Authorization") auth: String,
+        @Path("id") id: String
+    ): Response<ApiResponse<DeleteResult>>
+
     @GET("/api/products")
     suspend fun getProducts(): Response<ApiResponse<List<Product>>>
 
@@ -251,6 +257,14 @@ class AuraRepository(private val api: AuraApiService) {
             throw ApiException(body?.error ?: "Could not update order")
         }
         return body.data ?: throw ApiException("Update failed")
+    }
+
+    suspend fun deleteOrder(token: String, id: String) {
+        val response = api.deleteOrder(bearer(token), id)
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) {
+            throw ApiException(body?.error ?: "Could not delete order")
+        }
     }
 
     suspend fun fetchProducts(): List<Product> {

@@ -679,6 +679,11 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                             onBack = { navController.popBackStack() },
                             onStatusChange = { status ->
                                 viewModel.updateOrderStatus(orderId, status)
+                            },
+                            onDelete = {
+                                viewModel.deleteOrder(orderId, onDone = {
+                                    navController.popBackStack()
+                                })
                             }
                         )
                     }

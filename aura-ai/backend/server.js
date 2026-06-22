@@ -1568,6 +1568,16 @@ app.patch('/api/admin/orders/:id', requireAdmin, async (req, res) => {
     return jsonOk(res, updated);
 });
 
+app.delete('/api/admin/orders/:id', requireAdmin, (req, res) => {
+    const orders = readJson(ORDERS_FILE, []);
+    const idx = orders.findIndex((o) => o.id === req.params.id);
+    if (idx === -1) return jsonErr(res, 404, 'Order not found');
+    const [removed] = orders.splice(idx, 1);
+    writeJson(ORDERS_FILE, orders);
+    console.log(`[Orders] Deleted order ${removed.id}`);
+    return jsonOk(res, { deleted: true, id: removed.id });
+});
+
 app.post('/api/create-order', async (req, res) => {
     if (!razorpayInstance) return jsonErr(res, 500, 'Razorpay keys not configured on server.');
     const fromItems = Array.isArray(req.body?.items) ? calculateCart(req.body.items).grandTotal : 0;

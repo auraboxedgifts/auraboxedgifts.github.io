@@ -1099,6 +1099,25 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun deleteOrder(orderId: String, onDone: () -> Unit, authToken: String? = adminToken.value) {
+        if (authToken.isNullOrBlank()) return
+        viewModelScope.launch {
+            _detailState.value = _detailState.value.copy(isUpdating = true, error = null)
+            try {
+                repository.deleteOrder(authToken, orderId)
+                _ordersState.value = _ordersState.value.copy(
+                    orders = _ordersState.value.orders.filter { it.id != orderId }
+                )
+                _detailState.value = OrderDetailUiState()
+                onDone()
+            } catch (e: ApiException) {
+                _detailState.value = _detailState.value.copy(isUpdating = false, error = e.message)
+            } catch (_: Exception) {
+                _detailState.value = _detailState.value.copy(isUpdating = false, error = "Could not delete order")
+            }
+        }
+    }
+
     fun filteredOrders(): List<Order> {
         val state = _ordersState.value
         return when (state.filter) {

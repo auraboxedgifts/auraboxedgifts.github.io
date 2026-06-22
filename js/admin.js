@@ -2072,14 +2072,70 @@
   async function renderOrdersView() {
     const content = document.getElementById('aapContent');
     content.innerHTML = '<p style="color:#999;text-align:center;padding:40px;">Loading orders…</p>';
+
+    let shippingRate = 120;
     try {
-      const token = getEffectiveAdminToken();
-      const res = await AuraApi.apiFetch('/api/admin/orders');
+      const settingsRes = await fetch('/api/settings');
+      const settingsJson = await settingsRes.json();
+      if (settingsJson.success && settingsJson.data) {
+        shippingRate = settingsJson.data.shippingFlatRate ?? 120;
+      }
+    } catch (_) { }
+
+  const shippingBar = `
+      <div class="aap-section-block" style="margin-bottom:18px;">
+        <div class="aap-block-head">
+          <div>
+            <h3 style="margin:0;"><i class="fas fa-truck"></i> Flat shipping rate</h3>
+            <p class="aap-hint" style="margin:4px 0 0;">Applied once per cart at checkout (website + Android app).</p>
+          </div>
+        </div>
+        <div class="aap-tool-row">
+          <input class="aap-input" id="aapOrdersShippingRate" type="number" min="0" step="1" value="${shippingRate}">
+          <button type="button" class="aap-btn-primary" id="aapOrdersSaveShipping"><i class="fas fa-save"></i> Save rate</button>
+        </div>
+        <p class="aap-hint" id="aapOrdersShippingStatus" style="margin-top:8px;">Current flat rate: ₹${shippingRate}</p>
+      </div>`;
+
+    try {
+      const res = await adminFetch('/api/admin/orders');
       const orders = Array.isArray(res.data) ? res.data : [];
+
+      const bindShippingControls = () => {
+        const shippingInput = content.querySelector('#aapOrdersShippingRate');
+        const shippingStatus = content.querySelector('#aapOrdersShippingStatus');
+        content.querySelector('#aapOrdersSaveShipping')?.addEventListener('click', async function () {
+          const rate = Number(shippingInput?.value);
+          if (!Number.isFinite(rate) || rate < 0) {
+            toast('Enter a valid shipping amount', 'error');
+            return;
+          }
+          this.disabled = true;
+          const orig = this.innerHTML;
+          this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+          try {
+            const saveRes = await adminFetch('/api/admin/settings', {
+              method: 'PUT',
+              body: JSON.stringify({ shippingFlatRate: Math.round(rate) })
+            });
+            if (shippingStatus) {
+              shippingStatus.textContent = `Saved — flat rate is now ₹${saveRes.data.shippingFlatRate}`;
+            }
+            toast('Shipping rate updated', 'success');
+          } catch (err) {
+            toast(err.message, 'error');
+          }
+          this.disabled = false;
+          this.innerHTML = orig;
+        });
+      };
+
       if (!orders.length) {
-        content.innerHTML = '<div style="text-align:center;padding:60px;color:#999;"><i class="fas fa-inbox" style="font-size:3rem;margin-bottom:16px;display:block;color:var(--rose-gold);"></i><h3 style="margin:0 0 8px;">No orders yet</h3><p>When customers place orders, they will appear here.</p></div>';
+        content.innerHTML = `${shippingBar}<div style="text-align:center;padding:60px;color:#999;"><i class="fas fa-inbox" style="font-size:3rem;margin-bottom:16px;display:block;color:var(--rose-gold);"></i><h3 style="margin:0 0 8px;">No orders yet</h3><p>When customers place orders, they will appear here.</p></div>`;
+        bindShippingControls();
         return;
       }
+
       const statusColors = {
         created: '#3b82f6', confirmed: '#8b5cf6', packed: '#f59e0b',
         shipped: '#06b6d4', delivered: '#22c55e', cancelled: '#ef4444'
@@ -2105,9 +2161,14 @@
                 ${optionsHtml}
               </select>
             </td>
+            <td style="text-align:center;">
+              <button type="button" class="aap-order-delete-btn" data-order-id="${escapeHtml(o.id)}" title="Delete order" style="border:none;background:#fee2e2;color:#dc2626;width:30px;height:30px;border-radius:8px;cursor:pointer;">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
           </tr>
           <tr class="aap-order-detail-row" style="display:none;">
-            <td colspan="7" style="background:#fdf6f0;padding:12px 20px;">
+            <td colspan="8" style="background:#fdf6f0;padding:12px 20px;">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:12px;">
                 <div><strong>Phone:</strong> ${escapeHtml(c.phone || '-')}<br><strong>Address:</strong> ${escapeHtml(c.address || '-')}</div>
                 <div><strong>Items:</strong>${lines}<br><strong>Subtotal:</strong> ₹${o.cart?.subtotal || 0} | <strong>Shipping:</strong> ₹${o.cart?.shipping || 0}</div>
@@ -2117,6 +2178,7 @@
       }).join('');
 
       content.innerHTML = `
+        ${shippingBar}
         <div style="overflow-x:auto;">
           <table style="width:100%;border-collapse:collapse;font-size:13px;">
             <thead>
@@ -2128,30 +2190,31 @@
                 <th style="padding:10px 8px;">Total</th>
                 <th style="padding:10px 8px;">Status</th>
                 <th style="padding:10px 8px;">Update</th>
+                <th style="padding:10px 8px;text-align:center;">Delete</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
           </table>
         </div>`;
 
-      // Expand/collapse order detail
+      bindShippingControls();
+
       content.querySelectorAll('.aap-order-row').forEach(row => {
         row.style.cursor = 'pointer';
         row.addEventListener('click', function(e) {
-          if (e.target.closest('select')) return;
+          if (e.target.closest('select') || e.target.closest('.aap-order-delete-btn')) return;
           const detail = row.nextElementSibling;
           if (detail) detail.style.display = detail.style.display === 'none' ? '' : 'none';
         });
       });
 
-      // Status update
       content.querySelectorAll('.aap-order-status-select').forEach(sel => {
         sel.addEventListener('change', async function(e) {
           e.stopPropagation();
           const orderId = sel.dataset.orderId;
           const newStatus = sel.value;
           try {
-            await AuraApi.apiFetch(`/api/admin/orders/${orderId}`, {
+            await adminFetch(`/api/admin/orders/${encodeURIComponent(orderId)}`, {
               method: 'PATCH',
               body: JSON.stringify({ status: newStatus })
             });
@@ -2162,8 +2225,47 @@
           }
         });
       });
+
+      content.querySelectorAll('.aap-order-delete-btn').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+          e.stopPropagation();
+          const orderId = btn.dataset.orderId;
+          if (!orderId) return;
+          if (!window.confirm(`Delete order ${orderId}? This cannot be undone.`)) return;
+          btn.disabled = true;
+          try {
+            await adminFetch(`/api/admin/orders/${encodeURIComponent(orderId)}`, { method: 'DELETE' });
+            toast(`Order ${orderId.slice(0, 8)} deleted`, 'success');
+            renderOrdersView();
+          } catch (err) {
+            toast('Failed to delete: ' + err.message, 'error');
+            btn.disabled = false;
+          }
+        });
+      });
     } catch (err) {
-      content.innerHTML = `<p style="color:#ef4444;text-align:center;padding:40px;">Failed to load orders: ${escapeHtml(err.message)}</p>`;
+      content.innerHTML = `${shippingBar}<p style="color:#ef4444;text-align:center;padding:40px;">Failed to load orders: ${escapeHtml(err.message)}</p>`;
+      const shippingInput = content.querySelector('#aapOrdersShippingRate');
+      const shippingStatus = content.querySelector('#aapOrdersShippingStatus');
+      content.querySelector('#aapOrdersSaveShipping')?.addEventListener('click', async function () {
+        const rate = Number(shippingInput?.value);
+        if (!Number.isFinite(rate) || rate < 0) {
+          toast('Enter a valid shipping amount', 'error');
+          return;
+        }
+        try {
+          const saveRes = await adminFetch('/api/admin/settings', {
+            method: 'PUT',
+            body: JSON.stringify({ shippingFlatRate: Math.round(rate) })
+          });
+          if (shippingStatus) {
+            shippingStatus.textContent = `Saved — flat rate is now ₹${saveRes.data.shippingFlatRate}`;
+          }
+          toast('Shipping rate updated', 'success');
+        } catch (saveErr) {
+          toast(saveErr.message, 'error');
+        }
+      });
     }
   }
 
