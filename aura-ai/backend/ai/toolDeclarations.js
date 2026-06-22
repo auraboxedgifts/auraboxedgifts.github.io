@@ -111,7 +111,40 @@ const toolDeclarations = [
     },
     { name: 'show_cart', description: 'Open shopping cart.' },
     { name: 'open_checkout', description: 'Open checkout page for the user.' },
-    { name: 'open_login', description: 'Open the login/signup popup modal for the user.' }
+    { name: 'open_login', description: 'Open the login/signup popup modal for the user.' },
+    {
+        name: 'auth_enter_email',
+        description: 'Enter the user\'s email into the login/signup form and submit it. This will either send an OTP (new user) or show the password field (existing user). Use this after the user provides their email for login.',
+        parameters: {
+            type: 'object',
+            properties: {
+                email: { type: 'string', description: 'The user\'s email address' }
+            },
+            required: ['email']
+        }
+    },
+    {
+        name: 'auth_enter_otp',
+        description: 'Enter the 6-digit OTP code the user received via email. Use after user tells you their OTP code.',
+        parameters: {
+            type: 'object',
+            properties: {
+                otp: { type: 'string', description: 'The 6-digit OTP code' }
+            },
+            required: ['otp']
+        }
+    },
+    {
+        name: 'auth_enter_password',
+        description: 'Enter the user\'s password for login. Use when the user has an existing account and provides their password.',
+        parameters: {
+            type: 'object',
+            properties: {
+                password: { type: 'string', description: 'The user\'s password' }
+            },
+            required: ['password']
+        }
+    }
 ];
 
 module.exports = { toolDeclarations };

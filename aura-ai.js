@@ -112,6 +112,7 @@ async function handleAuraSpeakerToggle(e) {
 function createAuraAIWidget() {
     const widgetHTML = `
     <div class="aura-ai-widget" id="auraAIWidget">
+        <div class="aura-mini-cart" id="auraMiniCart"></div>
         <div class="aura-widget-panel" id="auraWidgetPanel">
             <div class="aura-visualizer-container">
                 <canvas id="auraVisualizer" width="50" height="50"></canvas>
@@ -175,6 +176,89 @@ function createAuraAIWidget() {
     auraEndBtn = document.getElementById('auraEndBtn');
     auraOrb = document.getElementById('auraOrb');
     auraVisualizer = document.getElementById('auraVisualizer');
+
+    // Mini cart: show/hide on cart updates
+    setupAuraMiniCart();
+}
+
+// ─── Mini Cart Summary Logic ───
+let auraMiniCartTimer = null;
+function setupAuraMiniCart() {
+    // Listen for cart changes via storage events and message broadcasts
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'aura_cart_v2') refreshAuraMiniCart();
+    });
+    // Also hook into updateQtyById broadcasts
+    window.addEventListener('message', function(e) {
+        if (e.data && (e.data.type === 'cartUpdated' || e.data.type === 'bounceBadge')) {
+            refreshAuraMiniCart();
+        }
+    });
+    // Periodic check for cart changes (catches addToCart calls from same page)
+    let lastCartStr = localStorage.getItem('aura_cart_v2') || '[]';
+    setInterval(function() {
+        const cur = localStorage.getItem('aura_cart_v2') || '[]';
+        if (cur !== lastCartStr) {
+            lastCartStr = cur;
+            refreshAuraMiniCart();
+        }
+    }, 1500);
+}
+
+async function refreshAuraMiniCart() {
+    const panel = document.getElementById('auraMiniCart');
+    if (!panel) return;
+    const cart = JSON.parse(localStorage.getItem('aura_cart_v2') || '[]');
+    if (!cart.length) {
+        panel.classList.remove('show');
+        return;
+    }
+    try {
+        const calc = await AuraApi.apiFetch('/api/cart/calculate', {
+            method: 'POST',
+            body: JSON.stringify({ items: cart.map(i => ({ productId: i.productId, qty: i.qty })) })
+        });
+        const lines = calc.data?.lines || [];
+        if (!lines.length) { panel.classList.remove('show'); return; }
+        const totalItems = lines.reduce((s, l) => s + l.qty, 0);
+        const itemsHtml = lines.map(l => `
+            <div class="aura-mini-cart-item">
+                <img src="${AuraApi.resolveAssetPath(l.image || '')}" alt="${l.name}" onerror="this.style.display='none'">
+                <div class="aura-mini-cart-item-info">
+                    <div class="aura-mini-cart-item-name">${l.name}</div>
+                    <div class="aura-mini-cart-item-price">₹${l.unitPrice}</div>
+                </div>
+                <div class="aura-mini-cart-item-qty">x${l.qty}</div>
+            </div>`).join('');
+
+        panel.innerHTML = `
+            <div class="aura-mini-cart-header">
+                <h4>🛒 Your Cart</h4>
+                <span class="aura-mini-cart-count">${totalItems} item${totalItems > 1 ? 's' : ''}</span>
+            </div>
+            <div class="aura-mini-cart-items">${itemsHtml}</div>
+            <div class="aura-mini-cart-footer">
+                <div class="aura-mini-cart-totals">
+                    <span>Total</span>
+                    <span class="aura-mini-cart-total-val">₹${calc.data.grandTotal}.00</span>
+                </div>
+                <button class="aura-mini-cart-checkout" id="auraMiniCartCheckout">Checkout</button>
+            </div>`;
+        panel.querySelector('#auraMiniCartCheckout').addEventListener('click', function(e) {
+            e.stopPropagation();
+            panel.classList.remove('show');
+            if (window.AuraCheckout && typeof window.AuraCheckout.openCheckoutPage === 'function') {
+                window.AuraCheckout.openCheckoutPage();
+            } else if (typeof openCheckoutPage === 'function') {
+                openCheckoutPage();
+            }
+        });
+        panel.classList.add('show');
+        clearTimeout(auraMiniCartTimer);
+        auraMiniCartTimer = setTimeout(function() { panel.classList.remove('show'); }, 8000);
+    } catch (err) {
+        console.warn('[AuraMiniCart] calc error:', err);
+    }
 }
 
 function initAuraAI() {
@@ -428,6 +512,57 @@ function handleAuraBackendMessage(message) {
                 window.AuraAuth.openAuthModal();
             }
             break;
+        case 'auth_enter_email': {
+            // Voice auth: fill email and submit
+            if (window.AuraAuth && typeof window.AuraAuth.openAuthModal === 'function') {
+                window.AuraAuth.openAuthModal();
+            }
+            setTimeout(function() {
+                const modal = document.getElementById('auraAuthModal');
+                if (!modal) return;
+                const emailInput = modal.querySelector('#authEmailInput');
+                if (emailInput && message.email) {
+                    emailInput.value = message.email;
+                    emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    // Click Continue
+                    setTimeout(function() {
+                        const btn = modal.querySelector('#authContinueBtn');
+                        if (btn) btn.click();
+                    }, 300);
+                }
+            }, 500);
+            break;
+        }
+        case 'auth_enter_otp': {
+            const modal = document.getElementById('auraAuthModal');
+            if (modal && message.otp) {
+                const otpInput = modal.querySelector('#authOtpInput');
+                if (otpInput) {
+                    otpInput.value = message.otp;
+                    otpInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    setTimeout(function() {
+                        const btn = modal.querySelector('#authVerifyOtpBtn');
+                        if (btn) btn.click();
+                    }, 300);
+                }
+            }
+            break;
+        }
+        case 'auth_enter_password': {
+            const modal = document.getElementById('auraAuthModal');
+            if (modal && message.password) {
+                const pwInput = modal.querySelector('#authPasswordInput');
+                if (pwInput) {
+                    pwInput.value = message.password;
+                    pwInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    setTimeout(function() {
+                        const btn = modal.querySelector('#authPasswordLoginBtn');
+                        if (btn) btn.click();
+                    }, 300);
+                }
+            }
+            break;
+        }
         case 'view_hamper':
             closeCollectionOverlay();
             setTimeout(() => openAuraHamperFromMessage(message), 350);

@@ -107,6 +107,8 @@
             <button class="aap-nav-item active" data-view="products"><i class="fas fa-box-open"></i><span>Products</span></button>
             <button class="aap-nav-item" data-view="collections"><i class="fas fa-layer-group"></i><span>Collections</span></button>
             <button class="aap-nav-item" data-view="homepage"><i class="fas fa-house"></i><span>Homepage</span></button>
+            <button class="aap-nav-item" data-view="orders"><i class="fas fa-receipt"></i><span>Orders</span></button>
+            <button class="aap-nav-item" data-view="preview"><i class="fas fa-eye"></i><span>Home Preview</span></button>
             <button class="aap-nav-item" data-view="tools"><i class="fas fa-flask"></i><span>Testing &amp; Setup</span></button>
             <button class="aap-nav-item" data-view="history"><i class="fas fa-clock-rotate-left"></i><span>History</span></button>
             <button class="aap-nav-item" data-view="help"><i class="fas fa-question-circle"></i><span>Quick Help</span></button>
@@ -301,6 +303,14 @@
       title.textContent = 'Quick Help';
       sub.textContent = 'Tips to manage your catalog without writing any code.';
       renderHelpView();
+    } else if (state.view === 'orders') {
+      title.textContent = 'Orders';
+      sub.textContent = 'View and manage customer orders.';
+      renderOrdersView();
+    } else if (state.view === 'preview') {
+      title.textContent = 'Home Preview';
+      sub.textContent = 'See how your storefront looks to customers right now.';
+      renderPreviewView();
     }
   }
 
@@ -1249,8 +1259,23 @@
       if (!firstImg[p.collection] && p.image) firstImg[p.collection] = p.image;
     });
 
+    const COLLECTION_IMAGES = {
+      bracelets: 'images/web/bracelets-1.jpeg',
+      pendants: 'images/web/pendents-1.jpeg',
+      earrings: 'images/web/earings-1.jpeg',
+      jhumkas: 'images/web/earings-3.jpeg',
+      scrunchies: 'images/web/scrunchies-1.jpeg',
+      claws: 'images/web/hairclaws-1.jpeg',
+      hairbows: 'images/web/aligator-hairpins-1.jpeg',
+      rings: 'images/web/jwellery-case-1.jpeg',
+      keychains: 'images/web/mini-bags-1.jpeg',
+      makeup: 'images/web/lip-gloss-2.jpeg',
+      'luxury-hampers': 'images/web/eyeshadow-palette-1.jpeg',
+      'affordable-hampers': 'images/web/highlighter-1.jpeg'
+    };
+
     const collCards = collections.map((c) => {
-      const coverSrc = c.image || firstImg[c.slug] || '';
+      const coverSrc = c.image || firstImg[c.slug] || COLLECTION_IMAGES[c.slug] || '';
       return `
       <article class="aap-hp-card" data-id="${escapeHtml(c.slug)}" draggable="true">
         <div class="aap-hp-media">
@@ -1956,6 +1981,123 @@
       setTimeout(openAdminModal, 200);
     }
   });
+
+  // ─── Orders View ───
+  async function renderOrdersView() {
+    const content = document.getElementById('aapContent');
+    content.innerHTML = '<p style="color:#999;text-align:center;padding:40px;">Loading orders…</p>';
+    try {
+      const token = getEffectiveAdminToken();
+      const res = await AuraApi.apiFetch('/api/admin/orders');
+      const orders = Array.isArray(res.data) ? res.data : [];
+      if (!orders.length) {
+        content.innerHTML = '<div style="text-align:center;padding:60px;color:#999;"><i class="fas fa-inbox" style="font-size:3rem;margin-bottom:16px;display:block;color:var(--rose-gold);"></i><h3 style="margin:0 0 8px;">No orders yet</h3><p>When customers place orders, they will appear here.</p></div>';
+        return;
+      }
+      const statusColors = {
+        created: '#3b82f6', confirmed: '#8b5cf6', packed: '#f59e0b',
+        shipped: '#06b6d4', delivered: '#22c55e', cancelled: '#ef4444'
+      };
+      const statusOptions = ['created', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled'];
+      const rows = orders.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).map(o => {
+        const c = o.customer || {};
+        const status = o.status || 'created';
+        const color = statusColors[status] || '#888';
+        const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+        const lines = (o.cart?.lines || []).map(l => `<div style="font-size:12px;padding:2px 0;">${escapeHtml(l.name)} x${l.qty} — ₹${l.lineTotal}</div>`).join('');
+        const optionsHtml = statusOptions.map(s => `<option value="${s}" ${s === status ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`).join('');
+        return `
+          <tr class="aap-order-row" data-order-id="${escapeHtml(o.id)}">
+            <td style="font-weight:600;font-size:12px;color:var(--rose-gold);">${escapeHtml(o.id).slice(0, 8)}…</td>
+            <td>${escapeHtml(c.name || '-')}</td>
+            <td style="font-size:12px;">${escapeHtml(c.email || o.userEmail || '-')}</td>
+            <td style="font-size:12px;">${date}</td>
+            <td style="font-weight:600;">₹${o.cart?.grandTotal || 0}</td>
+            <td><span style="background:${color};color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;">${status}</span></td>
+            <td>
+              <select class="aap-order-status-select" data-order-id="${escapeHtml(o.id)}" style="padding:4px 8px;border-radius:8px;border:1px solid #ddd;font-size:11px;background:#fff;cursor:pointer;">
+                ${optionsHtml}
+              </select>
+            </td>
+          </tr>
+          <tr class="aap-order-detail-row" style="display:none;">
+            <td colspan="7" style="background:#fdf6f0;padding:12px 20px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:12px;">
+                <div><strong>Phone:</strong> ${escapeHtml(c.phone || '-')}<br><strong>Address:</strong> ${escapeHtml(c.address || '-')}</div>
+                <div><strong>Items:</strong>${lines}<br><strong>Subtotal:</strong> ₹${o.cart?.subtotal || 0} | <strong>Shipping:</strong> ₹${o.cart?.shipping || 0}</div>
+              </div>
+            </td>
+          </tr>`;
+      }).join('');
+
+      content.innerHTML = `
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead>
+              <tr style="border-bottom:2px solid var(--rose-gold);text-align:left;">
+                <th style="padding:10px 8px;">Order ID</th>
+                <th style="padding:10px 8px;">Customer</th>
+                <th style="padding:10px 8px;">Email</th>
+                <th style="padding:10px 8px;">Date</th>
+                <th style="padding:10px 8px;">Total</th>
+                <th style="padding:10px 8px;">Status</th>
+                <th style="padding:10px 8px;">Update</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+
+      // Expand/collapse order detail
+      content.querySelectorAll('.aap-order-row').forEach(row => {
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', function(e) {
+          if (e.target.closest('select')) return;
+          const detail = row.nextElementSibling;
+          if (detail) detail.style.display = detail.style.display === 'none' ? '' : 'none';
+        });
+      });
+
+      // Status update
+      content.querySelectorAll('.aap-order-status-select').forEach(sel => {
+        sel.addEventListener('change', async function(e) {
+          e.stopPropagation();
+          const orderId = sel.dataset.orderId;
+          const newStatus = sel.value;
+          try {
+            await AuraApi.apiFetch(`/api/admin/orders/${orderId}`, {
+              method: 'PATCH',
+              body: JSON.stringify({ status: newStatus })
+            });
+            toast(`Order ${orderId.slice(0, 8)} updated to ${newStatus}`, 'success');
+            renderOrdersView();
+          } catch (err) {
+            toast('Failed to update: ' + err.message, 'error');
+          }
+        });
+      });
+    } catch (err) {
+      content.innerHTML = `<p style="color:#ef4444;text-align:center;padding:40px;">Failed to load orders: ${escapeHtml(err.message)}</p>`;
+    }
+  }
+
+  // ─── Home Preview View ───
+  function renderPreviewView() {
+    const content = document.getElementById('aapContent');
+    const siteUrl = window.location.origin + '/';
+    content.innerHTML = `
+      <div style="display:flex;flex-direction:column;height:calc(100vh - 180px);gap:12px;">
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 0;">
+          <button class="aap-btn-secondary" id="aapPreviewRefresh"><i class="fas fa-sync-alt"></i> Refresh</button>
+          <span style="font-size:12px;color:#888;">Live preview of your storefront as customers see it</span>
+        </div>
+        <iframe id="aapPreviewFrame" src="${siteUrl}" style="flex:1;border:2px solid rgba(183,110,121,0.2);border-radius:12px;background:#fff;width:100%;"></iframe>
+      </div>`;
+    content.querySelector('#aapPreviewRefresh').addEventListener('click', function() {
+      const frame = document.getElementById('aapPreviewFrame');
+      if (frame) frame.src = frame.src;
+    });
+  }
 
   window.AuraAdmin = { openAdminModal, updateAdminIcon };
 })();

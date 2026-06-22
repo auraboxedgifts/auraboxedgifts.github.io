@@ -146,6 +146,7 @@
       await refreshUser();
       renderAccountState();
       closeAuthModal();
+      window.dispatchEvent(new Event('auraAuthSuccess'));
     } catch (err) {
       alert(`Login failed: ${err.message}`);
     } finally {
@@ -203,6 +204,7 @@
         await refreshUser();
         renderAccountState();
         closeAuthModal();
+        window.dispatchEvent(new Event('auraAuthSuccess'));
       }
     } catch (err) {
       alert(`OTP verification failed: ${err.message}`);
@@ -241,6 +243,7 @@
       await refreshUser();
       renderAccountState();
       closeAuthModal();
+      window.dispatchEvent(new Event('auraAuthSuccess'));
     } catch (err) {
       alert(`Could not reset password: ${err.message}`);
     } finally {
@@ -277,6 +280,7 @@
       await refreshUser();
       renderAccountState();
       closeAuthModal();
+      window.dispatchEvent(new Event('auraAuthSuccess'));
     } catch (err) {
       alert(`Could not save password: ${err.message}`);
     } finally {
@@ -310,6 +314,7 @@
       <div id="navUserDropdown" class="aura-user-dropdown" style="display:none;">
         <p id="navUserEmail"></p>
         <button id="navUserLogout">Logout</button>
+        <button id="navUserDelete" style="background:#ff4b4b;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px;margin-top:6px;width:100%;transition:all 0.2s ease;">Delete Account</button>
       </div>`;
     if (navIcons) {
       const cartIcon = document.getElementById('navCartIcon');
@@ -340,6 +345,20 @@
           window.AuraAdmin.updateAdminIcon();
         }
       };
+      document.getElementById('navUserDelete').onclick = async function () {
+        if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) return;
+        if (!confirm('This will permanently delete your account and all your data. Type OK to confirm.')) return;
+        try {
+          await AuraApi.apiFetch('/api/auth/account', { method: 'DELETE' });
+          localStorage.removeItem('auraAuthToken');
+          user = null;
+          dropdown.style.display = 'none';
+          renderAccountState();
+          alert('Your account has been deleted.');
+        } catch (err) {
+          alert('Could not delete account: ' + err.message);
+        }
+      };
     } else {
       icon.onclick = function (e) {
         e.preventDefault();
@@ -364,5 +383,5 @@
     renderAccountState();
   });
 
-  window.AuraAuth = { getUser, refreshUser, openAuthModal };
+  window.AuraAuth = { getUser, refreshUser, openAuthModal, closeAuthModal };
 })();

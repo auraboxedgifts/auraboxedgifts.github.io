@@ -101,18 +101,24 @@ if (document.readyState === 'loading') {
 
 // ─── SCROLL REVEAL ───
 const revealElements = document.querySelectorAll('.reveal');
+const auraIoElements = document.querySelectorAll('.aura-io-hidden');
 const revealObserver = new IntersectionObserver((entries) => {
   entries.forEach((entry, index) => {
     if (entry.isIntersecting) {
-      setTimeout(() => {
-        entry.target.classList.add('visible');
-      }, index * 80);
+      if (entry.target.classList.contains('reveal')) {
+        setTimeout(() => {
+          entry.target.classList.add('visible');
+        }, index * 80);
+      } else {
+        entry.target.classList.add('aura-io-visible');
+      }
       revealObserver.unobserve(entry.target);
     }
   });
 }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
 revealElements.forEach(el => revealObserver.observe(el));
+auraIoElements.forEach(el => revealObserver.observe(el));
 
 // ─── SMOOTH SCROLL FOR NAV LINKS ───
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {

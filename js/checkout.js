@@ -114,6 +114,21 @@
   }
 
   async function openCheckoutPage() {
+    // ─── Auth gate: require login before checkout ───
+    const currentUser = AuraAuth.getUser();
+    if (!currentUser) {
+      AuraAuth.openAuthModal();
+      // Wait for login, then auto-open checkout
+      const onLogin = async function() {
+        const me = await AuraAuth.refreshUser();
+        if (me) {
+          window.removeEventListener('auraAuthSuccess', onLogin);
+          openCheckoutPage();
+        }
+      };
+      window.addEventListener('auraAuthSuccess', onLogin);
+      return;
+    }
     const items = AuraCart.getItems();
     const calc = await AuraApi.apiFetch('/api/cart/calculate', {
       method: 'POST',

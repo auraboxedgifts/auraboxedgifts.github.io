@@ -1346,6 +1346,29 @@ app.put('/api/auth/checkout-info', requireAuth, (req, res) => {
     return jsonOk(res, payload);
 });
 
+// ─── Delete Account ───
+app.delete('/api/auth/account', requireAuth, (req, res) => {
+    const users = readJson(USERS_FILE, {});
+    const email = req.auth.email;
+    if (!users[email]) return jsonErr(res, 404, 'Account not found');
+    // Anonymize orders but keep order data for admin
+    const orders = readJson(ORDERS_FILE, []);
+    orders.forEach(o => {
+        if (o.userEmail === email || (o.customer && o.customer.email === email)) {
+            o.userEmail = '[deleted]';
+            if (o.customer) {
+                o.customer.name = '[Deleted Account]';
+                o.customer.email = '[deleted]';
+            }
+        }
+    });
+    writeJson(ORDERS_FILE, orders);
+    delete users[email];
+    writeJson(USERS_FILE, users);
+    console.log(`[Auth] Account deleted: ${email}`);
+    return jsonOk(res, { deleted: true });
+});
+
 app.get('/api/auth/addresses', requireAuth, (req, res) => {
     const users = readJson(USERS_FILE, {});
     return jsonOk(res, users[req.auth.email]?.addresses || []);
@@ -1480,7 +1503,7 @@ app.patch('/api/admin/orders/:id', requireAdmin, async (req, res) => {
     const orders = readJson(ORDERS_FILE, []);
     const idx = orders.findIndex((o) => o.id === req.params.id);
     if (idx === -1) return jsonErr(res, 404, 'Order not found');
-    const allowed = ['created', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
+    const allowed = ['created', 'confirmed', 'processing', 'packed', 'shipped', 'delivered', 'cancelled'];
     const status = String(req.body?.status || '').trim();
     if (status && !allowed.includes(status)) {
         return jsonErr(res, 400, `Invalid status. Allowed: ${allowed.join(', ')}`);
@@ -2187,6 +2210,15 @@ wss.on('connection', (clientWs, request) => {
                                 } else if (fc.name === 'open_login') {
                                     clientWs.send(JSON.stringify({ type: 'open_login' }));
                                     response = { result: 'Opened login/signup modal for the user' };
+                                } else if (fc.name === 'auth_enter_email') {
+                                    clientWs.send(JSON.stringify({ type: 'auth_enter_email', email: args.email }));
+                                    response = { result: `Entered email ${args.email} and submitted. The system will check if this is a new user (OTP sent) or existing user (password prompt shown). Ask the user for the OTP or password.` };
+                                } else if (fc.name === 'auth_enter_otp') {
+                                    clientWs.send(JSON.stringify({ type: 'auth_enter_otp', otp: args.otp }));
+                                    response = { result: 'Entered and submitted OTP. The user should now be logged in if the OTP was correct.' };
+                                } else if (fc.name === 'auth_enter_password') {
+                                    clientWs.send(JSON.stringify({ type: 'auth_enter_password', password: args.password }));
+                                    response = { result: 'Entered and submitted password. The user should now be logged in if the password was correct.' };
                                 }
 
                                 toolDedupe.set(dedupeKey, { ts: Date.now(), response });
