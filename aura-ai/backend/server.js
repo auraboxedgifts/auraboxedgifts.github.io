@@ -252,7 +252,8 @@ function getSite() {
 
 function getSettings() {
     const settings = getSite().settings || DEFAULT_SITE.settings;
-    const shippingFlatRate = Math.max(0, Number(settings.shippingFlatRate ?? 120) || 120);
+    const raw = Number(settings.shippingFlatRate);
+    const shippingFlatRate = Number.isFinite(raw) && raw >= 0 ? raw : 120;
     return { shippingFlatRate };
 }
 
@@ -512,9 +513,9 @@ app.put('/api/admin/settings', requireAdmin, (req, res) => {
     if (!Number.isFinite(rate) || rate < 0) {
         return jsonErr(res, 400, 'shippingFlatRate must be a non-negative number');
     }
-    site.settings = { ...getSettings(), shippingFlatRate: Math.round(rate) };
+    site.settings = { ...(site.settings || {}), shippingFlatRate: Math.round(rate) };
     saveSite(site);
-    return jsonOk(res, site.settings);
+    return jsonOk(res, getSettings());
 });
 
 app.get('/api/hampers', (req, res) => {

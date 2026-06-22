@@ -12,6 +12,9 @@
   }
 
   function broadcastCartUpdate() {
+    try {
+      window.postMessage({ type: 'cartUpdated', cart: cart }, '*');
+    } catch (e) {}
     document.querySelectorAll('iframe').forEach((iframe) => {
       try {
         iframe.contentWindow.postMessage({
@@ -38,75 +41,6 @@
     if (overlay && overlay.classList.contains('active')) {
       renderCartPage();
     }
-    showCartToastForProduct(productId);
-  }
-
-  let toastTimer = null;
-  async function showCartToastForProduct(productId) {
-    let toast = document.getElementById('auraCartToast');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.id = 'auraCartToast';
-      toast.className = 'aura-cart-toast';
-      toast.addEventListener('click', function (e) {
-        if (!e.target.closest('.toast-qty-btn')) {
-          openCartPage();
-        }
-      });
-      document.body.appendChild(toast);
-    }
-
-    const products = await ensureCatalog();
-
-    const itemInCart = cart.find(c => c.productId === productId);
-    if (!itemInCart || itemInCart.qty <= 0) {
-      toast.classList.remove('show');
-      return;
-    }
-    let productName = 'Item';
-    if (products) {
-      const p = products.find(x => x.id === productId);
-      if (p) productName = p.name;
-    }
-    if (productName === 'Item') {
-      try {
-        const siteRes = await AuraApi.apiFetch('/api/site');
-        const hampers = (siteRes.data && siteRes.data.hampers) || [];
-        const h = hampers.find(x => x.id === productId);
-        if (h) productName = h.title;
-      } catch (err) {}
-    }
-
-    toast.innerHTML = `
-      <div class="aura-cart-toast-body" style="width: 100%;">
-        <div class="aura-cart-toast-title"><i class="fas fa-circle-check"></i> Added to your cart</div>
-        <div class="aura-cart-toast-row">
-          <span class="aura-cart-toast-name" title="${productName}">${productName}</span>
-          <div class="aura-cart-toast-control">
-            <button class="toast-qty-btn minus" data-id="${productId}">-</button>
-            <span class="toast-qty-val">${itemInCart.qty}</span>
-            <button class="toast-qty-btn plus" data-id="${productId}">+</button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const minusBtn = toast.querySelector('.toast-qty-btn.minus');
-    const plusBtn = toast.querySelector('.toast-qty-btn.plus');
-
-    minusBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      updateQtyById(productId, -1);
-    });
-
-    plusBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      updateQtyById(productId, 1);
-    });
-
-    toast.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 6000);
   }
 
   function itemCount() {
@@ -239,8 +173,6 @@
     if (addsSinceOpen >= AUTO_OPEN_THRESHOLD) {
       addsSinceOpen = 0;
       await openCartPage();
-    } else {
-      showCartToastForProduct(productId);
     }
   }
 

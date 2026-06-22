@@ -372,6 +372,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             _ordersState.value = OrdersUiState()
             _detailState.value = OrderDetailUiState()
             _selectedTab.value = MainTab.HOME
+            refreshStoreSettings()
         }
     }
 
@@ -723,6 +724,15 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun shippingRate(): Double = _storeSettings.value.shippingFlatRate
+
+    fun refreshStoreSettings() {
+        viewModelScope.launch {
+            try {
+                _storeSettings.value = repository.fetchSettings()
+                refreshCartTotals(_cartState.value.items)
+            } catch (_: Exception) { }
+        }
+    }
 
     fun updateCheckoutInfo(transform: (CheckoutInfo) -> CheckoutInfo) {
         _checkoutState.value = _checkoutState.value.copy(info = transform(_checkoutState.value.info))

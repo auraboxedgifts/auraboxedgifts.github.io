@@ -19,7 +19,7 @@ let firebaseReady = false;
 
 function initFirebase() {
     if (firebaseReady) return true;
-    const json = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    const json = loadServiceAccountJson();
     if (!json) return false;
     try {
         const admin = require('firebase-admin');
@@ -33,6 +33,24 @@ function initFirebase() {
         console.error('[FCM] Init failed:', err.message);
         return false;
     }
+}
+
+function loadServiceAccountJson() {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+        return process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    }
+    const filePath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+    if (filePath) {
+        try {
+            const resolved = path.isAbsolute(filePath) ? filePath : path.join(__dirname, filePath);
+            if (fs.existsSync(resolved)) {
+                return fs.readFileSync(resolved, 'utf8');
+            }
+        } catch (err) {
+            console.error('[FCM] Could not read service account file:', err.message);
+        }
+    }
+    return null;
 }
 
 function registerToken({ token, role, email }) {
@@ -51,7 +69,7 @@ function registerToken({ token, role, email }) {
 async function sendPush(tokens, notification, data = {}) {
     if (!tokens?.length) return { sent: 0 };
     if (!initFirebase()) {
-        console.log('[FCM] Skipping push — FIREBASE_SERVICE_ACCOUNT_JSON not set.');
+        console.log('[FCM] Skipping push — set FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT_PATH.');
         return { sent: 0, skipped: true };
     }
     const admin = require('firebase-admin');

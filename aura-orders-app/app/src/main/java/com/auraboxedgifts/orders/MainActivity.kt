@@ -339,6 +339,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
 
                     auraComposable("cart") {
                         LaunchedEffect(Unit) {
+                            viewModel.refreshStoreSettings()
                             if (catalogState.products.isEmpty()) {
                                 viewModel.loadCatalog()
                             }
@@ -385,6 +386,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
 
                         DisposableEffect(Unit) {
                             viewModel.startForegroundOrderPolling()
+                            viewModel.registerPushTokenIfAvailable()
                             onDispose { viewModel.stopForegroundOrderPolling() }
                         }
 
@@ -536,7 +538,10 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                         popEnterTransition = { popEnter() },
                         popExitTransition = { popExit() }
                     ) {
-                        LaunchedEffect(Unit) { viewModel.prepareCheckout() }
+                        LaunchedEffect(Unit) {
+                            viewModel.refreshStoreSettings()
+                            viewModel.prepareCheckout()
+                        }
                         CheckoutScreen(
                             state = checkoutState,
                             cartTotal = viewModel.cartGrandTotal(),

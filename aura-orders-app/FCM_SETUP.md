@@ -36,12 +36,16 @@ npm install
 Set on the server (e.g. `.env` or hosting env vars):
 
 ```bash
+# Option A — inline JSON (one line)
 FIREBASE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
+
+# Option B — file path (handy on Oracle / VPS)
+FIREBASE_SERVICE_ACCOUNT_PATH=/path/to/firebase-service-account.json
 ```
 
-Use a Firebase **service account** JSON (Project settings → Service accounts → Generate new private key). Paste the full JSON as one line or store the file and load it in your deploy script.
+Use a Firebase **service account** JSON (Project settings → Service accounts → Generate new private key). Paste the full JSON as one line or store the file and point `FIREBASE_SERVICE_ACCOUNT_PATH` at it.
 
-Without this variable, the server still runs; FCM sends are skipped with a log message.
+Without either variable, the server still runs; FCM sends are skipped with a log message.
 
 ## 4. What gets pushed
 

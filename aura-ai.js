@@ -202,7 +202,7 @@ function setupAuraMiniCart() {
             lastCartStr = cur;
             refreshAuraMiniCart();
         }
-    }, 1500);
+    }, 400);
 }
 
 async function refreshAuraMiniCart() {
