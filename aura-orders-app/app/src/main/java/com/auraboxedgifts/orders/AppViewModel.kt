@@ -665,13 +665,76 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             cartStore.clear()
             CartReminderWorker.cancel(getApplication())
+            syncAuraCartShowcaseFromLocalCart()
+            _snackbarMessage.value = "Cart cleared"
+        }
+    }
+
+    fun removeFromCartInAura(productId: String) {
+        viewModelScope.launch {
+            val name = sellableName(productId)
+            val current = cartStore.getCart().toMutableList()
+            current.removeAll { it.productId == productId }
+            cartStore.saveCart(current)
+            scheduleCartReminderIfNeeded(current)
+            syncAuraCartShowcaseFromLocalCart()
+            _snackbarMessage.value = "$name removed from cart"
+        }
+    }
+
+    private suspend fun syncAuraCartShowcaseFromLocalCart() {
+        val cartSectionTitle = "Your shopping cart"
+        val otherSections = _aiState.value.showcaseSections.filterNot {
+            it.title.equals(cartSectionTitle, ignoreCase = true)
+        }
+        val items = cartStore.getCart()
+
+        if (items.isEmpty()) {
             _aiState.value = _aiState.value.copy(
+                showcaseSections = otherSections,
+                showcaseItems = otherSections.flatMap { it.items },
+                showcaseTitle = otherSections.firstOrNull()?.title,
                 cartSubtotal = null,
                 cartShipping = null,
                 cartGrandTotal = null
             )
-            _snackbarMessage.value = "Cart cleared"
+            return
         }
+
+        val cart = try {
+            repository.calculateCart(items)
+        } catch (_: Exception) {
+            null
+        }
+
+        val showcaseItems = items.map { item ->
+            val line = cart?.lines?.find { it.productId == item.productId }
+            val product = productForCartItem(item.productId)
+            val unitPrice = line?.unitPrice ?: product?.price ?: 0.0
+            AuraShowcaseItem(
+                id = item.productId,
+                title = line?.name ?: product?.name ?: sellableName(item.productId),
+                subtitle = "Qty: ${item.qty} | Price: ₹${unitPrice.toInt()}",
+                price = line?.lineTotal ?: (unitPrice * item.qty),
+                image = line?.image ?: product?.image.orEmpty(),
+                isHamper = item.productId.startsWith("hamper_")
+            )
+        }
+
+        val subtotal = cart?.subtotal ?: showcaseItems.sumOf { it.price }
+        val shipping = cart?.shipping ?: if (items.isNotEmpty()) _storeSettings.value.shippingFlatRate else 0.0
+        val grandTotal = cart?.grandTotal ?: (subtotal + shipping)
+        val cartSection = AuraShowcaseSection(cartSectionTitle, showcaseItems)
+        val updatedSections = listOf(cartSection) + otherSections
+
+        _aiState.value = _aiState.value.copy(
+            showcaseSections = updatedSections,
+            showcaseItems = updatedSections.flatMap { it.items },
+            showcaseTitle = cartSectionTitle,
+            cartSubtotal = subtotal,
+            cartShipping = shipping,
+            cartGrandTotal = grandTotal
+        )
     }
 
     private fun scheduleCartReminderIfNeeded(items: List<LocalCartItem>) {

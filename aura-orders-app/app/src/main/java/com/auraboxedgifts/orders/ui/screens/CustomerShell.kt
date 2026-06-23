@@ -19,6 +19,8 @@ import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DrawerValue
@@ -48,7 +50,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -98,8 +99,7 @@ fun CustomerShell(
     onAdminPanel: () -> Unit,
     onCustomerLogout: () -> Unit,
     onDeleteAccount: () -> Unit,
-    onOpenAuraAi: () -> Unit,
-    onClearCart: () -> Unit = {}
+    onOpenAuraAi: () -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -174,10 +174,6 @@ fun CustomerShell(
                 onAbout = {
                     closeDrawer()
                     showAboutDialog = true
-                },
-                onClearCart = {
-                    closeDrawer()
-                    onClearCart()
                 }
             )
         }
@@ -188,7 +184,11 @@ fun CustomerShell(
                 snackbarHost = {
                     SnackbarHost(
                         hostState = snackbarHostState,
-                        modifier = Modifier.padding(bottom = 96.dp)
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 8.dp)
                     )
                 },
                 floatingActionButton = {
@@ -196,9 +196,7 @@ fun CustomerShell(
                         onClick = onOpenAuraAi,
                         containerColor = RoseGold,
                         contentColor = Cream,
-                        modifier = Modifier
-                            .padding(bottom = 72.dp)
-                            .navigationBarsPadding()
+                        modifier = Modifier.offset(y = 10.dp)
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_aura_hamper),
@@ -236,9 +234,8 @@ fun CustomerShell(
                         actions = {
                             Box(
                                 modifier = Modifier
-                                    .padding(end = 8.dp)
-                                    .size(44.dp)
-                                    .clip(CircleShape)
+                                    .padding(end = 4.dp)
+                                    .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
                                     .clickable(onClick = onOpenCart)
                                     .scale(cartIconScale),
                                 contentAlignment = Alignment.Center
@@ -253,17 +250,18 @@ fun CustomerShell(
                                     Box(
                                         modifier = Modifier
                                             .align(Alignment.TopEnd)
-                                            .offset(x = 8.dp, y = (-4).dp)
-                                            .size(18.dp)
-                                            .background(RoseGold, CircleShape),
+                                            .offset(x = (-2).dp, y = 6.dp)
+                                            .defaultMinSize(minWidth = 18.dp, minHeight = 18.dp)
+                                            .background(RoseGold, CircleShape)
+                                            .padding(horizontal = 4.dp, vertical = 2.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
                                             text = if (cartItemCount > 99) "99+" else "$cartItemCount",
                                             style = MaterialTheme.typography.labelSmall.copy(
-                                                fontSize = 9.sp,
+                                                fontSize = 10.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                lineHeight = 10.sp
+                                                lineHeight = 12.sp
                                             ),
                                             color = Color.White,
                                             maxLines = 1

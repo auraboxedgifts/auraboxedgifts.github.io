@@ -59,7 +59,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -109,7 +108,8 @@ fun AuraAiScreen(
     onToggleMute: () -> Unit,
     onToggleSpeaker: () -> Unit,
     onAddToCart: (String) -> Unit = {},
-    onClearCart: () -> Unit = {}
+    onClearCart: () -> Unit = {},
+    onRemoveFromCart: (String) -> Unit = {}
 ) {
     val isConnecting = state.phase == AuraVoicePhase.Connecting
     val hasShowcase = state.showcaseSections.isNotEmpty() || state.showcaseItems.isNotEmpty()
@@ -150,7 +150,6 @@ fun AuraAiScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .background(Brush.verticalGradient(listOf(AuraDark, AuraDarkMid, AuraDark)))
-                .navigationBarsPadding()
         ) {
             AnimatedContent(
                 targetState = isConnecting,
@@ -167,7 +166,8 @@ fun AuraAiScreen(
                         onToggleMute = onToggleMute,
                         onToggleSpeaker = onToggleSpeaker,
                         onAddToCart = onAddToCart,
-                        onClearCart = onClearCart
+                        onClearCart = onClearCart,
+                        onRemoveFromCart = onRemoveFromCart
                     )
                 } else {
                     CenteredVoiceLayout(
@@ -356,7 +356,8 @@ private fun ShowcaseVoiceLayout(
     onToggleMute: () -> Unit,
     onToggleSpeaker: () -> Unit,
     onAddToCart: (String) -> Unit,
-    onClearCart: () -> Unit
+    onClearCart: () -> Unit,
+    onRemoveFromCart: (String) -> Unit
 ) {
     val sections = if (state.showcaseSections.isNotEmpty()) {
         state.showcaseSections
@@ -443,7 +444,13 @@ private fun ShowcaseVoiceLayout(
                         horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         items(section.items, key = { "${section.title}_${it.id}" }) { item ->
-                            ShowcaseGiftCard(item = item, onAddToCart = { onAddToCart(item.id) })
+                            val isCartSection = section.title.equals("Your shopping cart", ignoreCase = true)
+                            ShowcaseGiftCard(
+                                item = item,
+                                isInCartSection = isCartSection,
+                                onAddToCart = { onAddToCart(item.id) },
+                                onRemoveFromCart = { onRemoveFromCart(item.id) }
+                            )
                         }
                     }
                 }
@@ -484,18 +491,16 @@ private fun AuraCartSummaryCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Cart summary", color = Color.White, style = MaterialTheme.typography.titleSmall)
-                TextButton(
+                IconButton(
                     onClick = onClearCart,
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                    modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
                         Icons.Outlined.DeleteOutline,
-                        contentDescription = null,
+                        contentDescription = "Clear cart",
                         tint = EndRed,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(22.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Clear", color = EndRed, style = MaterialTheme.typography.labelMedium)
                 }
             }
             Text(
@@ -510,7 +515,9 @@ private fun AuraCartSummaryCard(
 @Composable
 private fun ShowcaseGiftCard(
     item: AuraShowcaseItem,
-    onAddToCart: () -> Unit
+    isInCartSection: Boolean = false,
+    onAddToCart: () -> Unit,
+    onRemoveFromCart: () -> Unit = {}
 ) {
     var isAdded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -577,33 +584,53 @@ private fun ShowcaseGiftCard(
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 color = RoseGold
             )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(if (isAdded) Color(0xFF2E7D32).copy(alpha = 0.85f) else AuraRose.copy(alpha = 0.22f))
-                    .clickable {
-                        if (!isAdded) {
-                            onAddToCart()
-                            isAdded = true
-                            scope.launch {
-                                kotlinx.coroutines.delay(1500)
-                                isAdded = false
+            if (isInCartSection) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(EndRed.copy(alpha = 0.18f))
+                        .clickable(onClick = onRemoveFromCart)
+                        .padding(vertical = 10.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Outlined.DeleteOutline,
+                        contentDescription = "Remove from cart",
+                        tint = EndRed,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (isAdded) Color(0xFF2E7D32).copy(alpha = 0.85f) else AuraRose.copy(alpha = 0.22f))
+                        .clickable {
+                            if (!isAdded) {
+                                onAddToCart()
+                                isAdded = true
+                                scope.launch {
+                                    kotlinx.coroutines.delay(1500)
+                                    isAdded = false
+                                }
                             }
                         }
+                        .padding(vertical = 10.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isAdded) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Added", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold), color = Color.White)
+                    } else {
+                        Icon(Icons.Outlined.AddShoppingCart, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Add to cart", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold), color = Color.White)
                     }
-                    .padding(vertical = 10.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (isAdded) {
-                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Added", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold), color = Color.White)
-                } else {
-                    Icon(Icons.Outlined.AddShoppingCart, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Add to cart", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold), color = Color.White)
                 }
             }
         }
@@ -737,7 +764,7 @@ private fun VoiceControlsBar(
         Row(
             modifier = modifier
                 .padding(horizontal = 20.dp)
-                .padding(top = 8.dp, bottom = 12.dp),
+                .padding(top = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -784,7 +811,7 @@ private fun VoiceControlsBar(
         Box(
             modifier = modifier
                 .navigationBarsPadding()
-                .padding(bottom = 24.dp)
+                .padding(bottom = 4.dp)
                 .clip(RoundedCornerShape(50))
                 .background(RoseGold)
                 .clickable { onStartSession() }

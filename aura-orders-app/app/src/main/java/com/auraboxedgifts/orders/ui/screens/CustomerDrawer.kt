@@ -21,7 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.automirrored.outlined.Login
 import androidx.compose.material.icons.outlined.AdminPanelSettings
-import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Receipt
@@ -64,8 +63,7 @@ fun CustomerDrawerContent(
     onSignIn: () -> Unit,
     onAdminPanel: () -> Unit,
     onCustomerLogout: () -> Unit,
-    onAbout: () -> Unit,
-    onClearCart: () -> Unit
+    onAbout: () -> Unit
 ) {
     val uriHandler = LocalUriHandler.current
 
@@ -123,19 +121,11 @@ fun CustomerDrawerContent(
                 badge = if (cartItemCount > 0) cartItemCount.toString() else null,
                 onClick = onCart
             )
-            if (cartItemCount > 0) {
-                DrawerItem(
-                    index = 3,
-                    icon = Icons.Outlined.DeleteOutline,
-                    label = "Clear cart",
-                    onClick = onClearCart
-                )
-            }
-            DrawerItem(index = 4, icon = Icons.Outlined.Person, label = "My account", onClick = onAccount)
+            DrawerItem(index = 3, icon = Icons.Outlined.Person, label = "My account", onClick = onAccount)
             if (isCustomerLoggedIn) {
-                DrawerItem(index = 5, icon = Icons.Outlined.Receipt, label = "My orders", onClick = onAccount)
+                DrawerItem(index = 4, icon = Icons.Outlined.Receipt, label = "My orders", onClick = onAccount)
             }
-            DrawerItem(index = 6, icon = Icons.Outlined.Info, label = "About", onClick = onAbout)
+            DrawerItem(index = 5, icon = Icons.Outlined.Info, label = "About", onClick = onAbout)
         }
 
         Column(
