@@ -32,30 +32,30 @@ fun CustomerAboutDialog(onDismiss: () -> Unit) {
         text = {
             Column {
                 Text(
-                    "Aura Boxed Gifts creates beautifully curated, personalized gift hampers for birthdays, weddings, anniversaries, corporate gifting, and more — delivered across India.",
+                    "Aura Boxed Gifts is a gifting brand focused on premium hampers and thoughtful custom gift boxes for birthdays, weddings, anniversaries, and corporate occasions.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextMedium
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    "This app lets you browse gifts, talk to Aura AI for recommendations, manage your cart, and track orders — all synced with our online store.",
+                    "With this app, you can browse collections, get suggestions from Aura AI, manage your cart, and track your orders in one place.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextMedium
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-                val footer = buildAnnotatedString {
-                    append("App created by ")
-                    pushStringAnnotation(tag = "URL", annotation = "https://devshubh.me")
+                Spacer(modifier = Modifier.height(14.dp))
+                val website = buildAnnotatedString {
+                    append("Website: ")
+                    pushStringAnnotation(tag = "URL", annotation = "https://auraboxedgifts.in")
                     withStyle(SpanStyle(color = RoseGold, fontWeight = FontWeight.SemiBold)) {
-                        append("SS")
+                        append("auraboxedgifts.in")
                     }
                     pop()
                 }
                 ClickableText(
-                    text = footer,
-                    style = MaterialTheme.typography.bodySmall.copy(color = TextMedium),
+                    text = website,
+                    style = MaterialTheme.typography.bodyMedium.copy(color = TextMedium),
                     onClick = { offset ->
-                        footer.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                        website.getStringAnnotations(tag = "URL", start = offset, end = offset)
                             .firstOrNull()
                             ?.let { uriHandler.openUri(it.item) }
                     }

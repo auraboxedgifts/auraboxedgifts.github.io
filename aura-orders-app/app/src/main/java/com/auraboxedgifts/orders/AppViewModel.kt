@@ -632,7 +632,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun addToCart(productId: String, qty: Int = 1) {
         viewModelScope.launch {
-            val name = sellableName(productId)
             val current = cartStore.getCart().toMutableList()
             val idx = current.indexOfFirst { it.productId == productId }
             val addQty = qty.coerceAtLeast(1)
@@ -642,11 +641,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 current.add(LocalCartItem(productId, addQty))
             }
             cartStore.saveCart(current)
+            _cartState.value = _cartState.value.copy(items = current)
             scheduleCartReminderIfNeeded(current)
             if (_aiState.value.isSessionActive) {
                 syncAuraCartShowcaseFromLocalCart()
             }
-            _snackbarMessage.value = "$name added to cart"
         }
     }
 
@@ -660,6 +659,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 if (idx >= 0) current[idx] = current[idx].copy(qty = qty)
             }
             cartStore.saveCart(current)
+            _cartState.value = _cartState.value.copy(items = current)
             scheduleCartReminderIfNeeded(current)
         }
     }
@@ -667,21 +667,20 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun clearCart() {
         viewModelScope.launch {
             cartStore.clear()
+            _cartState.value = _cartState.value.copy(items = emptyList())
             CartReminderWorker.cancel(getApplication())
             syncAuraCartShowcaseFromLocalCart()
-            _snackbarMessage.value = "Cart cleared"
         }
     }
 
     fun removeFromCartInAura(productId: String) {
         viewModelScope.launch {
-            val name = sellableName(productId)
             val current = cartStore.getCart().toMutableList()
             current.removeAll { it.productId == productId }
             cartStore.saveCart(current)
+            _cartState.value = _cartState.value.copy(items = current)
             scheduleCartReminderIfNeeded(current)
             syncAuraCartShowcaseFromLocalCart()
-            _snackbarMessage.value = "$name removed from cart"
         }
     }
 

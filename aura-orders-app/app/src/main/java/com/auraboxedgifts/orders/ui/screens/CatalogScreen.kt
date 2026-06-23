@@ -1,6 +1,7 @@
 package com.auraboxedgifts.orders.ui.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AddShoppingCart
 import androidx.compose.material.icons.outlined.Search
@@ -41,6 +43,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,6 +69,8 @@ import com.auraboxedgifts.orders.ui.theme.RoseLight
 import com.auraboxedgifts.orders.ui.theme.TextDark
 import com.auraboxedgifts.orders.ui.theme.TextLight
 import com.auraboxedgifts.orders.ui.theme.TextMedium
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -332,6 +341,8 @@ private fun HamperCard(
     onClick: () -> Unit,
     onAddToCart: (() -> Unit)? = null
 ) {
+    var justAdded by remember(hamper.id) { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     PressableScale(onClick = onClick) {
         Card(
             modifier = Modifier.width(210.dp),
@@ -369,12 +380,29 @@ private fun HamperCard(
                     )
                     if (onAddToCart != null) {
                         OutlinedButton(
-                            onClick = onAddToCart,
+                            onClick = {
+                                if (!justAdded) {
+                                    onAddToCart()
+                                    justAdded = true
+                                    scope.launch {
+                                        delay(2000)
+                                        justAdded = false
+                                    }
+                                }
+                            },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, if (justAdded) Color(0xFF2E7D32) else RoseLight),
+                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                containerColor = if (justAdded) Color(0xFF2E7D32).copy(alpha = 0.14f) else Color.Transparent,
+                                contentColor = if (justAdded) Color(0xFF2E7D32) else RoseGold
+                            )
                         ) {
-                            Icon(Icons.Outlined.AddShoppingCart, contentDescription = null, tint = RoseGold)
-                            Text("  Add", color = RoseGold)
+                            Icon(
+                                imageVector = if (justAdded) Icons.Filled.Check else Icons.Outlined.AddShoppingCart,
+                                contentDescription = null
+                            )
+                            Text(if (justAdded) "  Added" else "  Add")
                         }
                     }
                 }
@@ -391,6 +419,8 @@ private fun ProductCard(
     showAddToCart: Boolean = false,
     onAddToCart: () -> Unit = {}
 ) {
+    var justAdded by remember(product.id) { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     PressableScale(onClick = onClick) {
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -429,12 +459,29 @@ private fun ProductCard(
                     )
                     if (showAddToCart) {
                         OutlinedButton(
-                            onClick = onAddToCart,
+                            onClick = {
+                                if (!justAdded) {
+                                    onAddToCart()
+                                    justAdded = true
+                                    scope.launch {
+                                        delay(2000)
+                                        justAdded = false
+                                    }
+                                }
+                            },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, if (justAdded) Color(0xFF2E7D32) else RoseLight),
+                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                containerColor = if (justAdded) Color(0xFF2E7D32).copy(alpha = 0.14f) else Color.Transparent,
+                                contentColor = if (justAdded) Color(0xFF2E7D32) else RoseGold
+                            )
                         ) {
-                            Icon(Icons.Outlined.AddShoppingCart, contentDescription = null, tint = RoseGold)
-                            Text("  Add to cart", color = RoseGold)
+                            Icon(
+                                imageVector = if (justAdded) Icons.Filled.Check else Icons.Outlined.AddShoppingCart,
+                                contentDescription = null
+                            )
+                            Text(if (justAdded) "  Added" else "  Add to cart")
                         }
                     }
                 }

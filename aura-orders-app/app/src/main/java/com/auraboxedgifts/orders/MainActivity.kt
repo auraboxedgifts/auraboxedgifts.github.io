@@ -269,7 +269,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                             selectedTab = customerTab,
                             onTabSelected = viewModel::selectCustomerTab,
                             catalogState = catalogState,
-                            cartItemCount = viewModel.cartItemCount(),
+                            cartItemCount = cartState.items.sumOf { it.qty },
                             filteredProducts = viewModel.filteredProducts(),
                             hampers = viewModel.filteredHampers(),
                             collectionName = viewModel::collectionName,

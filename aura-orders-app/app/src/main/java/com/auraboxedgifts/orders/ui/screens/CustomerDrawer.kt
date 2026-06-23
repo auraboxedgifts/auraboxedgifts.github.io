@@ -39,9 +39,9 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import com.auraboxedgifts.orders.BuildConfig
 import com.auraboxedgifts.orders.ui.components.BrandLogo
 import com.auraboxedgifts.orders.ui.components.StaggeredFadeIn
 import com.auraboxedgifts.orders.ui.theme.Cream
@@ -172,16 +172,15 @@ fun CustomerDrawerContent(
                     append("SS")
                 }
                 pop()
+                append("  •  v${BuildConfig.VERSION_NAME}")
             }
+            HorizontalDivider(color = CreamDark)
             ClickableText(
                 text = footer,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 14.dp),
-                style = MaterialTheme.typography.labelMedium.copy(
-                    color = TextLight,
-                    textAlign = TextAlign.Center
-                ),
+                style = MaterialTheme.typography.labelMedium.copy(color = TextLight),
                 onClick = { offset ->
                     footer.getStringAnnotations(tag = "URL", start = offset, end = offset)
                         .firstOrNull()

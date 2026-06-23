@@ -169,9 +169,7 @@ fun CartScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        Icon(Icons.Outlined.DeleteOutline, contentDescription = null, tint = RoseGold)
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text("Clear cart", color = TextMedium)
+                        Icon(Icons.Outlined.DeleteOutline, contentDescription = "Clear cart", tint = RoseGold)
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
