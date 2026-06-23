@@ -17,6 +17,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -37,6 +40,7 @@ import com.auraboxedgifts.orders.ui.screens.AuraAiScreen
 import com.auraboxedgifts.orders.ui.screens.CartScreen
 import com.auraboxedgifts.orders.ui.screens.CheckoutScreen
 import com.auraboxedgifts.orders.ui.screens.CustomerAuthScreen
+import com.auraboxedgifts.orders.ui.screens.CustomerOnboardingScreen
 import com.auraboxedgifts.orders.ui.screens.CustomerShell
 import com.auraboxedgifts.orders.ui.screens.LoginScreen
 import com.auraboxedgifts.orders.ui.screens.MainShell
@@ -102,6 +106,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
 
         val deepLinkOrderId = intent?.getStringExtra("order_id")
         val openCustomerOrders = intent?.getBooleanExtra("open_customer_orders", false) == true
+        val appPrefs = getSharedPreferences("aura_orders_prefs", MODE_PRIVATE)
 
         setContent {
             AuraOrdersTheme {
@@ -130,6 +135,9 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                 val selectedTab by vm.selectedTab.collectAsState()
                 val customerTab by vm.customerTab.collectAsState()
                 val snackbarMessage by vm.snackbarMessage.collectAsState()
+                var showOnboarding by remember {
+                    mutableStateOf(!appPrefs.getBoolean("customer_onboarding_done", false))
+                }
 
                 LaunchedEffect(vm) {
                     FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
@@ -239,7 +247,14 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                     }
                 }
 
-                NavHost(
+                if (showOnboarding && appMode != AppMode.ADMIN) {
+                    CustomerOnboardingScreen(
+                        onFinish = {
+                            appPrefs.edit().putBoolean("customer_onboarding_done", true).apply()
+                            showOnboarding = false
+                        }
+                    )
+                } else NavHost(
                     navController = navController,
                     startDestination = if (appMode == AppMode.ADMIN) "admin" else "shop"
                 ) {

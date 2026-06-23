@@ -20,7 +20,6 @@ import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DrawerValue
@@ -34,8 +33,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -70,6 +68,7 @@ import com.auraboxedgifts.orders.ui.theme.RoseGold
 import com.auraboxedgifts.orders.ui.theme.TextDark
 import com.auraboxedgifts.orders.ui.theme.TextLight
 import com.auraboxedgifts.orders.ui.theme.TextMedium
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -103,8 +102,8 @@ fun CustomerShell(
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
     var showAboutDialog by remember { mutableStateOf(false) }
+    var floatingToastMessage by remember { mutableStateOf<String?>(null) }
 
     if (showAboutDialog) {
         CustomerAboutDialog(onDismiss = { showAboutDialog = false })
@@ -132,8 +131,10 @@ fun CustomerShell(
 
     LaunchedEffect(snackbarMessage) {
         snackbarMessage?.let {
-            snackbarHostState.showSnackbar(it)
+            floatingToastMessage = it
             onSnackbarShown()
+            delay(1700)
+            floatingToastMessage = null
         }
     }
 
@@ -181,27 +182,19 @@ fun CustomerShell(
         Box(modifier = Modifier.drawerBackdropEffect(drawerProgress)) {
             Scaffold(
                 containerColor = Cream,
-                snackbarHost = {
-                    SnackbarHost(
-                        hostState = snackbarHostState,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 8.dp)
-                    )
-                },
                 floatingActionButton = {
                     FloatingActionButton(
                         onClick = onOpenAuraAi,
                         containerColor = RoseGold,
                         contentColor = Cream,
-                        modifier = Modifier.offset(y = 10.dp)
+                        modifier = Modifier
+                            .offset(y = 12.dp)
+                            .size(50.dp)
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_aura_hamper),
                             contentDescription = "Talk to Aura AI",
-                            modifier = Modifier.size(26.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 },
@@ -345,6 +338,23 @@ fun CustomerShell(
                             onDeleteAccount = onDeleteAccount
                         )
                     }
+                }
+            }
+            floatingToastMessage?.let { message ->
+                Surface(
+                    color = Color(0xFF2E2A2E),
+                    contentColor = Color.White,
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .navigationBarsPadding()
+                        .padding(end = 74.dp, bottom = 64.dp)
+                ) {
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                    )
                 }
             }
         }
