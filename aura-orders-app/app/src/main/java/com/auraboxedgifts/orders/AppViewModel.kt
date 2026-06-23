@@ -643,6 +643,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             }
             cartStore.saveCart(current)
             scheduleCartReminderIfNeeded(current)
+            if (_aiState.value.isSessionActive) {
+                syncAuraCartShowcaseFromLocalCart()
+            }
             _snackbarMessage.value = "$name added to cart"
         }
     }
