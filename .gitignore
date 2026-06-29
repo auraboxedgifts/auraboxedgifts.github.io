@@ -39,3 +39,5 @@ aura-orders-app/.gradle/
 aura-orders-app/**/build/
 aura-orders-app/local.properties
 aura-orders-app/.idea/
+aura-orders-app/keystore.properties
+aura-orders-app/*.keystore

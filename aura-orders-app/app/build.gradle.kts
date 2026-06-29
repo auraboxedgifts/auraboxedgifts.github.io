@@ -1,8 +1,20 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.gms.google-services")
 }
+
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
+}
+
+fun releaseSigningValue(propertyKey: String, envKey: String): String? =
+    System.getenv(envKey)?.takeIf { it.isNotBlank() }
+        ?: keystoreProperties.getProperty(propertyKey)?.takeIf { it.isNotBlank() }
 
 android {
     namespace = "com.auraboxedgifts.orders"
@@ -12,8 +24,8 @@ android {
         applicationId = "com.auraboxedgifts.orders"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "1.3.4"
+        versionCode = 14
+        versionName = "1.3.7"
 
         ndk {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a")
@@ -22,8 +34,25 @@ android {
         buildConfigField("String", "API_BASE_URL", "\"https://aura.devshubh.me\"")
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFilePath = releaseSigningValue("storeFile", "AURA_KEYSTORE_FILE")
+            val storePass = releaseSigningValue("storePassword", "AURA_KEYSTORE_PASSWORD")
+            val alias = releaseSigningValue("keyAlias", "AURA_KEY_ALIAS")
+            val keyPass = releaseSigningValue("keyPassword", "AURA_KEY_PASSWORD")
+
+            if (!storeFilePath.isNullOrBlank()) {
+                storeFile = rootProject.file(storeFilePath)
+            }
+            storePassword = storePass
+            keyAlias = alias
+            keyPassword = keyPass ?: storePass
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

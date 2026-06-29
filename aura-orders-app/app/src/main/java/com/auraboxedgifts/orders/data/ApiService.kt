@@ -48,6 +48,28 @@ interface AuraApiService {
         @Path("id") id: String
     ): Response<ApiResponse<DeleteResult>>
 
+    @GET("/api/admin/requests")
+    suspend fun getRequests(@Header("Authorization") auth: String): Response<ApiResponse<List<CustomerRequest>>>
+
+    @GET("/api/admin/requests/{id}")
+    suspend fun getRequest(
+        @Header("Authorization") auth: String,
+        @Path("id") id: String
+    ): Response<ApiResponse<CustomerRequest>>
+
+    @PATCH("/api/admin/requests/{id}")
+    suspend fun updateRequest(
+        @Header("Authorization") auth: String,
+        @Path("id") id: String,
+        @Body body: UpdateRequestRequest
+    ): Response<ApiResponse<CustomerRequest>>
+
+    @DELETE("/api/admin/requests/{id}")
+    suspend fun deleteRequest(
+        @Header("Authorization") auth: String,
+        @Path("id") id: String
+    ): Response<ApiResponse<DeleteResult>>
+
     @GET("/api/products")
     suspend fun getProducts(): Response<ApiResponse<List<Product>>>
 
@@ -264,6 +286,49 @@ class AuraRepository(private val api: AuraApiService) {
         val body = response.body()
         if (!response.isSuccessful || body?.success != true) {
             throw ApiException(body?.error ?: "Could not delete order")
+        }
+    }
+
+    suspend fun fetchRequests(token: String): List<CustomerRequest> {
+        val response = api.getRequests(bearer(token))
+        if (response.code() == 404) {
+            throw ApiException(
+                "Requests API is not on the server yet. Deploy the latest backend and restart, then pull to refresh."
+            )
+        }
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) {
+            val errBody = response.errorBody()?.string()?.take(200)
+            throw ApiException(
+                body?.error ?: errBody ?: "Could not load requests (HTTP ${response.code()})"
+            )
+        }
+        return body.data ?: emptyList()
+    }
+
+    suspend fun fetchRequest(token: String, id: String): CustomerRequest {
+        val response = api.getRequest(bearer(token), id)
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) {
+            throw ApiException(body?.error ?: "Request not found")
+        }
+        return body.data ?: throw ApiException("Request not found")
+    }
+
+    suspend fun updateRequestStatus(token: String, id: String, status: String): CustomerRequest {
+        val response = api.updateRequest(bearer(token), id, UpdateRequestRequest(status = status))
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) {
+            throw ApiException(body?.error ?: "Could not update request")
+        }
+        return body.data ?: throw ApiException("Update failed")
+    }
+
+    suspend fun deleteRequest(token: String, id: String) {
+        val response = api.deleteRequest(bearer(token), id)
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) {
+            throw ApiException(body?.error ?: "Could not delete request")
         }
     }
 

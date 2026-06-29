@@ -45,6 +45,8 @@ import com.auraboxedgifts.orders.ui.screens.CustomerShell
 import com.auraboxedgifts.orders.ui.screens.LoginScreen
 import com.auraboxedgifts.orders.ui.screens.MainShell
 import com.auraboxedgifts.orders.ui.screens.OrderDetailScreen
+import com.auraboxedgifts.orders.ui.screens.RequestDetailScreen
+import com.auraboxedgifts.orders.ui.screens.RequestsScreen
 import com.auraboxedgifts.orders.ui.screens.ProductDetailScreen
 import com.auraboxedgifts.orders.ui.theme.AuraOrdersTheme
 import com.razorpay.Checkout
@@ -105,6 +107,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
         initTextToSpeech()
 
         val deepLinkOrderId = intent?.getStringExtra("order_id")
+        val deepLinkRequestId = intent?.getStringExtra("request_id")
         val openCustomerOrders = intent?.getBooleanExtra("open_customer_orders", false) == true
         val appPrefs = getSharedPreferences("aura_orders_prefs", MODE_PRIVATE)
 
@@ -122,8 +125,10 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                 val loginState by vm.loginState.collectAsState()
                 val customerAuthState by vm.customerAuthState.collectAsState()
                 val ordersState by vm.ordersState.collectAsState()
+                val requestsState by vm.requestsState.collectAsState()
                 val customerOrdersState by vm.customerOrdersState.collectAsState()
                 val detailState by vm.detailState.collectAsState()
+                val requestDetailState by vm.requestDetailState.collectAsState()
                 val catalogState by vm.catalogState.collectAsState()
                 val productDetailState by vm.productDetailState.collectAsState()
                 val productFormState by vm.productFormState.collectAsState()
@@ -177,6 +182,15 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                                 launchSingleTop = true
                             }
                         }
+                    }
+                }
+
+                LaunchedEffect(deepLinkRequestId, adminToken) {
+                    val requestId = deepLinkRequestId
+                    if (!requestId.isNullOrBlank() && !adminToken.isNullOrBlank()) {
+                        viewModel.loadRequestDetail(requestId, adminToken)
+                        viewModel.selectTab(MainTab.REQUESTS)
+                        navController.navigate("admin/request/$requestId")
                     }
                 }
 
@@ -412,6 +426,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
 
                         LaunchedEffect(adminToken) {
                             viewModel.loadOrders(adminToken)
+                            viewModel.loadRequests(adminToken)
                             viewModel.loadCatalog()
                         }
 
@@ -425,18 +440,26 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                             selectedTab = selectedTab,
                             onTabSelected = viewModel::selectTab,
                             ordersState = ordersState,
+                            requestsState = requestsState,
                             catalogState = catalogState,
                             adminEmail = adminEmail,
                             dashboardStats = viewModel.dashboardStats(),
                             filteredOrders = viewModel.filteredOrders(),
+                            filteredRequests = viewModel.filteredRequests(),
                             filteredProducts = viewModel.filteredProducts(),
                             collectionName = viewModel::collectionName,
                             onRefreshOrders = { viewModel.loadOrders(refreshing = true) },
+                            onRefreshRequests = { viewModel.loadRequests(refreshing = true) },
                             onRefreshCatalog = { viewModel.loadCatalog(refreshing = true) },
                             onOrderFilterChange = viewModel::setOrderFilter,
+                            onRequestFilterChange = viewModel::setRequestFilter,
                             onOrderClick = { orderId ->
                                 viewModel.loadOrderDetail(orderId)
                                 navController.navigate("admin/order/$orderId")
+                            },
+                            onRequestClick = { requestId ->
+                                viewModel.loadRequestDetail(requestId)
+                                navController.navigate("admin/request/$requestId")
                             },
                             onProductClick = { productId ->
                                 viewModel.loadProductDetail(productId)
@@ -445,6 +468,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                             onCollectionChange = viewModel::setCatalogCollection,
                             onSearchChange = viewModel::setCatalogSearch,
                             onNavigateToOrders = { viewModel.selectTab(MainTab.ORDERS) },
+                            onNavigateToRequests = { viewModel.selectTab(MainTab.REQUESTS) },
                             onNavigateToCatalog = { viewModel.selectTab(MainTab.CATALOG) },
                             onAddProduct = {
                                 viewModel.loadProductForm(null)
@@ -684,6 +708,25 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                             onTagsChange = { v -> viewModel.updateProductForm { copy(tags = v) } },
                             onPickImage = { imagePicker.launch("image/*") },
                             onSave = { viewModel.saveProduct { navController.popBackStack() } }
+                        )
+                    }
+
+                    auraComposable(
+                        route = "admin/request/{requestId}",
+                        arguments = listOf(navArgument("requestId") { type = NavType.StringType })
+                    ) { entry ->
+                        val requestId = entry.arguments?.getString("requestId").orEmpty()
+                        RequestDetailScreen(
+                            state = requestDetailState,
+                            onBack = { navController.popBackStack() },
+                            onStatusChange = { status ->
+                                viewModel.updateRequestStatus(requestId, status)
+                            },
+                            onDelete = {
+                                viewModel.deleteRequest(requestId, onDone = {
+                                    navController.popBackStack()
+                                })
+                            }
                         )
                     }
 

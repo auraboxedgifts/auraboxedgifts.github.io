@@ -22,7 +22,9 @@ class TokenStore(private val context: Context) {
     private val customerEmailKey = stringPreferencesKey("customer_email")
     private val customerNameKey = stringPreferencesKey("customer_name")
     private val knownOrderIdsKey = stringSetPreferencesKey("known_order_ids")
+    private val knownRequestIdsKey = stringSetPreferencesKey("known_request_ids")
     private val notificationsSeededKey = booleanPreferencesKey("notifications_seeded")
+    private val requestsSeededKey = booleanPreferencesKey("requests_seeded")
     private val fcmTokenKey = stringPreferencesKey("fcm_token")
 
     val adminTokenFlow: Flow<String?> = context.dataStore.data.map { it[adminTokenKey] }
@@ -67,7 +69,9 @@ class TokenStore(private val context: Context) {
             prefs.remove(adminTokenKey)
             prefs.remove(adminEmailKey)
             prefs.remove(knownOrderIdsKey)
+            prefs.remove(knownRequestIdsKey)
             prefs.remove(notificationsSeededKey)
+            prefs.remove(requestsSeededKey)
         }
     }
 
@@ -99,6 +103,27 @@ class TokenStore(private val context: Context) {
             val current = prefs[knownOrderIdsKey] ?: emptySet()
             prefs[knownOrderIdsKey] = current + orderIds.toSet()
             prefs[notificationsSeededKey] = true
+        }
+    }
+
+    suspend fun areRequestsSeeded(): Boolean =
+        context.dataStore.data.first()[requestsSeededKey] == true
+
+    suspend fun getKnownRequestIds(): Set<String> =
+        context.dataStore.data.first()[knownRequestIdsKey] ?: emptySet()
+
+    suspend fun seedKnownRequestIds(requestIds: Iterable<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[knownRequestIdsKey] = requestIds.toSet()
+            prefs[requestsSeededKey] = true
+        }
+    }
+
+    suspend fun addKnownRequestIds(requestIds: Iterable<String>) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[knownRequestIdsKey] ?: emptySet()
+            prefs[knownRequestIdsKey] = current + requestIds.toSet()
+            prefs[requestsSeededKey] = true
         }
     }
 }

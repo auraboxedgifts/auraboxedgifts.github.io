@@ -28,6 +28,7 @@ function buildMobileLiveInstruction(getCatalog, getSite, getSettings) {
         'Only call open_sign_in or open_sign_up when the customer clearly asks to sign in, sign up, or use OTP — never open auth screens proactively.',
         'If the customer wants to complete sign up entirely by voice, first ask for their full name, then send OTP with open_sign_up, and finally call verify_sign_up_otp after they speak the code.',
         'Use navigate_cart, navigate_checkout, navigate_account only when they ask to open those screens.',
+        'For custom hamper requests: collect occasion, who it is for, budget, preferences, the customer full name, and phone or email. Confirm everything, then call request_custom_hamper. Do not send without contact details. Never use a logged-in account name — ask the shopper for their details.',
         'Never invent product ids — use ids from the catalog below.',
         '',
         'MOBILE CATALOG:',
@@ -60,7 +61,13 @@ async function executeMobileLiveTool(fc, clientWs, ctx) {
         formatCartTotalsMessage,
         calculateCart,
         createOtp,
-        sleep
+        sleep,
+        sendEmailNotification,
+        formatInquiryContact,
+        validateInquiryContact,
+        saveInquiryAndNotify,
+        processCustomerInquiry,
+        requestsFile
     } = ctx;
     const args = fc.args || {};
     const name = fc.name;
@@ -282,6 +289,29 @@ async function executeMobileLiveTool(fc, clientWs, ctx) {
                 response = { result: 'Could not read cart.', error: err.message };
             }
             break;
+        case 'request_custom_hamper': {
+            const details = [
+                args.occasion ? `Occasion: ${args.occasion}` : '',
+                args.recipient ? `For: ${args.recipient}` : '',
+                args.budget ? `Budget: ${args.budget}` : '',
+                args.preferences ? `Preferences: ${args.preferences}` : ''
+            ]
+                .filter(Boolean)
+                .join('<br>');
+            const inquiry = await processCustomerInquiry({
+                toolName: 'request_custom_hamper',
+                args,
+                source: 'android_ai',
+                requestsFile,
+                sendEmailNotification,
+                formatInquiryContact,
+                validateInquiryContact,
+                emailHtml: `New custom hamper request via Aura AI (Android app):<br><br>${details}`,
+                inquiryType: 'Custom Hamper'
+            });
+            response = inquiry.response;
+            break;
+        }
         default:
             response = { result: `Unknown tool ${name}` };
     }

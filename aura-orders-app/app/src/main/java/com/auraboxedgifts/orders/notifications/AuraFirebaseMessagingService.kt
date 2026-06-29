@@ -25,10 +25,11 @@ class AuraFirebaseMessagingService : FirebaseMessagingService() {
         val title = message.notification?.title ?: data["title"] ?: "Aura Boxed Gifts"
         val body = message.notification?.body ?: data["body"] ?: return
         val orderId = data["orderId"]
+        val requestId = data["requestId"]
         val imageUrl = data["imageUrl"]
         val openCustomerOrders = type == "order_status" || type == "order_confirmed"
 
-        Log.i(TAG, "FCM received type=$type orderId=${orderId ?: "-"}")
+        Log.i(TAG, "FCM received type=$type orderId=${orderId ?: "-"} requestId=${requestId ?: "-"}")
         OrderNotificationManager.ensureAllChannels(this)
         scope.launch {
             OrderNotificationManager.showGenericNotification(
@@ -36,6 +37,7 @@ class AuraFirebaseMessagingService : FirebaseMessagingService() {
                 title = title,
                 body = body,
                 orderId = orderId,
+                requestId = requestId,
                 imageUrl = imageUrl,
                 type = type,
                 openCustomerOrders = openCustomerOrders

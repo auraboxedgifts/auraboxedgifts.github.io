@@ -4,3 +4,4 @@ data/snapshots/
 data/fcm-tokens.json
 data/orders.json
 data/users.json
+data/requests.json

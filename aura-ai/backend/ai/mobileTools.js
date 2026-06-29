@@ -134,6 +134,24 @@ const mobileToolDeclarations = [
         name: 'calculate_cart_total',
         description: 'Read the current cart subtotal, shipping, and grand total.',
         parameters: { type: 'object', properties: {} }
+    },
+    {
+        name: 'request_custom_hamper',
+        description:
+            'Send a custom hamper inquiry to the Aura team. Collect occasion, preferences, customer name, and phone or email first. Confirm with the customer before sending.',
+        parameters: {
+            type: 'object',
+            properties: {
+                occasion: { type: 'string', description: 'e.g. Birthday, Wedding, Anniversary' },
+                recipient: { type: 'string', description: 'Who the hamper is for' },
+                budget: { type: 'string', description: 'Approximate budget in INR' },
+                preferences: { type: 'string', description: 'Theme, colours, items, notes' },
+                customerName: { type: 'string', description: 'Customer full name — required' },
+                phone: { type: 'string', description: 'Customer phone — required unless email provided' },
+                email: { type: 'string', description: 'Customer email — required unless phone provided' }
+            },
+            required: ['occasion', 'customerName']
+        }
     }
 ];
 

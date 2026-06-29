@@ -1,18 +1,20 @@
 const toolDeclarations = [
     {
         name: 'send_message',
-        description: 'Send a message, order request, or custom hamper inquiry.',
+        description: 'Send a message, order request, or inquiry to the Aura team. Only call after collecting the customer name and phone or email.',
         parameters: {
             type: 'object',
             properties: {
                 message: { type: 'string' },
-                senderInfo: { type: 'string' },
+                customerName: { type: 'string', description: 'Customer full name' },
+                phone: { type: 'string', description: 'Customer phone number with country code if possible' },
+                email: { type: 'string', description: 'Customer email address' },
                 inquiryType: {
                     type: 'string',
                     enum: ['Order Request', 'Custom Hamper', 'Product Inquiry', 'Bulk Order', 'General']
                 }
             },
-            required: ['message']
+            required: ['message', 'customerName']
         }
     },
     {
@@ -67,7 +69,7 @@ const toolDeclarations = [
     },
     {
         name: 'request_custom_hamper',
-        description: 'Send a customised hamper request/inquiry to the Aura team by email. Use after collecting the details from the user. Always confirm before sending.',
+        description: 'Send a customised hamper request/inquiry to the Aura team by email. Use only after collecting occasion details AND the customer name plus phone or email. Always confirm before sending.',
         parameters: {
             type: 'object',
             properties: {
@@ -75,9 +77,11 @@ const toolDeclarations = [
                 recipient: { type: 'string', description: 'Who the hamper is for (relationship, gender, age if shared)' },
                 budget: { type: 'string', description: 'Approximate budget in INR' },
                 preferences: { type: 'string', description: 'Theme, colours, items, or any special notes' },
-                contact: { type: 'string', description: 'Customer name, phone, or email to reach them' }
+                customerName: { type: 'string', description: 'Customer full name — required' },
+                phone: { type: 'string', description: 'Customer phone number — required unless email is provided' },
+                email: { type: 'string', description: 'Customer email — required unless phone is provided' }
             },
-            required: ['occasion']
+            required: ['occasion', 'customerName']
         }
     },
     { name: 'next_product', description: 'Go to next product image.' },

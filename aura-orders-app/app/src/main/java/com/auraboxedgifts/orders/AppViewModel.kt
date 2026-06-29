@@ -20,8 +20,10 @@ import com.auraboxedgifts.orders.data.CheckoutInfo
 import com.auraboxedgifts.orders.data.Collection
 import com.auraboxedgifts.orders.data.Customer
 import com.auraboxedgifts.orders.data.LocalCartItem
+import com.auraboxedgifts.orders.data.CustomerRequest
 import com.auraboxedgifts.orders.data.Order
 import com.auraboxedgifts.orders.data.OrderStatus
+import com.auraboxedgifts.orders.data.RequestStatus
 import com.auraboxedgifts.orders.data.Product
 import com.auraboxedgifts.orders.data.ProductPayload
 import com.auraboxedgifts.orders.data.TokenStore
@@ -64,6 +66,7 @@ enum class AppMode { CUSTOMER, ADMIN }
 enum class MainTab(val label: String) {
     HOME("Home"),
     ORDERS("Orders"),
+    REQUESTS("Requests"),
     CATALOG("Catalog"),
     PROFILE("Profile")
 }
@@ -114,6 +117,26 @@ data class CustomerAuthUiState(
 data class OrderDetailUiState(
     val isLoading: Boolean = true,
     val order: Order? = null,
+    val error: String? = null,
+    val isUpdating: Boolean = false
+)
+
+data class RequestsUiState(
+    val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
+    val requests: List<CustomerRequest> = emptyList(),
+    val error: String? = null,
+    val filter: RequestFilter = RequestFilter.ALL
+)
+
+enum class RequestFilter(val label: String) {
+    ALL("All"),
+    OPEN("Open")
+}
+
+data class RequestDetailUiState(
+    val isLoading: Boolean = true,
+    val request: CustomerRequest? = null,
     val error: String? = null,
     val isUpdating: Boolean = false
 )
@@ -174,9 +197,11 @@ data class DashboardStats(
     val totalOrders: Int,
     val paidOrders: Int,
     val pendingOrders: Int,
+    val openRequests: Int,
     val totalProducts: Int,
     val totalCollections: Int,
-    val recentOrders: List<Order>
+    val recentOrders: List<Order>,
+    val recentRequests: List<CustomerRequest>
 )
 
 data class PaymentLaunchData(
@@ -260,6 +285,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val _detailState = MutableStateFlow(OrderDetailUiState())
     val detailState: StateFlow<OrderDetailUiState> = _detailState.asStateFlow()
 
+    private val _requestsState = MutableStateFlow(RequestsUiState())
+    val requestsState: StateFlow<RequestsUiState> = _requestsState.asStateFlow()
+
+    private val _requestDetailState = MutableStateFlow(RequestDetailUiState())
+    val requestDetailState: StateFlow<RequestDetailUiState> = _requestDetailState.asStateFlow()
+
     private val _catalogState = MutableStateFlow(CatalogUiState())
     val catalogState: StateFlow<CatalogUiState> = _catalogState.asStateFlow()
 
@@ -328,7 +359,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { loadCatalog() }
     }
 
-    fun selectTab(tab: MainTab) { _selectedTab.value = tab }
+    fun selectTab(tab: MainTab) {
+        _selectedTab.value = tab
+        if (tab == MainTab.REQUESTS && adminToken.value != null) {
+            loadRequests(refreshing = _requestsState.value.requests.isNotEmpty())
+        }
+    }
     fun selectCustomerTab(tab: CustomerTab) { _customerTab.value = tab }
 
     fun updateLoginEmail(value: String) {
@@ -354,6 +390,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 registerPushTokenIfAvailable()
                 _loginState.value = LoginUiState()
                 loadOrders(result.token, checkNotifications = true)
+                loadRequests(result.token, checkNotifications = true)
                 loadCatalog()
                 onSuccess()
             } catch (e: ApiException) {
@@ -370,7 +407,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             OrderPollWorker.cancel(getApplication())
             tokenStore.clearAdmin()
             _ordersState.value = OrdersUiState()
+            _requestsState.value = RequestsUiState()
             _detailState.value = OrderDetailUiState()
+            _requestDetailState.value = RequestDetailUiState()
             _selectedTab.value = MainTab.HOME
             refreshStoreSettings()
         }
@@ -1121,6 +1160,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     val orders = repository.fetchOrders(authToken)
                     notifyIfNewOrders(orders)
                     _ordersState.value = _ordersState.value.copy(orders = orders)
+                    val requests = repository.fetchRequests(authToken)
+                    notifyIfNewRequests(requests)
+                    _requestsState.value = _requestsState.value.copy(requests = requests)
                 } catch (_: Exception) { }
             }
         }
@@ -1135,6 +1177,114 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val ctx = getApplication<Application>()
         val newOrders = OrderNotificationManager.processOrders(ctx, orders)
         OrderNotificationManager.showNewOrderNotifications(ctx, newOrders)
+    }
+
+    private suspend fun notifyIfNewRequests(requests: List<CustomerRequest>) {
+        val ctx = getApplication<Application>()
+        val newRequests = OrderNotificationManager.processRequests(ctx, requests)
+        OrderNotificationManager.showNewRequestNotifications(ctx, newRequests)
+    }
+
+    fun setRequestFilter(filter: RequestFilter) {
+        _requestsState.value = _requestsState.value.copy(filter = filter)
+    }
+
+    fun loadRequests(
+        authToken: String? = adminToken.value,
+        refreshing: Boolean = false,
+        checkNotifications: Boolean = true
+    ) {
+        if (authToken.isNullOrBlank()) return
+        viewModelScope.launch {
+            _requestsState.value = _requestsState.value.copy(
+                isLoading = !refreshing,
+                isRefreshing = refreshing,
+                error = null
+            )
+            try {
+                val requests = repository.fetchRequests(authToken)
+                if (checkNotifications) notifyIfNewRequests(requests)
+                _requestsState.value = _requestsState.value.copy(
+                    isLoading = false,
+                    isRefreshing = false,
+                    requests = requests
+                )
+            } catch (e: ApiException) {
+                _requestsState.value = _requestsState.value.copy(
+                    isLoading = false,
+                    isRefreshing = false,
+                    error = e.message
+                )
+            } catch (e: Exception) {
+                _requestsState.value = _requestsState.value.copy(
+                    isLoading = false,
+                    isRefreshing = false,
+                    error = e.message?.takeIf { it.isNotBlank() } ?: "Could not load requests. Pull down to refresh."
+                )
+            }
+        }
+    }
+
+    fun loadRequestDetail(requestId: String, authToken: String? = adminToken.value) {
+        if (authToken.isNullOrBlank()) return
+        viewModelScope.launch {
+            _requestDetailState.value = RequestDetailUiState(isLoading = true)
+            try {
+                val request = repository.fetchRequest(authToken, requestId)
+                _requestDetailState.value = RequestDetailUiState(isLoading = false, request = request)
+            } catch (e: ApiException) {
+                _requestDetailState.value = RequestDetailUiState(isLoading = false, error = e.message)
+            } catch (_: Exception) {
+                _requestDetailState.value = RequestDetailUiState(isLoading = false, error = "Could not load request details")
+            }
+        }
+    }
+
+    fun updateRequestStatus(requestId: String, status: RequestStatus, authToken: String? = adminToken.value) {
+        if (authToken.isNullOrBlank()) return
+        viewModelScope.launch {
+            _requestDetailState.value = _requestDetailState.value.copy(isUpdating = true, error = null)
+            try {
+                val updated = repository.updateRequestStatus(authToken, requestId, status.apiValue)
+                _requestDetailState.value = RequestDetailUiState(isLoading = false, request = updated)
+                _requestsState.value = _requestsState.value.copy(
+                    requests = _requestsState.value.requests.map { if (it.id == requestId) updated else it }
+                )
+            } catch (e: ApiException) {
+                _requestDetailState.value = _requestDetailState.value.copy(isUpdating = false, error = e.message)
+            } catch (_: Exception) {
+                _requestDetailState.value = _requestDetailState.value.copy(isUpdating = false, error = "Could not update status")
+            }
+        }
+    }
+
+    fun deleteRequest(requestId: String, onDone: () -> Unit, authToken: String? = adminToken.value) {
+        if (authToken.isNullOrBlank()) return
+        viewModelScope.launch {
+            _requestDetailState.value = _requestDetailState.value.copy(isUpdating = true, error = null)
+            try {
+                repository.deleteRequest(authToken, requestId)
+                _requestsState.value = _requestsState.value.copy(
+                    requests = _requestsState.value.requests.filter { it.id != requestId }
+                )
+                _requestDetailState.value = RequestDetailUiState()
+                onDone()
+            } catch (e: ApiException) {
+                _requestDetailState.value = _requestDetailState.value.copy(isUpdating = false, error = e.message)
+            } catch (_: Exception) {
+                _requestDetailState.value = _requestDetailState.value.copy(isUpdating = false, error = "Could not delete request")
+            }
+        }
+    }
+
+    fun filteredRequests(): List<CustomerRequest> {
+        val state = _requestsState.value
+        return when (state.filter) {
+            RequestFilter.ALL -> state.requests
+            RequestFilter.OPEN -> state.requests.filter {
+                RequestStatus.fromApi(it.status) == RequestStatus.OPEN
+            }
+        }
     }
 
     fun loadOrderDetail(orderId: String, authToken: String? = adminToken.value) {
@@ -1302,9 +1452,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         totalOrders = _ordersState.value.orders.size,
         paidOrders = _ordersState.value.orders.count { it.isPaid() },
         pendingOrders = _ordersState.value.orders.count { !it.isPaid() },
+        openRequests = _requestsState.value.requests.count {
+            RequestStatus.fromApi(it.status) == RequestStatus.OPEN
+        },
         totalProducts = _catalogState.value.products.size,
         totalCollections = _catalogState.value.collections.size,
-        recentOrders = _ordersState.value.orders.take(5)
+        recentOrders = _ordersState.value.orders.take(5),
+        recentRequests = _requestsState.value.requests.take(5)
     )
 
     fun productForCartItem(productId: String): Product? {
@@ -1405,19 +1559,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         var wsUrl = BuildConfig.API_BASE_URL.trimEnd('/')
             .replace("https://", "wss://")
             .replace("http://", "ws://") + "?platform=android"
-
-        val name = customerName.value
-        val email = customerEmail.value
-        if (!name.isNullOrBlank()) {
-            try {
-                wsUrl += "&name=" + java.net.URLEncoder.encode(name, "UTF-8")
-            } catch (_: Exception) {}
-        }
-        if (!email.isNullOrBlank()) {
-            try {
-                wsUrl += "&email=" + java.net.URLEncoder.encode(email, "UTF-8")
-            } catch (_: Exception) {}
-        }
 
         liveAudioPlayer = AuraLiveAudioPlayer().also { it.startPlayback() }
         liveVoiceClient = AuraLiveVoiceClient(wsUrl, voiceListener()).also { it.connect() }

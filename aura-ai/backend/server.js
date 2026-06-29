@@ -68,6 +68,7 @@ function sanitizeUser(user, email) {
 const DATA_DIR = path.join(__dirname, 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
+const REQUESTS_FILE = path.join(DATA_DIR, 'requests.json');
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
 const COLLECTIONS_FILE = path.join(DATA_DIR, 'collections.json');
 const SITE_FILE = path.join(DATA_DIR, 'site.json');
@@ -109,6 +110,7 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 }
 if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, '{}');
 if (!fs.existsSync(ORDERS_FILE)) fs.writeFileSync(ORDERS_FILE, '[]');
+if (!fs.existsSync(REQUESTS_FILE)) fs.writeFileSync(REQUESTS_FILE, '[]');
 if (!fs.existsSync(PRODUCTS_FILE)) fs.writeFileSync(PRODUCTS_FILE, '[]');
 if (!fs.existsSync(COLLECTIONS_FILE)) fs.writeFileSync(COLLECTIONS_FILE, '[]');
 if (!fs.existsSync(SITE_FILE)) fs.writeFileSync(SITE_FILE, JSON.stringify(DEFAULT_SITE, null, 2));
@@ -306,17 +308,21 @@ const emailTransporter = nodemailer.createTransport({
     }
 });
 
-async function sendEmailNotification(message, senderInfo = '', inquiryType = 'General', toAddress = null) {
-    const to = String(toAddress || process.env.RECIPIENT_EMAIL || '').trim();
+function resolveNotificationRecipient(toAddress = null) {
+    return String(toAddress || process.env.RECIPIENT_EMAIL || process.env.EMAIL_USER || '').trim();
+}
+
+async function sendEmailNotification(message, customerContact = '', inquiryType = 'General', toAddress = null) {
+    const to = resolveNotificationRecipient(toAddress);
     if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
         return { success: false, error: 'Email credentials not configured on server.', to };
     }
     if (!to) {
-        return { success: false, error: 'No recipient email configured.', to };
+        return { success: false, error: 'No recipient email configured. Set RECIPIENT_EMAIL in .env.', to };
     }
     try {
         const info = await emailTransporter.sendMail({
-            from: process.env.EMAIL_USER,
+            from: `"Aura Boxed Gifts" <${process.env.EMAIL_USER}>`,
             to,
             subject: `Aura Inquiry - ${inquiryType}`,
             html: `
@@ -324,11 +330,12 @@ async function sendEmailNotification(message, senderInfo = '', inquiryType = 'Ge
                     <h2>Aura Boxed Gifts - ${inquiryType}</h2>
                     <p><strong>Message</strong></p>
                     <div>${message}</div>
-                    ${senderInfo ? `<p><strong>Sender:</strong> ${senderInfo}</p>` : ''}
+                    ${customerContact ? `<p><strong>Customer contact:</strong><br>${customerContact}</p>` : ''}
                     <p><strong>Received:</strong> ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
                 </div>
             `
         });
+        console.log(`[Email] Inquiry "${inquiryType}" sent to ${to} (from ${process.env.EMAIL_USER})`);
         return { success: true, messageId: info.messageId, to };
     } catch (error) {
         return { success: false, error: error.message, to };
@@ -887,7 +894,8 @@ app.get('/api/admin/integrations', requireAdmin, (req, res) => {
         email: {
             configured: Boolean(process.env.EMAIL_USER && process.env.EMAIL_APP_PASSWORD),
             sender: maskValue(process.env.EMAIL_USER),
-            recipient: maskValue(process.env.RECIPIENT_EMAIL)
+            recipient: maskValue(resolveNotificationRecipient()),
+            recipientEnv: maskValue(process.env.RECIPIENT_EMAIL)
         },
         whatsapp: {
             configured: Boolean(process.env.CALLMEBOT_PHONE && process.env.CALLMEBOT_API_KEY),
@@ -904,7 +912,7 @@ app.get('/api/admin/integrations', requireAdmin, (req, res) => {
 });
 
 app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
-    const to = String(req.body?.to || process.env.RECIPIENT_EMAIL || '').trim();
+    const to = resolveNotificationRecipient(req.body?.to);
     if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
         return jsonErr(res, 400, 'Email is not configured. Set EMAIL_USER and EMAIL_APP_PASSWORD on the server.');
     }
@@ -1579,6 +1587,49 @@ app.delete('/api/admin/orders/:id', requireAdmin, (req, res) => {
     return jsonOk(res, { deleted: true, id: removed.id });
 });
 
+app.get('/api/admin/requests', requireAdmin, (req, res) => {
+    const requests = readRequests(REQUESTS_FILE);
+    const sorted = requests.slice().sort((a, b) => {
+        const ta = new Date(a.createdAt || 0).getTime();
+        const tb = new Date(b.createdAt || 0).getTime();
+        return tb - ta;
+    });
+    return jsonOk(res, sorted);
+});
+
+app.get('/api/admin/requests/:id', requireAdmin, (req, res) => {
+    const requests = readRequests(REQUESTS_FILE);
+    const request = requests.find((r) => r.id === req.params.id);
+    if (!request) return jsonErr(res, 404, 'Request not found');
+    return jsonOk(res, request);
+});
+
+app.patch('/api/admin/requests/:id', requireAdmin, (req, res) => {
+    const requests = readRequests(REQUESTS_FILE);
+    const idx = requests.findIndex((r) => r.id === req.params.id);
+    if (idx === -1) return jsonErr(res, 404, 'Request not found');
+    const allowed = ['open', 'contacted', 'converted', 'closed'];
+    const status = String(req.body?.status || '').trim();
+    if (status && !allowed.includes(status)) {
+        return jsonErr(res, 400, `Invalid status. Allowed: ${allowed.join(', ')}`);
+    }
+    if (status) requests[idx].status = status;
+    if (req.body?.notes !== undefined) requests[idx].notes = String(req.body.notes || '');
+    requests[idx].updatedAt = new Date().toISOString();
+    writeRequests(REQUESTS_FILE, requests);
+    return jsonOk(res, requests[idx]);
+});
+
+app.delete('/api/admin/requests/:id', requireAdmin, (req, res) => {
+    const requests = readRequests(REQUESTS_FILE);
+    const idx = requests.findIndex((r) => r.id === req.params.id);
+    if (idx === -1) return jsonErr(res, 404, 'Request not found');
+    const [removed] = requests.splice(idx, 1);
+    writeRequests(REQUESTS_FILE, requests);
+    console.log(`[Inquiries] Deleted request ${removed.id}`);
+    return jsonOk(res, { deleted: true, id: removed.id });
+});
+
 app.post('/api/create-order', async (req, res) => {
     if (!razorpayInstance) return jsonErr(res, 500, 'Razorpay keys not configured on server.');
     const fromItems = Array.isArray(req.body?.items) ? calculateCart(req.body.items).grandTotal : 0;
@@ -1677,6 +1728,8 @@ app.get('/api/config', (req, res) => {
 });
 
 const { SYSTEM_PROMPT } = require('./ai/systemPrompt');
+const { formatInquiryContact, validateInquiryContact } = require('./ai/inquiryContact');
+const { saveInquiryAndNotify, readRequests, writeRequests, processCustomerInquiry } = require('./inquiries');
 const { toolDeclarations } = require('./ai/toolDeclarations');
 const { chatWithAura, buildSuggestions } = require('./ai/textChat');
 const { chatWithMobileAura } = require('./ai/mobileAi');
@@ -1999,26 +2052,18 @@ function friendlyGeminiError(raw) {
     return msg;
 }
 
-const GEMINI_KICKOFF_TEXT = '[SYSTEM NOTE: The customer just opened Aura AI on the Aura Boxed Gifts website. Greet them warmly in one short sentence and ask how you can help with gifts or hampers.]';
-function buildKickoffText(userName) {
-    if (userName) {
-        return `[SYSTEM NOTE: The customer ${userName} just opened Aura AI on the Aura Boxed Gifts website. Their name is ${userName}. Greet them by name warmly in one short sentence and ask how you can help with gifts or hampers.]`;
-    }
+const GEMINI_KICKOFF_TEXT = '[SYSTEM NOTE: The customer just opened Aura AI on the Aura Boxed Gifts website. Greet them warmly in one short sentence without using their name — ask how you can help with gifts or hampers.]';
+function buildKickoffText() {
     return GEMINI_KICKOFF_TEXT;
 }
 
 wss.on('connection', (clientWs, request) => {
     const clientIp = request?.socket?.remoteAddress || 'unknown';
     let isMobileClient = false;
-    let clientUserName = null;
     try {
         const host = request.headers.host || 'localhost';
         const requestUrl = new URL(request.url || '/', `http://${host}`);
         isMobileClient = requestUrl.searchParams.get('platform') === 'android';
-        const nameParam = requestUrl.searchParams.get('name');
-        if (nameParam) {
-            clientUserName = decodeURIComponent(nameParam);
-        }
     } catch (_) {
         isMobileClient = false;
     }
@@ -2090,7 +2135,22 @@ wss.on('connection', (clientWs, request) => {
                                         formatCartTotalsMessage,
                                         calculateCart,
                                         createOtp,
-                                        sleep
+                                        sleep,
+                                        sendEmailNotification,
+                                        formatInquiryContact,
+                                        validateInquiryContact,
+                                        saveInquiryAndNotify: (toolName, toolArgs, source) => {
+                                            const { notifyAdminsNewRequest } = require('./fcm');
+                                            return saveInquiryAndNotify(
+                                                REQUESTS_FILE,
+                                                toolName,
+                                                toolArgs,
+                                                source,
+                                                notifyAdminsNewRequest
+                                            );
+                                        },
+                                        processCustomerInquiry,
+                                        requestsFile: REQUESTS_FILE
                                     });
                                     if (mobileResult.lastViewedProduct) {
                                         lastViewedProduct = mobileResult.lastViewedProduct;
@@ -2102,11 +2162,18 @@ wss.on('connection', (clientWs, request) => {
                                 }
 
                                 if (fc.name === 'send_message') {
-                                    response = await sendEmailNotification(
-                                        args.message,
-                                        args.senderInfo,
-                                        args.inquiryType || 'General'
-                                    );
+                                    const inquiry = await processCustomerInquiry({
+                                        toolName: fc.name,
+                                        args,
+                                        source: isMobileClient ? 'android_ai' : 'web_ai',
+                                        requestsFile: REQUESTS_FILE,
+                                        sendEmailNotification,
+                                        formatInquiryContact,
+                                        validateInquiryContact,
+                                        emailHtml: String(args.message || ''),
+                                        inquiryType: args.inquiryType || 'General'
+                                    });
+                                    response = inquiry.response;
                                 } else if (fc.name === 'browse_collection') {
                                     const collection = args.collection;
                                     const collectionProducts = getCatalog().filter((p) => p.collection === collection);
@@ -2203,11 +2270,18 @@ wss.on('connection', (clientWs, request) => {
                                     ]
                                         .filter(Boolean)
                                         .join('<br>');
-                                    response = await sendEmailNotification(
-                                        `New custom hamper request via Aura AI:<br><br>${details}`,
-                                        args.contact || 'Not provided',
-                                        'Custom Hamper'
-                                    );
+                                    const inquiry = await processCustomerInquiry({
+                                        toolName: fc.name,
+                                        args,
+                                        source: isMobileClient ? 'android_ai' : 'web_ai',
+                                        requestsFile: REQUESTS_FILE,
+                                        sendEmailNotification,
+                                        formatInquiryContact,
+                                        validateInquiryContact,
+                                        emailHtml: `New custom hamper request via Aura AI:<br><br>${details}`,
+                                        inquiryType: 'Custom Hamper'
+                                    });
+                                    response = inquiry.response;
                                 } else if (fc.name === 'next_product') {
                                     clientWs.send(JSON.stringify({ type: 'next_product' }));
                                     response = { result: 'Moved to next product' };
@@ -2361,13 +2435,8 @@ wss.on('connection', (clientWs, request) => {
             console.log(`[Gemini] Live session ready${isMobileClient ? ' (android)' : ''}`);
             clientWs.send(JSON.stringify({ type: 'status', status: 'connected' }));
             try {
-                for (const item of inboundQueue) {
-                    if (item && item.type === 'user_info' && item.name) {
-                        clientUserName = item.name;
-                    }
-                }
                 geminiSession.sendRealtimeInput({
-                    text: buildKickoffText(clientUserName)
+                    text: buildKickoffText()
                 });
             } catch (kickErr) {
                 console.warn('[Gemini] Kickoff message failed:', kickErr.message);
@@ -2398,8 +2467,8 @@ wss.on('connection', (clientWs, request) => {
             } else if (message.type === 'text') {
                 geminiSession.sendRealtimeInput({ text: message.data });
             } else if (message.type === 'user_info') {
-                // Receive user info before kickoff for personalized greeting
-                if (message.name) clientUserName = message.name;
+                // Logged-in profile is not used for greetings — shoppers may be store staff testing the site.
+                return;
             } else if (message.type === 'context_update') {
                 if (message.productId || message.productName) {
                     lastViewedProduct = {
@@ -2458,6 +2527,13 @@ app.get('/health', (req, res) => {
 
 const server = app.listen(PORT, () => {
     console.log(`Aura backend running on ${PORT}`);
+    if (process.env.EMAIL_USER) {
+        const recipient = resolveNotificationRecipient();
+        console.log(`[Email] SMTP sender: ${process.env.EMAIL_USER} → alerts delivered to: ${recipient}`);
+        if (!process.env.RECIPIENT_EMAIL) {
+            console.warn('[Email] RECIPIENT_EMAIL is not set — using EMAIL_USER as the alert inbox.');
+        }
+    }
 });
 
 server.on('upgrade', (request, socket, head) => {

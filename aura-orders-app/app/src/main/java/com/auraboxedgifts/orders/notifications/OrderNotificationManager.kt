@@ -17,8 +17,10 @@ import coil.ImageLoader
 import coil.request.ImageRequest
 import com.auraboxedgifts.orders.MainActivity
 import com.auraboxedgifts.orders.R
+import com.auraboxedgifts.orders.data.CustomerRequest
 import com.auraboxedgifts.orders.data.Order
 import com.auraboxedgifts.orders.data.TokenStore
+import com.auraboxedgifts.orders.data.displayContact
 import com.auraboxedgifts.orders.data.displayName
 import com.auraboxedgifts.orders.data.formatRupee
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +28,7 @@ import kotlinx.coroutines.withContext
 
 object OrderNotificationManager {
     const val CHANNEL_ADMIN_ORDERS = "aura_new_orders"
+    const val CHANNEL_ADMIN_REQUESTS = "aura_new_requests"
     const val CHANNEL_CUSTOMER_UPDATES = "aura_customer_updates"
     const val CHANNEL_PROMOTIONS = "aura_promotions"
     private var notificationId = 2000
@@ -39,6 +42,7 @@ object OrderNotificationManager {
         val (name, description) = when (channelId) {
             CHANNEL_CUSTOMER_UPDATES -> "Order updates" to "Status updates for your Aura orders"
             CHANNEL_PROMOTIONS -> "Offers & new products" to "New products, offers, and announcements"
+            CHANNEL_ADMIN_REQUESTS -> "Customer requests" to "Alerts when someone sends a gift or hamper inquiry (not paid)"
             else -> "New orders" to "Alerts when a customer places a new order"
         }
         val channel = NotificationChannel(channelId, name, NotificationManager.IMPORTANCE_HIGH).apply {
@@ -49,11 +53,13 @@ object OrderNotificationManager {
 
     fun ensureAllChannels(context: Context) {
         ensureChannel(context, CHANNEL_ADMIN_ORDERS)
+        ensureChannel(context, CHANNEL_ADMIN_REQUESTS)
         ensureChannel(context, CHANNEL_CUSTOMER_UPDATES)
         ensureChannel(context, CHANNEL_PROMOTIONS)
     }
 
     fun channelForType(type: String?): String = when (type) {
+        "new_request" -> CHANNEL_ADMIN_REQUESTS
         "order_status", "order_confirmed", "cart_reminder" -> CHANNEL_CUSTOMER_UPDATES
         "broadcast", "product_digest", "product_announcement", "app_version", "promotion" -> CHANNEL_PROMOTIONS
         else -> CHANNEL_ADMIN_ORDERS
@@ -82,6 +88,21 @@ object OrderNotificationManager {
             store.addKnownOrderIds(newOrders.map { it.id })
         }
         return newOrders
+    }
+
+    suspend fun processRequests(context: Context, requests: List<CustomerRequest>): List<CustomerRequest> {
+        val store = TokenStore(context)
+        val currentIds = requests.map { it.id }.toSet()
+        if (!store.areRequestsSeeded()) {
+            store.seedKnownRequestIds(currentIds)
+            return emptyList()
+        }
+        val known = store.getKnownRequestIds()
+        val newRequests = requests.filter { it.id !in known }
+        if (newRequests.isNotEmpty()) {
+            store.addKnownRequestIds(newRequests.map { it.id })
+        }
+        return newRequests
     }
 
     fun showNewOrderNotifications(context: Context, newOrders: List<Order>) {
@@ -117,11 +138,45 @@ object OrderNotificationManager {
         }
     }
 
+    fun showNewRequestNotifications(context: Context, newRequests: List<CustomerRequest>) {
+        if (newRequests.isEmpty() || !canNotify(context)) return
+        ensureChannel(context, CHANNEL_ADMIN_REQUESTS)
+        val manager = NotificationManagerCompat.from(context)
+        newRequests.forEach { request ->
+            val intent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("request_id", request.id)
+            }
+            val pending = PendingIntent.getActivity(
+                context,
+                request.id.hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val inquiryType = request.inquiryType ?: "Inquiry"
+            val notification = NotificationCompat.Builder(context, CHANNEL_ADMIN_REQUESTS)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle("New request — $inquiryType")
+                .setContentText("${request.displayName()} · ${request.displayContact()}")
+                .setStyle(
+                    NotificationCompat.BigTextStyle().bigText(
+                        "${request.displayName()} sent a $inquiryType via Aura AI. Tap to view details."
+                    )
+                )
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pending)
+                .build()
+            manager.notify(notificationId++, notification)
+        }
+    }
+
     suspend fun showGenericNotification(
         context: Context,
         title: String,
         body: String,
         orderId: String? = null,
+        requestId: String? = null,
         imageUrl: String? = null,
         type: String? = null,
         openCustomerOrders: Boolean = false
@@ -132,11 +187,12 @@ object OrderNotificationManager {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             if (!orderId.isNullOrBlank()) putExtra("order_id", orderId)
+            if (!requestId.isNullOrBlank()) putExtra("request_id", requestId)
             if (openCustomerOrders) putExtra("open_customer_orders", true)
         }
         val pending = PendingIntent.getActivity(
             context,
-            (orderId ?: title).hashCode(),
+            (requestId ?: orderId ?: title).hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

@@ -21,9 +21,13 @@ class OrderPollWorker(
     override suspend fun doWork(): Result {
         return try {
             val token = TokenStore(applicationContext).getAdminToken() ?: return Result.success()
-            val orders = AuraRepository(ApiClient.create()).fetchOrders(token)
+            val repo = AuraRepository(ApiClient.create())
+            val orders = repo.fetchOrders(token)
             val newOrders = OrderNotificationManager.processOrders(applicationContext, orders)
             OrderNotificationManager.showNewOrderNotifications(applicationContext, newOrders)
+            val requests = repo.fetchRequests(token)
+            val newRequests = OrderNotificationManager.processRequests(applicationContext, requests)
+            OrderNotificationManager.showNewRequestNotifications(applicationContext, newRequests)
             Result.success()
         } catch (_: Exception) {
             Result.retry()

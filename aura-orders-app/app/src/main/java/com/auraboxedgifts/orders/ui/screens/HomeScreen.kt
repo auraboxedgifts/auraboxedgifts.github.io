@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.Chat
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Receipt
@@ -42,8 +43,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.auraboxedgifts.orders.DashboardStats
+import com.auraboxedgifts.orders.data.CustomerRequest
 import com.auraboxedgifts.orders.data.Order
 import com.auraboxedgifts.orders.data.OrderStatus
+import com.auraboxedgifts.orders.data.displayContact
 import com.auraboxedgifts.orders.data.displayName
 import com.auraboxedgifts.orders.data.formatRupee
 import com.auraboxedgifts.orders.data.isPaid
@@ -68,7 +71,9 @@ fun HomeScreen(
     adminEmail: String?,
     stats: DashboardStats,
     onOrderClick: (String) -> Unit,
+    onRequestClick: (String) -> Unit,
     onViewAllOrders: () -> Unit,
+    onViewAllRequests: () -> Unit,
     onViewCatalog: () -> Unit,
     onRefresh: () -> Unit,
     isRefreshing: Boolean
@@ -122,6 +127,30 @@ fun HomeScreen(
                     RecentOrderRow(
                         order = order,
                         onClick = { onOrderClick(order.id) },
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+            }
+
+            item {
+                SectionHeader(
+                    title = "Recent requests",
+                    action = "View all",
+                    onAction = onViewAllRequests
+                )
+            }
+
+            if (stats.recentRequests.isEmpty()) {
+                item {
+                    EmptyCard(
+                        message = "No inquiries yet. Custom hamper requests from Aura AI will appear here."
+                    )
+                }
+            } else {
+                items(stats.recentRequests, key = { it.id }) { request ->
+                    RecentRequestRow(
+                        request = request,
+                        onClick = { onRequestClick(request.id) },
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
                 }
@@ -239,9 +268,9 @@ private fun StatsGrid(stats: DashboardStats) {
             )
             StatCard(
                 modifier = Modifier.weight(1f),
-                label = "Pending",
-                value = stats.pendingOrders.toString(),
-                icon = Icons.Outlined.Schedule,
+                label = "Open requests",
+                value = stats.openRequests.toString(),
+                icon = Icons.Outlined.Chat,
                 accent = WarningAmber
             )
         }
@@ -468,6 +497,56 @@ private fun RecentOrderRow(
                     color = if (order.isPaid()) SuccessGreen else WarningAmber
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun RecentRequestRow(
+    request: CustomerRequest,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    request.displayName(),
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    request.displayContact(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    request.inquiryType ?: "Inquiry",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = RoseGold
+                )
+            }
+            Text(
+                formatOrderDate(request.createdAt),
+                style = MaterialTheme.typography.labelMedium,
+                color = TextLight
+            )
         }
     }
 }

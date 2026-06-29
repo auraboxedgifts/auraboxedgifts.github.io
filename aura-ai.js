@@ -336,16 +336,6 @@ async function connectToAuraBackend() {
             auraWs.onopen = () => {
                 console.log('[AuraAI] WebSocket open — waiting for Gemini Live…');
                 updateAuraStatus('Starting Aura AI…');
-                if (window.AuraAuth && typeof window.AuraAuth.getUser === 'function') {
-                    const u = window.AuraAuth.getUser();
-                    if (u) {
-                        auraWs.send(JSON.stringify({
-                            type: 'user_info',
-                            name: u.name || '',
-                            email: u.email || ''
-                        }));
-                    }
-                }
             };
 
             auraWs.onmessage = async (event) => {

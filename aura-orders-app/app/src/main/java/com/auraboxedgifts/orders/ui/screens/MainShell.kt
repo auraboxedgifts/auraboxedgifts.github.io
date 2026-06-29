@@ -3,6 +3,7 @@ package com.auraboxedgifts.orders.ui.screens
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Chat
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
@@ -21,6 +22,7 @@ import com.auraboxedgifts.orders.CatalogUiState
 import com.auraboxedgifts.orders.DashboardStats
 import com.auraboxedgifts.orders.MainTab
 import com.auraboxedgifts.orders.OrdersUiState
+import com.auraboxedgifts.orders.RequestsUiState
 import com.auraboxedgifts.orders.ui.theme.Cream
 import com.auraboxedgifts.orders.ui.theme.RoseGold
 import com.auraboxedgifts.orders.ui.theme.TextLight
@@ -35,6 +37,7 @@ private data class TabItem(
 private val tabs = listOf(
     TabItem(MainTab.HOME, "Home", Icons.Outlined.Home),
     TabItem(MainTab.ORDERS, "Orders", Icons.Outlined.Receipt),
+    TabItem(MainTab.REQUESTS, "Requests", Icons.Outlined.Chat),
     TabItem(MainTab.CATALOG, "Catalog", Icons.Outlined.GridView),
     TabItem(MainTab.PROFILE, "Profile", Icons.Outlined.Person)
 )
@@ -44,20 +47,26 @@ fun MainShell(
     selectedTab: MainTab,
     onTabSelected: (MainTab) -> Unit,
     ordersState: OrdersUiState,
+    requestsState: RequestsUiState,
     catalogState: CatalogUiState,
     adminEmail: String?,
     dashboardStats: DashboardStats,
     filteredOrders: List<com.auraboxedgifts.orders.data.Order>,
+    filteredRequests: List<com.auraboxedgifts.orders.data.CustomerRequest>,
     filteredProducts: List<com.auraboxedgifts.orders.data.Product>,
     collectionName: (String) -> String,
     onRefreshOrders: () -> Unit,
+    onRefreshRequests: () -> Unit,
     onRefreshCatalog: () -> Unit,
     onOrderFilterChange: (com.auraboxedgifts.orders.OrderFilter) -> Unit,
+    onRequestFilterChange: (com.auraboxedgifts.orders.RequestFilter) -> Unit,
     onOrderClick: (String) -> Unit,
+    onRequestClick: (String) -> Unit,
     onProductClick: (String) -> Unit,
     onCollectionChange: (String?) -> Unit,
     onSearchChange: (String) -> Unit,
     onNavigateToOrders: () -> Unit,
+    onNavigateToRequests: () -> Unit,
     onNavigateToCatalog: () -> Unit,
     onAddProduct: () -> Unit,
     onLogout: () -> Unit,
@@ -107,7 +116,9 @@ fun MainShell(
                 adminEmail = adminEmail,
                 stats = dashboardStats,
                 onOrderClick = onOrderClick,
+                onRequestClick = onRequestClick,
                 onViewAllOrders = onNavigateToOrders,
+                onViewAllRequests = onNavigateToRequests,
                 onViewCatalog = onNavigateToCatalog,
                 onRefresh = {
                     onRefreshOrders()
@@ -126,6 +137,15 @@ fun MainShell(
                 onFilterChange = onOrderFilterChange,
                 onOrderClick = onOrderClick,
                 onLogout = onLogout
+            )
+
+            MainTab.REQUESTS -> RequestsScreen(
+                modifier = Modifier.padding(padding),
+                state = requestsState,
+                filteredRequests = filteredRequests,
+                onRefresh = onRefreshRequests,
+                onFilterChange = onRequestFilterChange,
+                onRequestClick = onRequestClick
             )
 
             MainTab.CATALOG -> CatalogScreen(

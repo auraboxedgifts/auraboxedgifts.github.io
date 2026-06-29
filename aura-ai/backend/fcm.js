@@ -3,6 +3,7 @@ const path = require('path');
 
 const TOKENS_FILE = path.join(__dirname, 'data', 'fcm-tokens.json');
 const ANDROID_ADMIN_CHANNEL = 'aura_new_orders';
+const ANDROID_ADMIN_REQUESTS_CHANNEL = 'aura_new_requests';
 const ANDROID_CUSTOMER_CHANNEL = 'aura_customer_updates';
 const ANDROID_PROMO_CHANNEL = 'aura_promotions';
 
@@ -285,6 +286,31 @@ async function notifyAdminsNewOrder(order) {
     );
 }
 
+async function notifyAdminsNewRequest(request) {
+    const store = readTokens();
+    const requestId = request.id || '';
+    const name = request.customer?.name || 'Customer';
+    const inquiryType = request.inquiryType || 'Inquiry';
+    const contact = request.customer?.phone || request.customer?.email || 'no contact';
+    const body = `${name} — ${inquiryType} (${contact})`;
+    console.log(`[FCM] New request ${requestId}: notifying ${store.admin.length} admin token(s)`);
+    return sendPush(
+        store.admin,
+        {
+            title: 'New customer request',
+            body
+        },
+        {
+            type: 'new_request',
+            requestId,
+            title: 'New customer request',
+            body
+        },
+        `admin-new-request:${requestId}`,
+        { channelId: ANDROID_ADMIN_REQUESTS_CHANNEL }
+    );
+}
+
 async function notifyCustomerOrderConfirmed(email, order) {
     const key = String(email || '').trim().toLowerCase();
     const tokens = getCustomerTokens(key);
@@ -444,6 +470,7 @@ function getFcmConfigStatus() {
 module.exports = {
     registerToken,
     notifyAdminsNewOrder,
+    notifyAdminsNewRequest,
     notifyCustomerOrderConfirmed,
     notifyCustomerOrderStatus,
     broadcastToCustomers,

@@ -41,8 +41,10 @@ Order confirmation emails to customers and alerts to you are sent through Gmail.
    RECIPIENT_EMAIL=where_you_want_order_alerts@gmail.com
    ```
 
-   - `EMAIL_USER` = the Gmail that sends mail.
-   - `RECIPIENT_EMAIL` = where new-order alerts are delivered (can be the same address).
+   - `EMAIL_USER` = the Gmail account that **sends** mail (SMTP login; appears as **From**).
+   - `RECIPIENT_EMAIL` = the inbox that **receives** order alerts and custom hamper inquiries (**To**).
+   - These are often different addresses. If you only set `EMAIL_USER`, alerts still go to `RECIPIENT_EMAIL` — not automatically to `EMAIL_USER`.
+   - If `RECIPIENT_EMAIL` is unset, the backend falls back to `EMAIL_USER`.
 
 5. Restart and test (see section 3), then click **Send test email** in the admin panel.
 

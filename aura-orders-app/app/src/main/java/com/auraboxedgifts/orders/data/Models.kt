@@ -75,6 +75,66 @@ data class UpdateOrderRequest(
     val notes: String? = null
 )
 
+data class CustomerRequest(
+    val id: String,
+    val type: String? = null,
+    val inquiryType: String? = null,
+    val message: String? = null,
+    val details: RequestDetails? = null,
+    val customer: Customer? = null,
+    val status: String? = null,
+    val source: String? = null,
+    val notes: String? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null
+)
+
+data class RequestDetails(
+    val occasion: String? = null,
+    val recipient: String? = null,
+    val budget: String? = null,
+    val preferences: String? = null
+)
+
+data class UpdateRequestRequest(
+    val status: String? = null,
+    val notes: String? = null
+)
+
+enum class RequestStatus(val label: String, val apiValue: String) {
+    OPEN("Open", "open"),
+    CONTACTED("Contacted", "contacted"),
+    CONVERTED("Converted", "converted"),
+    CLOSED("Closed", "closed");
+
+    companion object {
+        fun fromApi(value: String?): RequestStatus =
+            entries.find { it.apiValue == value?.lowercase() } ?: OPEN
+    }
+}
+
+fun CustomerRequest.displayName(): String =
+    customer?.name?.takeIf { it.isNotBlank() } ?: "Customer"
+
+fun CustomerRequest.displayEmail(): String = customer?.email.orEmpty()
+
+fun CustomerRequest.displayPhone(): String = customer?.phone.orEmpty()
+
+fun CustomerRequest.displayContact(): String {
+    val phone = displayPhone()
+    val email = displayEmail()
+    return when {
+        phone.isNotBlank() && email.isNotBlank() -> "$phone · $email"
+        phone.isNotBlank() -> phone
+        email.isNotBlank() -> email
+        else -> "No contact provided"
+    }
+}
+
+fun CustomerRequest.isOpen(): Boolean = status?.equals("open", ignoreCase = true) != false &&
+    status?.equals("closed", ignoreCase = true) != true &&
+    status?.equals("converted", ignoreCase = true) != true
+
 enum class OrderStatus(val label: String, val apiValue: String) {
     CREATED("New", "created"),
     CONFIRMED("Confirmed", "confirmed"),
