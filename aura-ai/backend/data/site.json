@@ -68,8 +68,8 @@
     },
     {
       "id": "hamper_mens_birthday",
-      "title": "Customised Men's Birthday Hamper",
-      "subtitle": "",
+      "title": "Men's Birthday Hamper includes Shirts, Customised, perfume set and flower bouquet",
+      "subtitle": "Customised",
       "image": "/images/hampers/mens-birthday.jpeg",
       "price": 3750
     },
@@ -83,14 +83,14 @@
     {
       "id": "hamper_1780236081879_d85a22",
       "title": "Customised Mother's day Hamper",
-      "subtitle": "",
+      "subtitle": "Customised",
       "image": "https://aura.devshubh.me/images/web/1000063236-mpzcya6j4060ec.jpg",
       "price": 5999
     },
     {
       "id": "hamper_1780569506359_a98000",
       "title": "Ocean theme Birthday Hamper",
-      "subtitle": "",
+      "subtitle": "Customised",
       "image": "https://aura.devshubh.me/images/web/1000067336-mpzd3cruaa53d7.png",
       "price": 4399
     },
@@ -104,9 +104,23 @@
     {
       "id": "hamper_1780880755545_0dd60d",
       "title": "1st Birthday Hamper gift for baby girl-2",
-      "subtitle": "",
+      "subtitle": "Customised",
       "image": "https://aura.devshubh.me/images/web/1000068432-mq4ie8la1877ce.jpg",
       "price": 1699
+    },
+    {
+      "id": "hamper_1782812616496_c72d4f",
+      "title": "Birthday Hamper- Includes Dryfruits, Makeup items, Photo lamp, Customised Tumbler and keychain",
+      "subtitle": "Customised",
+      "image": "https://aura.devshubh.me/images/web/1000076073-mr0gizxwca038a.jpg",
+      "price": 7000
+    },
+    {
+      "id": "hamper_1782813256809_e5c108",
+      "title": "Retirement Hamper includes Shirt, Handkerchief set, customised wallet, pen, Diary, Penstand and keychain with personalised Note",
+      "subtitle": "Customised",
+      "image": "https://aura.devshubh.me/images/web/1000074555-mr0gwm2c754e89.jpg",
+      "price": 5800
     }
   ],
   "about": {
