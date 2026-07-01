@@ -32,7 +32,7 @@
     "slug": "black-gold-crystal-stud-earrings",
     "name": "Black Gold Crystal Stud Earrings",
     "collection": "earrings",
-    "price": 399,
+    "price": 40,
     "image": "/images/web/bracelets-1.jpeg",
     "description": "Black enamel and crystal accent pair with bold gold edges.",
     "tags": [
@@ -46,7 +46,7 @@
     "slug": "statement-drop-earrings",
     "name": "Statement Drop Earrings",
     "collection": "earrings",
-    "price": 449,
+    "price": 45,
     "image": "/images/web/earings-1.jpeg",
     "description": "Elegant drop style pair with premium finish.",
     "tags": [
@@ -55,24 +55,11 @@
     ]
   },
   {
-    "id": "earring_2",
-    "slug": "classic-stone-earrings",
-    "name": "Classic Stone Earrings",
-    "collection": "earrings",
-    "price": 399,
-    "image": "/images/web/earings-2.jpeg",
-    "description": "Classic stone-work earrings for day-to-evening wear.",
-    "tags": [
-      "earrings",
-      "classic"
-    ]
-  },
-  {
     "id": "earring_3",
     "slug": "party-glam-earrings",
     "name": "Party Glam Earrings",
     "collection": "earrings",
-    "price": 499,
+    "price": 45,
     "image": "/images/web/earings-3.jpeg",
     "description": "Party-ready design with polished finish.",
     "tags": [
@@ -85,7 +72,7 @@
     "slug": "minimal-stud-earrings",
     "name": "Minimal Stud Earrings",
     "collection": "earrings",
-    "price": 299,
+    "price": 55,
     "image": "/images/web/earings-4.jpeg",
     "description": "Lightweight studs for an effortless look.",
     "tags": [
@@ -98,7 +85,7 @@
     "slug": "daily-wear-stone-earrings",
     "name": "Daily Wear Stone Earrings",
     "collection": "earrings",
-    "price": 349,
+    "price": 55,
     "image": "/images/web/earings-5.jpeg",
     "description": "Neat pair designed for daily use.",
     "tags": [
@@ -111,7 +98,7 @@
     "slug": "festive-earring-pair",
     "name": "Festive Earring Pair",
     "collection": "earrings",
-    "price": 449,
+    "price": 50,
     "image": "/images/web/earings-6.jpeg",
     "description": "Decorative earring pair ideal for festive occasions.",
     "tags": [
@@ -124,7 +111,7 @@
     "slug": "premium-finish-earrings",
     "name": "Premium Finish Earrings",
     "collection": "earrings",
-    "price": 549,
+    "price": 50,
     "image": "/images/web/earings-7.jpeg",
     "description": "Premium finish pair with rich detailing.",
     "tags": [
@@ -167,71 +154,6 @@
     "description": "Hydrating sheet mask for a quick glow boost.",
     "tags": [
       "skincare"
-    ]
-  },
-  {
-    "id": "ring_1",
-    "slug": "jewellery-case-compact-rose",
-    "name": "Jewellery Case Compact Rose",
-    "collection": "rings",
-    "price": 799,
-    "image": "/images/web/jwellery-case-1.jpeg",
-    "description": "Compact travel jewellery case with organized slots.",
-    "tags": [
-      "jewellery-case",
-      "travel"
-    ]
-  },
-  {
-    "id": "ring_2",
-    "slug": "jewellery-case-compact-beige",
-    "name": "Jewellery Case Compact Beige",
-    "collection": "rings",
-    "price": 799,
-    "image": "/images/web/jwellery-case-2.jpeg",
-    "description": "Elegant compact case to carry rings and studs.",
-    "tags": [
-      "jewellery-case",
-      "compact"
-    ]
-  },
-  {
-    "id": "ring_3",
-    "slug": "jewellery-case-compact-classic",
-    "name": "Jewellery Case Compact Classic",
-    "collection": "rings",
-    "price": 849,
-    "image": "/images/web/jwellery-case-3.jpeg",
-    "description": "Classic hard-shell jewellery case with zipper closure.",
-    "tags": [
-      "jewellery-case",
-      "storage"
-    ]
-  },
-  {
-    "id": "ring_4",
-    "slug": "jewellery-case-compact-deluxe",
-    "name": "Jewellery Case Compact Deluxe",
-    "collection": "rings",
-    "price": 899,
-    "image": "/images/web/jwellery-case-4.jpeg",
-    "description": "Deluxe compartment case for organised accessories.",
-    "tags": [
-      "jewellery-case",
-      "deluxe"
-    ]
-  },
-  {
-    "id": "ring_5",
-    "slug": "jewellery-case-compact-premium",
-    "name": "Jewellery Case Compact Premium",
-    "collection": "rings",
-    "price": 949,
-    "image": "/images/web/jwellery-case-5.jpeg",
-    "description": "Premium compact organiser for rings and pendants.",
-    "tags": [
-      "jewellery-case",
-      "premium"
     ]
   },
   {
@@ -278,7 +200,7 @@
     "slug": "butterfly-pendant-necklace",
     "name": "Butterfly Pendant Necklace",
     "collection": "pendants",
-    "price": 599,
+    "price": 165,
     "image": "/images/web/pendents-1.jpeg",
     "description": "Butterfly pendant necklace in elegant finish.",
     "tags": [
@@ -287,24 +209,11 @@
     ]
   },
   {
-    "id": "pend_2",
-    "slug": "heart-pendant-necklace",
-    "name": "Heart Pendant Necklace",
-    "collection": "pendants",
-    "price": 649,
-    "image": "/images/web/pendents-2.jpeg",
-    "description": "Heart-shaped pendant ideal for gifting.",
-    "tags": [
-      "pendant",
-      "heart"
-    ]
-  },
-  {
     "id": "pend_3",
     "slug": "floral-pendant-necklace",
     "name": "Floral Pendant Necklace",
     "collection": "pendants",
-    "price": 699,
+    "price": 185,
     "image": "/images/web/pendents-3.jpeg",
     "description": "Floral motif pendant with delicate chain.",
     "tags": [
@@ -396,17 +305,17 @@
     "slug": "jhumka",
     "name": "Jhumka",
     "collection": "earrings",
-    "price": 0,
+    "price": 80,
     "image": "https://aura.devshubh.me/images/web/1000053629-mpy4j50n14a669.jpg",
     "description": "",
     "tags": []
   },
   {
     "id": "prod_1780551595382_42408d",
-    "slug": "hamper-box-with-warm-lights-1",
+    "slug": "hamper-box",
     "name": "Hamper box",
     "collection": "add-ons",
-    "price": 110,
+    "price": 120,
     "image": "https://aura.devshubh.me/images/web/1000056186-mpz2fsl5c6d962.png",
     "description": "",
     "tags": []
@@ -1030,6 +939,106 @@
     "collection": "bracelets",
     "price": 60,
     "image": "https://aura.devshubh.me/images/web/1000070006-mqfcbdq513dad3.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1782911124287_65c67c",
+    "slug": "white-teddy-keychain",
+    "name": "White teddy keychain",
+    "collection": "keychains",
+    "price": 95,
+    "image": "https://aura.devshubh.me/images/web/1000075688-mr2387bta48bc6.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1782911154074_4f1ebb",
+    "slug": "brown-teddy-keychain",
+    "name": "Brown Teddy keychain",
+    "collection": "keychains",
+    "price": 95,
+    "image": "https://aura.devshubh.me/images/web/1000075689-mr239cur8e5c04.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1782911175377_47f72a",
+    "slug": "pink-teddy-keychain",
+    "name": "Pink Teddy keychain",
+    "collection": "keychains",
+    "price": 95,
+    "image": "https://aura.devshubh.me/images/web/1000075760-mr239sih6ca2ec.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1782911273523_b319a5",
+    "slug": "blue-mini-bag",
+    "name": "Blue Mini bag",
+    "collection": "other-gift-items",
+    "price": 75,
+    "image": "https://aura.devshubh.me/images/web/1000075761-mr23b8y1f7b8b7.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1782911359882_b1762e",
+    "slug": "lavender-mini-bag",
+    "name": "Lavender Mini bag",
+    "collection": "other-gift-items",
+    "price": 75,
+    "image": "https://aura.devshubh.me/images/web/1000075764-mr23do6zcaa65b.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1782911382216_6c5606",
+    "slug": "pink-mini-bag",
+    "name": "Pink Mini bag",
+    "collection": "other-gift-items",
+    "price": 75,
+    "image": "https://aura.devshubh.me/images/web/1000075775-mr23e98vd4711c.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1782911433517_6470bf",
+    "slug": "grey-silicon-jwellery-case",
+    "name": "Grey Silicon Jwellery Case",
+    "collection": "other-gift-items",
+    "price": 120,
+    "image": "https://aura.devshubh.me/images/web/1000075686-mr23f2zk98243a.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1782911458496_e94a05",
+    "slug": "green-silicon-jwellery-case",
+    "name": "Green Silicon Jwellery Case",
+    "collection": "other-gift-items",
+    "price": 120,
+    "image": "https://aura.devshubh.me/images/web/1000075687-mr23fuehd3c8a3.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1782911484845_864951",
+    "slug": "orange-silicon-jwellery-case",
+    "name": "Orange Silicon Jwellery Case",
+    "collection": "other-gift-items",
+    "price": 120,
+    "image": "https://aura.devshubh.me/images/web/1000075683-mr23get5257325.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1782911940199_767a46",
+    "slug": "medium-hamper-box-with-shredded-paper-and-decorative-lights",
+    "name": "Medium Hamper box with Shredded Paper and decorative lights",
+    "collection": "add-ons",
+    "price": 180,
+    "image": "https://aura.devshubh.me/images/web/1000062732-mr23p4loda76e9.jpg",
     "description": "",
     "tags": []
   }
