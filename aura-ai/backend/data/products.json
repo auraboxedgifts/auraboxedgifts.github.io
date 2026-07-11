@@ -1071,5 +1071,205 @@
     "image": "https://aura.devshubh.me/images/web/1000080002-mrgkhyewf55958.jpg",
     "description": "",
     "tags": []
+  },
+  {
+    "id": "prod_1783787154230_b68faf",
+    "slug": "interlocking-circle-ring",
+    "name": "Interlocking Circle Ring",
+    "collection": "rings",
+    "price": 40,
+    "image": "https://aura.devshubh.me/images/web/1000080061-mrgkr1n8bfc885.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783787266251_433406",
+    "slug": "luna-shine-ring",
+    "name": "Luna Shine Ring",
+    "collection": "rings",
+    "price": 40,
+    "image": "https://aura.devshubh.me/images/web/1000079992-mrgkva6c7d4b8e.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783787368918_369609",
+    "slug": "essential-everyday-ring",
+    "name": "Essential everyday Ring",
+    "collection": "rings",
+    "price": 35,
+    "image": "https://aura.devshubh.me/images/web/1000079993-mrgkxkam326c45.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783787455797_2b0dd1",
+    "slug": "luna-disc-ring",
+    "name": "Luna Disc Ring",
+    "collection": "rings",
+    "price": 35,
+    "image": "https://aura.devshubh.me/images/web/1000079994-mrgkzji2e2ebc9.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783787518596_554476",
+    "slug": "luna-solitaire-ring",
+    "name": "Luna Solitaire ring",
+    "collection": "rings",
+    "price": 40,
+    "image": "https://aura.devshubh.me/images/web/1000079995-mrgl14r29186d6.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783787815653_ed609c",
+    "slug": "golden-leaf-whisper-ring",
+    "name": "Golden leaf whisper Ring",
+    "collection": "rings",
+    "price": 45,
+    "image": "https://aura.devshubh.me/images/web/1000080212-mrgl76xs734711.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783787860603_b73b6f",
+    "slug": "trinity-pearl-ring",
+    "name": "Trinity pearl Ring",
+    "collection": "rings",
+    "price": 40,
+    "image": "https://aura.devshubh.me/images/web/1000080213-mrgl88n88b92cf.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783787915374_a905d5",
+    "slug": "minimal-luxe-ring",
+    "name": "Minimal Luxe Ring",
+    "collection": "rings",
+    "price": 30,
+    "image": "https://aura.devshubh.me/images/web/1000080214-mrgl9air6ec6d4.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783787993707_054413",
+    "slug": "golden-bar-ring",
+    "name": "Golden Bar Ring",
+    "collection": "rings",
+    "price": 35,
+    "image": "https://aura.devshubh.me/images/web/1000080216-mrglacv16603bf.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783788093768_772a2c",
+    "slug": "abstract-petal-ring",
+    "name": "Abstract petal Ring",
+    "collection": "rings",
+    "price": 40,
+    "image": "https://aura.devshubh.me/images/web/1000080218-mrglcraa46a950.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783788186424_70aeca",
+    "slug": "endless-elegance-ring",
+    "name": "Endless elegance Ring",
+    "collection": "rings",
+    "price": 40,
+    "image": "https://aura.devshubh.me/images/web/1000080221-mrgldq3qbd0193.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783788257746_650183",
+    "slug": "silver-lotus-ring",
+    "name": "Silver Lotus Ring",
+    "collection": "rings",
+    "price": 0,
+    "image": "https://aura.devshubh.me/images/web/1000080222-mrglgqqu846d44.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783788318552_39d53d",
+    "slug": "black-onyx-bloom-ring",
+    "name": "Black onyx bloom Ring",
+    "collection": "bracelets",
+    "price": 45,
+    "image": "https://aura.devshubh.me/images/web/1000080227-mrglhwdmec1668.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783788371193_e01d69",
+    "slug": "triple-daisy-ring",
+    "name": "Triple daisy Ring",
+    "collection": "bracelets",
+    "price": 40,
+    "image": "https://aura.devshubh.me/images/web/1000080229-mrglj2rn2b8c9c.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783788427444_efa434",
+    "slug": "luna-texture-ring",
+    "name": "Luna Texture Ring",
+    "collection": "rings",
+    "price": 40,
+    "image": "https://aura.devshubh.me/images/web/1000080230-mrglkdije1b2de.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783788486587_3494c5",
+    "slug": "royal-filigree-ring",
+    "name": "Royal filigree Ring",
+    "collection": "rings",
+    "price": 45,
+    "image": "https://aura.devshubh.me/images/web/1000080231-mrglkrx06d9a1e.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783788526791_ae1f34",
+    "slug": "vogue-v-ring",
+    "name": "Vogue V Ring",
+    "collection": "rings",
+    "price": 40,
+    "image": "https://aura.devshubh.me/images/web/1000080232-mrglm3xhee8373.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783788610327_55c157",
+    "slug": "vintage-bloom-ring",
+    "name": "Vintage Bloom Ring",
+    "collection": "rings",
+    "price": 40,
+    "image": "https://aura.devshubh.me/images/web/1000080233-mrgln0r41a12b0.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783788689572_738e66",
+    "slug": "boho-bloom-ring",
+    "name": "Boho Bloom Ring",
+    "collection": "rings",
+    "price": 40,
+    "image": "https://aura.devshubh.me/images/web/1000080235-mrglpk3db7c9e9.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783788738175_109639",
+    "slug": "tribal-luxe-ring",
+    "name": "Tribal Luxe Ring",
+    "collection": "rings",
+    "price": 40,
+    "image": "https://aura.devshubh.me/images/web/1000080236-mrglqf8623f50b.jpg",
+    "description": "",
+    "tags": []
   }
 ]
