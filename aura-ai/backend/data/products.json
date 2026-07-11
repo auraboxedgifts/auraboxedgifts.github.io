@@ -198,9 +198,9 @@
   {
     "id": "pend_1",
     "slug": "butterfly-pendant-necklace",
-    "name": "Butterfly Pendant Necklace",
+    "name": "Anti- tarnish Flowery Pendant",
     "collection": "pendants",
-    "price": 165,
+    "price": 170,
     "image": "/images/web/pendents-1.jpeg",
     "description": "Butterfly pendant necklace in elegant finish.",
     "tags": [
@@ -211,9 +211,9 @@
   {
     "id": "pend_3",
     "slug": "floral-pendant-necklace",
-    "name": "Floral Pendant Necklace",
+    "name": "Anti- tarnish Butterfly Pendant",
     "collection": "pendants",
-    "price": 185,
+    "price": 175,
     "image": "/images/web/pendents-3.jpeg",
     "description": "Floral motif pendant with delicate chain.",
     "tags": [
@@ -1039,6 +1039,36 @@
     "collection": "add-ons",
     "price": 180,
     "image": "https://aura.devshubh.me/images/web/1000062732-mr23p4loda76e9.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1782912369929_e0bba2",
+    "slug": "stylish-pendent-with-droplet",
+    "name": "Stylish Rose Gold Pendent with Droplet",
+    "collection": "pendants",
+    "price": 110,
+    "image": "https://aura.devshubh.me/images/web/1000053632-mr23ydqicc1dd0.jpg",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783786593808_4f1827",
+    "slug": "infinity-stainless-steel-pendent",
+    "name": "Infinity Stainless steel Pendent",
+    "collection": "pendants",
+    "price": 110,
+    "image": "https://aura.devshubh.me/images/web/1000079999-mrgkfri8e0a3d7.png",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1783786833321_c524a9",
+    "slug": "heart-design-gold-plated-pendant",
+    "name": "Heart Design Gold plated Pendant",
+    "collection": "pendants",
+    "price": 110,
+    "image": "https://aura.devshubh.me/images/web/1000080002-mrgkhyewf55958.jpg",
     "description": "",
     "tags": []
   }
