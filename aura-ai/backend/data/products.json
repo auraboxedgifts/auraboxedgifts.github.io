@@ -1271,5 +1271,165 @@
     "image": "/images/web/1000080236-mrglqf8623f50b.jpg",
     "description": "",
     "tags": []
+  },
+  {
+    "id": "prod_1784274319474_1c72ee",
+    "slug": "twin-hearts-cuff-bracelet",
+    "name": "Twin Hearts Cuff bracelet",
+    "collection": "bracelets",
+    "price": 110,
+    "image": "https://aura.devshubh.me/images/web/1000082696-mromtmzbe85159.webp",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1784274667347_8987be",
+    "slug": "marble-duo-cuff-bracelet",
+    "name": "Marble duo Cuff bracelet",
+    "collection": "bracelets",
+    "price": 95,
+    "image": "https://aura.devshubh.me/images/web/1000082697-mron2cp9d98b6d.webp",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1784274818422_880899",
+    "slug": "twisted-grace-cuff-bracelet",
+    "name": "Twisted Grace Cuff bracelet",
+    "collection": "bracelets",
+    "price": 95,
+    "image": "https://aura.devshubh.me/images/web/1000082698-mron59tx997468.webp",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1784274937171_abe304",
+    "slug": "monochrome-edge-cuff-bracelet",
+    "name": "Monochrome edge Cuff bracelet",
+    "collection": "bracelets",
+    "price": 100,
+    "image": "https://aura.devshubh.me/images/web/1000082702-mron7sp4be2195.webp",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1784275059728_be5cf1",
+    "slug": "golden-path-bracelet",
+    "name": "Golden Path Bracelet",
+    "collection": "bracelets",
+    "price": 110,
+    "image": "https://aura.devshubh.me/images/web/1000082703-mronam7k3b41cb.webp",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1784276105652_d12141",
+    "slug": "celestial-star-bracelet",
+    "name": "Celestial star Bracelet",
+    "collection": "bracelets",
+    "price": 120,
+    "image": "https://aura.devshubh.me/images/web/1000082709-mronwaecdc6d50.webp",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1784276246214_22e88f",
+    "slug": "golden-laurel-bracelet",
+    "name": "Golden Laurel Bracelet",
+    "collection": "bracelets",
+    "price": 85,
+    "image": "https://aura.devshubh.me/images/web/1000082710-mronz7dw37fba6.webp",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1784276365739_171718",
+    "slug": "silver-twist-cuff-bracelet",
+    "name": "Silver Twist Cuff bracelet",
+    "collection": "bracelets",
+    "price": 75,
+    "image": "https://aura.devshubh.me/images/web/1000082711-mroo2l6g0af1fb.webp",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1784276632009_aeaaae",
+    "slug": "infinity-bow-cuff-bracelet",
+    "name": "Infinity Bow Cuff bracelet",
+    "collection": "bracelets",
+    "price": 70,
+    "image": "https://aura.devshubh.me/images/web/1000082713-mroo7wm9d83362.webp",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1784276781195_f347ef",
+    "slug": "pearl-grace-bracelet",
+    "name": "Pearl Grace Bracelet",
+    "collection": "bracelets",
+    "price": 85,
+    "image": "https://aura.devshubh.me/images/web/1000082714-mroobkk3d52a20.webp",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1784276931463_1ac80e",
+    "slug": "silver-gleam-bracelet",
+    "name": "Silver Gleam Bracelet",
+    "collection": "bracelets",
+    "price": 70,
+    "image": "https://aura.devshubh.me/images/web/1000082715-mrooe69ec29d8e.webp",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1784277049573_807b8d",
+    "slug": "starlight-circle-bracelet",
+    "name": "Starlight Circle Bracelet",
+    "collection": "bracelets",
+    "price": 75,
+    "image": "https://aura.devshubh.me/images/web/1000082747-mroogm5zb64b34.webp",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1784277157415_26c7b9",
+    "slug": "floral-grace-bracelet",
+    "name": "Floral Grace Bracelet",
+    "collection": "bracelets",
+    "price": 110,
+    "image": "https://aura.devshubh.me/images/web/1000082748-mroojc58eb10b5.webp",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1784277262249_9b986b",
+    "slug": "love-engraved-cuff-bracelet",
+    "name": "Love engraved Cuff bracelet",
+    "collection": "bracelets",
+    "price": 110,
+    "image": "https://aura.devshubh.me/images/web/1000082749-mroole3f9a2feb.webp",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1784277388155_494c87",
+    "slug": "infinity-grace-cuff-bracelet",
+    "name": "Infinity Grace Cuff bracelet",
+    "collection": "bracelets",
+    "price": 110,
+    "image": "https://aura.devshubh.me/images/web/1000082753-mrooo3mpd69618.webp",
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "prod_1784277504016_b0c9ae",
+    "slug": "aurora-texture-cuff-bracelet",
+    "name": "Aurora Texture Cuff bracelet",
+    "collection": "bracelets",
+    "price": 95,
+    "image": "https://aura.devshubh.me/images/web/1000082754-mrooqp9091c143.webp",
+    "description": "",
+    "tags": []
   }
 ]
