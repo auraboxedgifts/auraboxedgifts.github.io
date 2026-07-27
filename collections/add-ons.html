@@ -36,9 +36,9 @@
   <section class="col-gallery">
     <div class="col-grid" data-collection="add-ons">
 
-      <div class="col-item col-item-reveal" style="animation-delay: 0.0s" data-idx="0" data-id="prod_1780551595382_42408d" data-name="Hamper box" data-price="120" data-img="https://aura.devshubh.me/images/web/1000056186-mpz2fsl5c6d962.png" data-description="">
+      <div class="col-item col-item-reveal" style="animation-delay: 0.0s" data-idx="0" data-id="prod_1780551595382_42408d" data-name="Hamper box" data-price="120" data-img="../images/web/1000056186-mpz2fsl5c6d962.webp" data-description="">
         <div class="col-item-img-wrapper">
-          <img src="https://aura.devshubh.me/images/web/1000056186-mpz2fsl5c6d962.png" alt="Hamper box" loading="lazy">
+          <img src="../images/web/1000056186-mpz2fsl5c6d962.webp" alt="Hamper box" loading="lazy" decoding="async">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
@@ -48,9 +48,9 @@
         </div>
       </div>
 
-      <div class="col-item col-item-reveal" style="animation-delay: 0.1s" data-idx="1" data-id="prod_1782911940199_767a46" data-name="Medium Hamper box with Shredded Paper and decorative lights" data-price="180" data-img="https://aura.devshubh.me/images/web/1000062732-mr23p4loda76e9.jpg" data-description="">
+      <div class="col-item col-item-reveal" style="animation-delay: 0.1s" data-idx="1" data-id="prod_1782911940199_767a46" data-name="Medium Hamper box with Shredded Paper and decorative lights" data-price="180" data-img="../images/web/1000062732-mr23p4loda76e9.jpg" data-description="">
         <div class="col-item-img-wrapper">
-          <img src="https://aura.devshubh.me/images/web/1000062732-mr23p4loda76e9.jpg" alt="Medium Hamper box with Shredded Paper and decorative lights" loading="lazy">
+          <img src="../images/web/1000062732-mr23p4loda76e9.jpg" alt="Medium Hamper box with Shredded Paper and decorative lights" loading="lazy" decoding="async">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
@@ -72,12 +72,27 @@
     <p>&copy; 2026 Aura Boxed Gifts. All rights reserved.</p>
   </footer>
 
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script src="../js/api.js"></script>
-  <script src="../js/auth.js"></script>
-  <script src="../js/cart.js"></script>
-  <script src="../js/checkout.js"></script>
-  <script src="../js/admin.js"></script>
-  <script src="../js/lightbox.js"></script>
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/cart.js" defer></script>
+  <script src="../js/checkout.js" defer></script>
+  <script src="../js/lightbox.js" defer></script>
+  <script>
+    (function () {
+      function loadAdmin() {
+        if (window.__auraAdminLoading || window.AuraAdmin) return;
+        window.__auraAdminLoading = true;
+        var s = document.createElement('script');
+        s.src = '../js/admin.js';
+        s.defer = true;
+        document.body.appendChild(s);
+      }
+      if (location.hash === '#admin' || localStorage.getItem('auraAdminToken')) loadAdmin();
+      window.addEventListener('hashchange', function () {
+        if (location.hash === '#admin') loadAdmin();
+      });
+      window.AuraLoadAdmin = loadAdmin;
+    })();
+  </script>
 </body>
 </html>

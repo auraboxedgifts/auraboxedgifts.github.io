@@ -366,6 +366,9 @@
       };
       dropdown.style.display = 'none';
     }
+    if (user && user.isAdmin && window.AuraLoadAdmin) {
+      window.AuraLoadAdmin();
+    }
     if (window.AuraAdmin && typeof window.AuraAdmin.updateAdminIcon === 'function') {
       window.AuraAdmin.updateAdminIcon();
     }

@@ -3,7 +3,7 @@
     "slug": "bracelets",
     "name": "Bracelets",
     "description": "Handmade beaded and charm bracelets curated for gifting.",
-    "image": "https://aura.devshubh.me/images/web/1000042306-mq6jti7795eea8.jpg"
+    "image": "/images/web/1000042306-mq6jti7795eea8.jpg"
   },
   {
     "slug": "pendants",
@@ -19,7 +19,7 @@
     "slug": "scrunchies",
     "name": "Scrunchies",
     "description": "Soft silky scrunchies that are hair-friendly.",
-    "image": "https://aura.devshubh.me/images/web/1000068931-mq6lbhbc85c71e.png"
+    "image": "/images/web/1000068931-mq6lbhbc85c71e.webp"
   },
   {
     "slug": "claws",
@@ -30,42 +30,42 @@
     "slug": "hairbows",
     "name": "Hair Bows and other Hair Accessories",
     "description": "Cute bow clips for playful and elegant hair styling.",
-    "image": "https://aura.devshubh.me/images/web/1000068944-mq6m3gn44c6832.png"
+    "image": "/images/web/1000068944-mq6m3gn44c6832.webp"
   },
   {
     "slug": "rings",
     "name": "Rings",
     "description": "Ring accessories and compact jewellery organisers.",
-    "image": "https://aura.devshubh.me/images/web/1000053633-mrglv8g0c0951a.jpg"
+    "image": "/images/web/1000053633-mrglv8g0c0951a.jpg"
   },
   {
     "slug": "keychains",
     "name": "Keychains",
     "description": "",
-    "image": "https://aura.devshubh.me/images/web/1000067652-mq09vz65d68b45.png"
+    "image": "/images/web/1000067652-mq09vz65d68b45.webp"
   },
   {
     "slug": "makeup",
     "name": "Makeup items",
     "description": "Lip oils, glosses, palettes, and skincare add-ons.",
-    "image": "https://aura.devshubh.me/images/web/1000041057-mq4sl1pkc32113.jpg"
+    "image": "/images/web/1000041057-mq4sl1pkc32113.jpg"
   },
   {
     "slug": "other-gift-items",
     "name": "Other gift items and Chocolates",
     "description": "",
-    "image": "https://aura.devshubh.me/images/web/1000042300-mr23kvvlede7cf.jpg"
+    "image": "/images/web/1000042300-mr23kvvlede7cf.jpg"
   },
   {
     "slug": "add-ons",
     "name": "Add ons",
     "description": "",
-    "image": "https://aura.devshubh.me/images/web/1000062732-mpz2a1nq60bd51.jpg"
+    "image": "/images/web/1000062732-mpz2a1nq60bd51.jpg"
   },
   {
     "slug": "hair-alligator-pin",
     "name": "Scented candles",
     "description": "",
-    "image": "https://aura.devshubh.me/images/web/1000070779-mqfbptyza768d2.png"
+    "image": "/images/web/1000070779-mqfbptyza768d2.webp"
   }
 ]

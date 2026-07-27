@@ -6,20 +6,24 @@
     "scripts": {
         "start": "node server.js",
         "dev": "node server.js",
+        "optimize:images": "node scripts/optimize-images.js",
+        "optimize:png-to-webp": "node scripts/convert-png-to-webp.js",
         "fcm:announce": "node scripts/fcm-announce.js",
         "fcm:digest": "node scripts/fcm-announce.js --digest",
         "fcm:stats": "node scripts/fcm-announce.js --stats"
     },
     "dependencies": {
         "@google/genai": "^1.51.0",
+        "compression": "^1.8.1",
         "cors": "^2.8.5",
         "dotenv": "^16.3.1",
         "express": "^4.18.2",
+        "firebase-admin": "^13.0.2",
         "jsonwebtoken": "^9.0.3",
         "multer": "^2.1.1",
         "nodemailer": "^6.9.7",
         "razorpay": "^2.9.6",
-        "firebase-admin": "^13.0.2",
+        "sharp": "^0.33.5",
         "ws": "^8.14.2"
     }
 }

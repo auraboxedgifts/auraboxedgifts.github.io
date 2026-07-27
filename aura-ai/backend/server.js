@@ -1,6 +1,7 @@
 const express = require('express');
 const WebSocket = require('ws');
 const cors = require('cors');
+const compression = require('compression');
 const nodemailer = require('nodemailer');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
@@ -9,9 +10,39 @@ const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
+const sharp = require('sharp');
 require('dotenv').config();
 
 const { generateAllPages } = require('./scripts/generate-pages');
+
+const UPLOAD_MAX_EDGE = 1400;
+const UPLOAD_WEBP_QUALITY = 76;
+
+async function optimizeUploadedImage(filePath) {
+    const dir = path.dirname(filePath);
+    const base = path.basename(filePath, path.extname(filePath));
+    const outPath = path.join(dir, `${base}.webp`);
+    await sharp(filePath, { failOn: 'none' })
+        .rotate()
+        .resize({
+            width: UPLOAD_MAX_EDGE,
+            height: UPLOAD_MAX_EDGE,
+            fit: 'inside',
+            withoutEnlargement: true
+        })
+        .webp({ quality: UPLOAD_WEBP_QUALITY })
+        .toFile(outPath);
+
+    if (outPath !== filePath && fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+    }
+
+    return {
+        path: outPath,
+        filename: path.basename(outPath),
+        size: fs.statSync(outPath).size
+    };
+}
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {
@@ -76,7 +107,7 @@ const SITE_FILE = path.join(DATA_DIR, 'site.json');
 const DEFAULT_ABOUT = {
     label: 'Our Story',
     title: 'Crafted with Love, Delivered with Care',
-    image: '/images/web/auraboxedgifts.png',
+    image: '/images/web/auraboxedgifts.webp',
     body: 'Aura Boxed Gifts is a custom gift hamper business that focuses on creating beautifully curated, personalized gift boxes for different occasions.\n\n💝 What we do:\n• Create customized hamper boxes (you can choose items, theme, colors)\n• Design aesthetic packaging with lights, shredded paper, ribbons, etc.\n• Offer occasion-based gifting like Birthdays, Mother\'s Day, Weddings, Anniversaries, and Corporate gifts.\n\nWe provide pan-India delivery and take orders via our website or Instagram DMs! 🎁',
     ctaText: 'Visit Our Store',
     ctaLink: 'https://www.instagram.com/aura_boxedgifts?utm_source=qr&igsh=MTYwbTYzNjJ6anUwdA=='
@@ -85,7 +116,7 @@ const DEFAULT_ABOUT = {
 const DEFAULT_SITE = {
     hero: {
         slides: [
-            { id: 'hero_1', image: '/images/web/auraboxedgifts.png', alt: 'Aura Boxed Gifts' }
+            { id: 'hero_1', image: '/images/web/auraboxedgifts.webp', alt: 'Aura Boxed Gifts' }
         ]
     },
     hampers: [],
@@ -174,6 +205,7 @@ app.use(cors({
     },
     credentials: true
 }));
+app.use(compression());
 app.use(express.json({ limit: '5mb' }));
 app.use((req, res, next) => {
     const ts = new Date().toISOString();
@@ -181,7 +213,15 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use('/images', express.static(IMAGES_DIR, { maxAge: '7d' }));
+app.use('/images', express.static(IMAGES_DIR, {
+    maxAge: '30d',
+    immutable: true,
+    setHeaders(res, filePath) {
+        if (/\.(webp|jpe?g|png|gif|avif|svg)$/i.test(filePath)) {
+            res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+        }
+    }
+}));
 app.use('/collections', express.static(path.join(ROOT_DIR, 'collections'), { maxAge: '1h' }));
 // Serve the repo root for static assets (style.css, js/, etc.) so collection pages loaded
 // from the backend can resolve their relative paths (../style.css, ../js/api.js, etc.)
@@ -667,18 +707,27 @@ function getPublicBaseUrl(req) {
     return `${proto}://${host}`;
 }
 
-app.post('/api/admin/upload', requireAdmin, upload.single('image'), (req, res) => {
+app.post('/api/admin/upload', requireAdmin, upload.single('image'), async (req, res) => {
     if (!req.file) return jsonErr(res, 400, 'No image uploaded');
-    const relativePath = `/images/web/${req.file.filename}`;
-    // Absolute URL so uploaded images load even when the frontend is hosted on a
-    // different origin than this backend (e.g. static site + remote API).
-    const absoluteUrl = `${getPublicBaseUrl(req)}${relativePath}`;
-    return jsonOk(res, {
-        url: relativePath,
-        absoluteUrl,
-        filename: req.file.filename,
-        size: req.file.size
-    });
+    try {
+        // Resize + convert to WebP so admin phone dumps never ship multi‑MB originals.
+        const optimized = await optimizeUploadedImage(req.file.path);
+        const relativePath = `/images/web/${optimized.filename}`;
+        // Absolute URL so uploaded images load even when the frontend is hosted on a
+        // different origin than this backend (e.g. static site + remote API).
+        const absoluteUrl = `${getPublicBaseUrl(req)}${relativePath}`;
+        return jsonOk(res, {
+            url: relativePath,
+            absoluteUrl,
+            filename: optimized.filename,
+            size: optimized.size,
+            originalSize: req.file.size
+        });
+    } catch (err) {
+        console.error('Image optimize failed:', err.message);
+        try { if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path); } catch (_) {}
+        return jsonErr(res, 500, 'Failed to process uploaded image');
+    }
 });
 
 app.post('/api/admin/collections', requireAdmin, (req, res) => {

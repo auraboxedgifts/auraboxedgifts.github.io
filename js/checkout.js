@@ -1,6 +1,28 @@
 (function () {
   let mapsLoaded = false;
   let mapsLoadPromise = null;
+  let razorpayLoadPromise = null;
+
+  function ensureRazorpayLoaded() {
+    if (window.Razorpay) return Promise.resolve(true);
+    if (razorpayLoadPromise) return razorpayLoadPromise;
+    razorpayLoadPromise = new Promise((resolve) => {
+      const existing = document.getElementById('auraRazorpayScript');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(Boolean(window.Razorpay)), { once: true });
+        existing.addEventListener('error', () => resolve(false), { once: true });
+        return;
+      }
+      const script = document.createElement('script');
+      script.id = 'auraRazorpayScript';
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => resolve(Boolean(window.Razorpay));
+      script.onerror = () => resolve(false);
+      document.head.appendChild(script);
+    });
+    return razorpayLoadPromise;
+  }
 
   function logMaps(step, detail) {
     console.log(`[AuraMaps] ${step}`, detail !== undefined ? detail : '');
@@ -272,6 +294,11 @@
         });
       }
       const orderResp = await AuraApi.apiFetch('/api/create-order', { method: 'POST', body: JSON.stringify({ items }) });
+      const razorpayReady = await ensureRazorpayLoaded();
+      if (!razorpayReady || !window.Razorpay) {
+        alert('Payment SDK failed to load. Please check your connection and try again.');
+        return;
+      }
       const options = {
         key: orderResp.key_id,
         amount: orderResp.order.amount,

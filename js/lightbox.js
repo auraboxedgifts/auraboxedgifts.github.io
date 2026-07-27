@@ -17,6 +17,12 @@
 
   function resolveImagePath(image) {
     if (!image) return '';
+    if (window.AuraApi && typeof window.AuraApi.resolveAssetPath === 'function') {
+      const resolved = window.AuraApi.resolveAssetPath(image);
+      if (/^https?:/i.test(resolved)) return resolved;
+      if (resolved.startsWith('/')) return `..${resolved}`;
+      return resolved;
+    }
     if (/^https?:/i.test(image)) return image;
     return `..${image}`;
   }
@@ -41,7 +47,7 @@
     return `
       <div class="col-item col-item-reveal" style="animation-delay: ${(idx * 0.1).toFixed(1)}s" data-idx="${idx}" data-id="${escapeAttr(p.id)}" data-name="${escapeAttr(p.name)}" data-price="${escapeAttr(p.price)}" data-img="${escapeAttr(imgPath)}" data-description="${escapeAttr(p.description || '')}">
         <div class="col-item-img-wrapper">
-          <img src="${escapeAttr(imgPath)}" alt="${escapeAttr(p.name)}" loading="lazy">
+          <img src="${escapeAttr(imgPath)}" alt="${escapeAttr(p.name)}" loading="lazy" decoding="async">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">

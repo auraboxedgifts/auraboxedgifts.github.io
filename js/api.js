@@ -6,7 +6,18 @@
 
   function resolveAssetPath(assetPath) {
     if (!assetPath) return '';
-    if (/^https?:\/\//i.test(assetPath)) return assetPath;
+    // Prefer same-origin optimized assets on the static site when the API
+    // returns absolute Oracle image URLs (avoids cross-origin multi‑MB originals).
+    try {
+      const apiOrigin = new URL(API_BASE).origin;
+      if (/^https?:\/\//i.test(assetPath)) {
+        const u = new URL(assetPath);
+        if (u.origin === apiOrigin && u.pathname.startsWith('/images/')) {
+          if (window.location.origin !== apiOrigin) return u.pathname;
+        }
+        return assetPath;
+      }
+    } catch (_) {}
     if (assetPath.startsWith('//')) return `${window.location.protocol}${assetPath}`;
     if (protocol === 'file:') return assetPath.replace(/^\/+/, '');
     return assetPath;

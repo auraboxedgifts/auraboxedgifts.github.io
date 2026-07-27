@@ -25,7 +25,7 @@ function renderPage(collection, products) {
         return `
       <div class="col-item col-item-reveal" style="animation-delay: ${(idx * 0.1).toFixed(1)}s" data-idx="${idx}" data-id="${escapeAttr(p.id)}" data-name="${escapeAttr(p.name)}" data-price="${escapeAttr(p.price)}" data-img="${escapeAttr(imgPath)}" data-description="${escapeAttr(p.description || '')}">
         <div class="col-item-img-wrapper">
-          <img src="${escapeAttr(imgPath)}" alt="${escapeAttr(p.name)}" loading="lazy">
+          <img src="${escapeAttr(imgPath)}" alt="${escapeAttr(p.name)}" loading="lazy" decoding="async">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
@@ -93,13 +93,28 @@ ${imageCards}${emptyState}
     <p>&copy; 2026 Aura Boxed Gifts. All rights reserved.</p>
   </footer>
 
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script src="../js/api.js"></script>
-  <script src="../js/auth.js"></script>
-  <script src="../js/cart.js"></script>
-  <script src="../js/checkout.js"></script>
-  <script src="../js/admin.js"></script>
-  <script src="../js/lightbox.js"></script>
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/cart.js" defer></script>
+  <script src="../js/checkout.js" defer></script>
+  <script src="../js/lightbox.js" defer></script>
+  <script>
+    (function () {
+      function loadAdmin() {
+        if (window.__auraAdminLoading || window.AuraAdmin) return;
+        window.__auraAdminLoading = true;
+        var s = document.createElement('script');
+        s.src = '../js/admin.js';
+        s.defer = true;
+        document.body.appendChild(s);
+      }
+      if (location.hash === '#admin' || localStorage.getItem('auraAdminToken')) loadAdmin();
+      window.addEventListener('hashchange', function () {
+        if (location.hash === '#admin') loadAdmin();
+      });
+      window.AuraLoadAdmin = loadAdmin;
+    })();
+  </script>
 </body>
 </html>`;
 }

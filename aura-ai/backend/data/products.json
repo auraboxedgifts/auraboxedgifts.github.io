@@ -5,7 +5,7 @@
     "name": "Hair Bow Clip- Candy Pink",
     "collection": "hairbows",
     "price": 20,
-    "image": "https://aura.devshubh.me/images/web/1000068933-mq6lj448536d26.png",
+    "image": "/images/web/1000068933-mq6lj448536d26.webp",
     "description": "Soft-toned alligator clip bow for everyday styling.",
     "tags": [
       "bow",
@@ -19,7 +19,7 @@
     "name": "Hair Bow Clip- Dusky Pink",
     "collection": "hairbows",
     "price": 20,
-    "image": "https://aura.devshubh.me/images/web/1000068935-mq6lmnih48ee33.png",
+    "image": "/images/web/1000068935-mq6lmnih48ee33.webp",
     "description": "Neat bow clip with a secure alligator grip.",
     "tags": [
       "bow",
@@ -138,7 +138,7 @@
     "name": "Subtle Highlighter (any one)",
     "collection": "makeup",
     "price": 125,
-    "image": "https://aura.devshubh.me/images/web/1000041062-mq4rjt1ub644d9.jpg",
+    "image": "/images/web/1000041062-mq4rjt1ub644d9.jpg",
     "description": "Shimmer-rich shades for festive and party makeup",
     "tags": [
       "shimmery"
@@ -150,7 +150,7 @@
     "name": "Sadoer Face Mask Sheet (any one)",
     "collection": "makeup",
     "price": 65,
-    "image": "https://aura.devshubh.me/images/web/1000041079-mq4rtfnf920116.jpg",
+    "image": "/images/web/1000041079-mq4rtfnf920116.jpg",
     "description": "Hydrating sheet mask for a quick glow boost.",
     "tags": [
       "skincare"
@@ -162,7 +162,7 @@
     "name": "Mini Lipstick (any one)",
     "collection": "makeup",
     "price": 55,
-    "image": "https://aura.devshubh.me/images/web/1000041074-mq4rwtcnda5589.jpg",
+    "image": "/images/web/1000041074-mq4rwtcnda5589.jpg",
     "description": "Featuring beautiful nude, pink, and rosy shades- these lipsticks deliver rich color, a smooth velvety finish and travel friendly.",
     "tags": [
       "makeup",
@@ -188,7 +188,7 @@
     "name": "Kawaii Cute Robot Lip oil tint (any one)",
     "collection": "makeup",
     "price": 65,
-    "image": "https://aura.devshubh.me/images/web/1000068513-mq4sab2a243e03.png",
+    "image": "/images/web/1000068513-mq4sab2a243e03.webp",
     "description": "Soft rose tint with smooth lip conditioning.",
     "tags": [
       "makeup",
@@ -227,7 +227,7 @@
     "name": "Silk Scrunchie - Golden",
     "collection": "scrunchies",
     "price": 25,
-    "image": "https://aura.devshubh.me/images/web/1000068918-mq6kdoko1714c9.png",
+    "image": "/images/web/1000068918-mq6kdoko1714c9.webp",
     "description": "Soft silk scrunchie gentle on hair strands.",
     "tags": [
       "scrunchie",
@@ -253,7 +253,7 @@
     "name": "Silk Scrunchie - Light Pink",
     "collection": "scrunchies",
     "price": 25,
-    "image": "https://aura.devshubh.me/images/web/1000068920-mq6ki8o838d4e9.png",
+    "image": "/images/web/1000068920-mq6ki8o838d4e9.webp",
     "description": "Light organza texture with soft volume.",
     "tags": [
       "scrunchie",
@@ -266,7 +266,7 @@
     "name": "Silky Scrunchie - Candy Pink",
     "collection": "scrunchies",
     "price": 25,
-    "image": "https://aura.devshubh.me/images/web/1000068922-mq6kophb0e968b.png",
+    "image": "/images/web/1000068922-mq6kophb0e968b.webp",
     "description": "Rose-toned silky scrunchie for festive styling.",
     "tags": [
       "Scrunchy",
@@ -279,7 +279,7 @@
     "name": "Red Yellow shade Charm Bracelet",
     "collection": "bracelets",
     "price": 60,
-    "image": "https://aura.devshubh.me/images/web/1000069996-mqfc684ice70f1.png",
+    "image": "/images/web/1000069996-mqfc684ice70f1.webp",
     "description": "Color-pop beaded bracelets finished with silver charms.",
     "tags": [
       "bracelet",
@@ -293,7 +293,7 @@
     "name": "Multi-Color Charm Bracelet",
     "collection": "bracelets",
     "price": 60,
-    "image": "https://aura.devshubh.me/images/web/1000070002-mqfc79rfaa6337.png",
+    "image": "/images/web/1000070002-mqfc79rfaa6337.webp",
     "description": "Bright color bracelet designed for festive gifting.",
     "tags": [
       "bracelet",
@@ -306,7 +306,7 @@
     "name": "Jhumka",
     "collection": "earrings",
     "price": 80,
-    "image": "https://aura.devshubh.me/images/web/1000053629-mpy4j50n14a669.jpg",
+    "image": "/images/web/1000053629-mpy4j50n14a669.jpg",
     "description": "",
     "tags": []
   },
@@ -316,7 +316,7 @@
     "name": "Hamper box",
     "collection": "add-ons",
     "price": 120,
-    "image": "https://aura.devshubh.me/images/web/1000056186-mpz2fsl5c6d962.png",
+    "image": "/images/web/1000056186-mpz2fsl5c6d962.webp",
     "description": "",
     "tags": []
   },
@@ -326,7 +326,7 @@
     "name": "kitty Cartoon Character Small Keychain",
     "collection": "keychains",
     "price": 35,
-    "image": "https://aura.devshubh.me/images/web/1000067641-mq08k71378c38d.png",
+    "image": "/images/web/1000067641-mq08k71378c38d.webp",
     "description": "Pink kitty cute cartoon keychain",
     "tags": []
   },
@@ -336,7 +336,7 @@
     "name": "Tom Face changer keychain",
     "collection": "keychains",
     "price": 80,
-    "image": "https://aura.devshubh.me/images/web/1000067643-mq092nwde9238d.png",
+    "image": "/images/web/1000067643-mq092nwde9238d.webp",
     "description": "",
     "tags": []
   },
@@ -346,7 +346,7 @@
     "name": "Projection Camera Keychain- Yellow",
     "collection": "keychains",
     "price": 90,
-    "image": "https://aura.devshubh.me/images/web/1000067642-mq094kz4e415c6.png",
+    "image": "/images/web/1000067642-mq094kz4e415c6.webp",
     "description": "",
     "tags": []
   },
@@ -356,7 +356,7 @@
     "name": "Projection Camera Keychain- Pink",
     "collection": "keychains",
     "price": 90,
-    "image": "https://aura.devshubh.me/images/web/1000067645-mq09b1hlb20d91.png",
+    "image": "/images/web/1000067645-mq09b1hlb20d91.webp",
     "description": "",
     "tags": []
   },
@@ -366,7 +366,7 @@
     "name": "Projection Camera Keychain- Green",
     "collection": "keychains",
     "price": 90,
-    "image": "https://aura.devshubh.me/images/web/1000067648-mq09gs5rae6191.png",
+    "image": "/images/web/1000067648-mq09gs5rae6191.webp",
     "description": "",
     "tags": []
   },
@@ -376,7 +376,7 @@
     "name": "Projection Camera Keychain- Blue",
     "collection": "keychains",
     "price": 90,
-    "image": "https://aura.devshubh.me/images/web/1000067649-mq09oy8v4f99fc.png",
+    "image": "/images/web/1000067649-mq09oy8v4f99fc.webp",
     "description": "",
     "tags": []
   },
@@ -386,7 +386,7 @@
     "name": "Kawaii Capybara Cartoon Character Face changer",
     "collection": "keychains",
     "price": 80,
-    "image": "https://aura.devshubh.me/images/web/1000067654-mq0a0wsr7add85.png",
+    "image": "/images/web/1000067654-mq0a0wsr7add85.webp",
     "description": "",
     "tags": []
   },
@@ -396,7 +396,7 @@
     "name": "Jerry Cartoon Character Face Changer",
     "collection": "keychains",
     "price": 80,
-    "image": "https://aura.devshubh.me/images/web/1000067658-mq0amb4h1ff924.png",
+    "image": "/images/web/1000067658-mq0amb4h1ff924.webp",
     "description": "",
     "tags": []
   },
@@ -406,7 +406,7 @@
     "name": "Pink Cartoon Character Face changer",
     "collection": "keychains",
     "price": 80,
-    "image": "https://aura.devshubh.me/images/web/1000067660-mq0apafha7745d.png",
+    "image": "/images/web/1000067660-mq0apafha7745d.webp",
     "description": "",
     "tags": []
   },
@@ -416,7 +416,7 @@
     "name": "Tom and Jerry shiny Keychain",
     "collection": "keychains",
     "price": 80,
-    "image": "https://aura.devshubh.me/images/web/1000067663-mq0av2zxf2e690.png",
+    "image": "/images/web/1000067663-mq0av2zxf2e690.webp",
     "description": "",
     "tags": []
   },
@@ -426,7 +426,7 @@
     "name": "Hello Kitty Shiny Keychain",
     "collection": "keychains",
     "price": 80,
-    "image": "https://aura.devshubh.me/images/web/1000067665-mq0c0go055f9d9.png",
+    "image": "/images/web/1000067665-mq0c0go055f9d9.webp",
     "description": "",
     "tags": []
   },
@@ -436,7 +436,7 @@
     "name": "Spiderman Cartoon Character Face Changer",
     "collection": "keychains",
     "price": 80,
-    "image": "https://aura.devshubh.me/images/web/1000067721-mq0cg0jq82d9ab.png",
+    "image": "/images/web/1000067721-mq0cg0jq82d9ab.webp",
     "description": "",
     "tags": []
   },
@@ -446,7 +446,7 @@
     "name": "Mini Beauty Blender",
     "collection": "makeup",
     "price": 15,
-    "image": "https://aura.devshubh.me/images/web/1000042287-mq4sh6fd1766cc.jpg",
+    "image": "/images/web/1000042287-mq4sh6fd1766cc.jpg",
     "description": "Soft, lightweight, and easy to use, these sponges help blend foundation, concealer, and cream products seamlessly for a smooth, natural look.",
     "tags": []
   },
@@ -456,7 +456,7 @@
     "name": "Silk Scrunchie - Dusty Rose",
     "collection": "scrunchies",
     "price": 25,
-    "image": "https://aura.devshubh.me/images/web/1000068924-mq6kvuyf3bcc2e.png",
+    "image": "/images/web/1000068924-mq6kvuyf3bcc2e.webp",
     "description": "Silky Scrunchie for cute hair accessory collection",
     "tags": [
       "Silky-scrunchie"
@@ -468,7 +468,7 @@
     "name": "Silk Scrunchie - Lavender",
     "collection": "scrunchies",
     "price": 25,
-    "image": "https://aura.devshubh.me/images/web/1000068927-mq6l0uyf00370b.png",
+    "image": "/images/web/1000068927-mq6l0uyf00370b.webp",
     "description": "Lavender-scrunchie",
     "tags": []
   },
@@ -478,7 +478,7 @@
     "name": "Silk Scrunchie - Blue",
     "collection": "scrunchies",
     "price": 25,
-    "image": "https://aura.devshubh.me/images/web/1000068929-mq6l81p25f4d90.png",
+    "image": "/images/web/1000068929-mq6l81p25f4d90.webp",
     "description": "Blue silk Scrunchy",
     "tags": []
   },
@@ -488,7 +488,7 @@
     "name": "Hair Bow Clip- Blue",
     "collection": "hairbows",
     "price": 20,
-    "image": "https://aura.devshubh.me/images/web/1000068939-mq6lsx5f296f44.png",
+    "image": "/images/web/1000068939-mq6lsx5f296f44.webp",
     "description": "Pastel colours Hairbows for cute hairstyles",
     "tags": []
   },
@@ -498,7 +498,7 @@
     "name": "Hair Bow Clip- Light Pink",
     "collection": "hairbows",
     "price": 20,
-    "image": "https://aura.devshubh.me/images/web/1000068940-mq6luwsz407f04.png",
+    "image": "/images/web/1000068940-mq6luwsz407f04.webp",
     "description": "",
     "tags": []
   },
@@ -508,7 +508,7 @@
     "name": "Hair Bow Clip- Lavender",
     "collection": "hairbows",
     "price": 20,
-    "image": "https://aura.devshubh.me/images/web/1000068942-mq6lz2uj396786.png",
+    "image": "/images/web/1000068942-mq6lz2uj396786.webp",
     "description": "",
     "tags": []
   },
@@ -518,7 +518,7 @@
     "name": "Mini Butterfly shape dual colour Hairclaw",
     "collection": "claws",
     "price": 15,
-    "image": "https://aura.devshubh.me/images/web/1000069270-mqf8cw130a7f33.png",
+    "image": "/images/web/1000069270-mqf8cw130a7f33.webp",
     "description": "",
     "tags": []
   },
@@ -528,7 +528,7 @@
     "name": "Mini Navy blue flowery Hairclaw",
     "collection": "claws",
     "price": 15,
-    "image": "https://aura.devshubh.me/images/web/1000069263-mqf8epcx626b67.png",
+    "image": "/images/web/1000069263-mqf8epcx626b67.webp",
     "description": "",
     "tags": []
   },
@@ -538,7 +538,7 @@
     "name": "Mini Bluey Dual shade normal Hairclaw",
     "collection": "claws",
     "price": 15,
-    "image": "https://aura.devshubh.me/images/web/1000069268-mqf8gy6yc1fe31.png",
+    "image": "/images/web/1000069268-mqf8gy6yc1fe31.webp",
     "description": "",
     "tags": []
   },
@@ -548,7 +548,7 @@
     "name": "Mini Butterfly shape Pastel dual colour Hairclaw",
     "collection": "claws",
     "price": 15,
-    "image": "https://aura.devshubh.me/images/web/1000069266-mqf8hyzw10a034.png",
+    "image": "/images/web/1000069266-mqf8hyzw10a034.webp",
     "description": "",
     "tags": []
   },
@@ -558,7 +558,7 @@
     "name": "Mini Candy shade flowery Hairclaw",
     "collection": "claws",
     "price": 15,
-    "image": "https://aura.devshubh.me/images/web/1000069272-mqf8j99f557e97.png",
+    "image": "/images/web/1000069272-mqf8j99f557e97.webp",
     "description": "",
     "tags": []
   },
@@ -568,7 +568,7 @@
     "name": "Mini Pinky shade dual normal Hairclaw",
     "collection": "claws",
     "price": 15,
-    "image": "https://aura.devshubh.me/images/web/1000069274-mqf8kmtg6fa39a.png",
+    "image": "/images/web/1000069274-mqf8kmtg6fa39a.webp",
     "description": "",
     "tags": []
   },
@@ -578,7 +578,7 @@
     "name": "Mini Black flowery Hairclaw",
     "collection": "claws",
     "price": 15,
-    "image": "https://aura.devshubh.me/images/web/1000069276-mqf8lsq19d45fa.png",
+    "image": "/images/web/1000069276-mqf8lsq19d45fa.webp",
     "description": "",
     "tags": []
   },
@@ -588,7 +588,7 @@
     "name": "Mini Browny dual shade normal Hairclaw",
     "collection": "claws",
     "price": 15,
-    "image": "https://aura.devshubh.me/images/web/1000069279-mqf8mc4o665526.png",
+    "image": "/images/web/1000069279-mqf8mc4o665526.webp",
     "description": "",
     "tags": []
   },
@@ -598,7 +598,7 @@
     "name": "Peach flowery Hairclaw",
     "collection": "claws",
     "price": 20,
-    "image": "https://aura.devshubh.me/images/web/1000069533-mqf8rkeh8ea6a6.png",
+    "image": "/images/web/1000069533-mqf8rkeh8ea6a6.webp",
     "description": "",
     "tags": []
   },
@@ -608,7 +608,7 @@
     "name": "Sea Green flowery Hairclaw",
     "collection": "claws",
     "price": 20,
-    "image": "https://aura.devshubh.me/images/web/1000069531-mqf8uf38fbe018.png",
+    "image": "/images/web/1000069531-mqf8uf38fbe018.webp",
     "description": "",
     "tags": []
   },
@@ -618,7 +618,7 @@
     "name": "Rose pink flowery Hairclaw",
     "collection": "claws",
     "price": 20,
-    "image": "https://aura.devshubh.me/images/web/1000069519-mqf8vemn310f50.png",
+    "image": "/images/web/1000069519-mqf8vemn310f50.webp",
     "description": "",
     "tags": []
   },
@@ -628,7 +628,7 @@
     "name": "Light Pink flowery Hairclaw",
     "collection": "claws",
     "price": 20,
-    "image": "https://aura.devshubh.me/images/web/1000069517-mqf8w2an406fa1.png",
+    "image": "/images/web/1000069517-mqf8w2an406fa1.webp",
     "description": "",
     "tags": []
   },
@@ -638,7 +638,7 @@
     "name": "Yellow flowery Hairclaw",
     "collection": "claws",
     "price": 20,
-    "image": "https://aura.devshubh.me/images/web/1000069515-mqf8wo55cbfab2.png",
+    "image": "/images/web/1000069515-mqf8wo55cbfab2.webp",
     "description": "",
     "tags": []
   },
@@ -648,7 +648,7 @@
     "name": "Lavender flowery Hairclaw",
     "collection": "claws",
     "price": 20,
-    "image": "https://aura.devshubh.me/images/web/1000069513-mqf8xasl7a192b.png",
+    "image": "/images/web/1000069513-mqf8xasl7a192b.webp",
     "description": "",
     "tags": []
   },
@@ -658,7 +658,7 @@
     "name": "Peach Bow shaped Hairclaw",
     "collection": "claws",
     "price": 25,
-    "image": "https://aura.devshubh.me/images/web/1000069541-mqf901oae2c027.png",
+    "image": "/images/web/1000069541-mqf901oae2c027.webp",
     "description": "",
     "tags": []
   },
@@ -668,7 +668,7 @@
     "name": "Lavender Bow shaped Hairclaw",
     "collection": "claws",
     "price": 25,
-    "image": "https://aura.devshubh.me/images/web/1000069543-mqfajslb08384f.png",
+    "image": "/images/web/1000069543-mqfajslb08384f.webp",
     "description": "",
     "tags": []
   },
@@ -678,7 +678,7 @@
     "name": "Sea Green Bow shaped Hairclaw",
     "collection": "claws",
     "price": 25,
-    "image": "https://aura.devshubh.me/images/web/1000069545-mqfaknagd13501.png",
+    "image": "/images/web/1000069545-mqfaknagd13501.webp",
     "description": "",
     "tags": []
   },
@@ -688,7 +688,7 @@
     "name": "Red Bow shaped Hairclaw",
     "collection": "claws",
     "price": 25,
-    "image": "https://aura.devshubh.me/images/web/1000069547-mqfan9e8adbb17.png",
+    "image": "/images/web/1000069547-mqfan9e8adbb17.webp",
     "description": "",
     "tags": []
   },
@@ -698,7 +698,7 @@
     "name": "White Bow shaped Hairclaw",
     "collection": "claws",
     "price": 25,
-    "image": "https://aura.devshubh.me/images/web/1000069549-mqfao0ad6c8722.png",
+    "image": "/images/web/1000069549-mqfao0ad6c8722.webp",
     "description": "",
     "tags": []
   },
@@ -708,7 +708,7 @@
     "name": "Black Bow shaped Hairclaw",
     "collection": "claws",
     "price": 25,
-    "image": "https://aura.devshubh.me/images/web/1000069551-mqfapbzl4d5b04.png",
+    "image": "/images/web/1000069551-mqfapbzl4d5b04.webp",
     "description": "",
     "tags": []
   },
@@ -718,7 +718,7 @@
     "name": "Brown Big Hairclaw",
     "collection": "claws",
     "price": 30,
-    "image": "https://aura.devshubh.me/images/web/1000069553-mqfas4jzed4a29.png",
+    "image": "/images/web/1000069553-mqfas4jzed4a29.webp",
     "description": "",
     "tags": []
   },
@@ -728,7 +728,7 @@
     "name": "Skin Colour Big Hairclaw",
     "collection": "claws",
     "price": 30,
-    "image": "https://aura.devshubh.me/images/web/1000069555-mqfat1ke4b9a8c.png",
+    "image": "/images/web/1000069555-mqfat1ke4b9a8c.webp",
     "description": "",
     "tags": []
   },
@@ -738,7 +738,7 @@
     "name": "Flowery Light brown Big Hairclaw",
     "collection": "claws",
     "price": 30,
-    "image": "https://aura.devshubh.me/images/web/1000069557-mqfav7v1fdaeb2.png",
+    "image": "/images/web/1000069557-mqfav7v1fdaeb2.webp",
     "description": "",
     "tags": []
   },
@@ -748,7 +748,7 @@
     "name": "Browny Zigzag Big Hairclaw",
     "collection": "claws",
     "price": 30,
-    "image": "https://aura.devshubh.me/images/web/1000069559-mqfawad7b2fc26.png",
+    "image": "/images/web/1000069559-mqfawad7b2fc26.webp",
     "description": "",
     "tags": []
   },
@@ -758,7 +758,7 @@
     "name": "Browny Big Normal Hairclaw",
     "collection": "claws",
     "price": 30,
-    "image": "https://aura.devshubh.me/images/web/1000069561-mqfawx4n4e56fb.png",
+    "image": "/images/web/1000069561-mqfawx4n4e56fb.webp",
     "description": "",
     "tags": []
   },
@@ -768,7 +768,7 @@
     "name": "Peach Colour bow shaped Hairpin",
     "collection": "hairbows",
     "price": 20,
-    "image": "https://aura.devshubh.me/images/web/1000069992-mqfb000p3df9df.png",
+    "image": "/images/web/1000069992-mqfb000p3df9df.webp",
     "description": "",
     "tags": []
   },
@@ -778,7 +778,7 @@
     "name": "Blue colour Bow shaped Hairpin",
     "collection": "hairbows",
     "price": 20,
-    "image": "https://aura.devshubh.me/images/web/1000069994-mqfb1jn97b763d.png",
+    "image": "/images/web/1000069994-mqfb1jn97b763d.webp",
     "description": "",
     "tags": []
   },
@@ -788,7 +788,7 @@
     "name": "Pink Heart shaped Hairpin set",
     "collection": "hairbows",
     "price": 30,
-    "image": "https://aura.devshubh.me/images/web/1000070023-mqfb2m3h67589a.png",
+    "image": "/images/web/1000070023-mqfb2m3h67589a.webp",
     "description": "",
     "tags": []
   },
@@ -798,7 +798,7 @@
     "name": "Flowery shaped Dual colour Hairpin set",
     "collection": "hairbows",
     "price": 30,
-    "image": "https://aura.devshubh.me/images/web/1000070025-mqfb3jlf81ee56.png",
+    "image": "/images/web/1000070025-mqfb3jlf81ee56.webp",
     "description": "",
     "tags": []
   },
@@ -808,7 +808,7 @@
     "name": "Light Pink Heart shaped Hairpin set",
     "collection": "hairbows",
     "price": 30,
-    "image": "https://aura.devshubh.me/images/web/1000070056-mqfb5onk53293b.png",
+    "image": "/images/web/1000070056-mqfb5onk53293b.webp",
     "description": "",
     "tags": []
   },
@@ -818,7 +818,7 @@
     "name": "Blue Hairclaw with scrunchy set",
     "collection": "hairbows",
     "price": 50,
-    "image": "https://aura.devshubh.me/images/web/1000070019-mqfb8wm541f6dd.png",
+    "image": "/images/web/1000070019-mqfb8wm541f6dd.webp",
     "description": "",
     "tags": []
   },
@@ -828,7 +828,7 @@
     "name": "Pink Hairclaw with scrunchy set",
     "collection": "hairbows",
     "price": 50,
-    "image": "https://aura.devshubh.me/images/web/1000070021-mqfb9ua41d6b70.png",
+    "image": "/images/web/1000070021-mqfb9ua41d6b70.webp",
     "description": "",
     "tags": []
   },
@@ -838,7 +838,7 @@
     "name": "Purple shade flowery Scented candle",
     "collection": "hair-alligator-pin",
     "price": 60,
-    "image": "https://aura.devshubh.me/images/web/1000070044-mqfbrs895d1905.png",
+    "image": "/images/web/1000070044-mqfbrs895d1905.webp",
     "description": "",
     "tags": []
   },
@@ -848,7 +848,7 @@
     "name": "Violet shade flowery Scented candle",
     "collection": "hair-alligator-pin",
     "price": 60,
-    "image": "https://aura.devshubh.me/images/web/1000070042-mqfbsrk085e2cd.png",
+    "image": "/images/web/1000070042-mqfbsrk085e2cd.webp",
     "description": "",
     "tags": []
   },
@@ -858,7 +858,7 @@
     "name": "White flowery Scented candle",
     "collection": "hair-alligator-pin",
     "price": 60,
-    "image": "https://aura.devshubh.me/images/web/1000070040-mqfbwi9ya097de.png",
+    "image": "/images/web/1000070040-mqfbwi9ya097de.webp",
     "description": "",
     "tags": []
   },
@@ -868,7 +868,7 @@
     "name": "Yellow flowery Scented candle",
     "collection": "hair-alligator-pin",
     "price": 60,
-    "image": "https://aura.devshubh.me/images/web/1000070046-mqfbxmmt240946.png",
+    "image": "/images/web/1000070046-mqfbxmmt240946.webp",
     "description": "",
     "tags": []
   },
@@ -878,7 +878,7 @@
     "name": "Rose Shape Scented candle",
     "collection": "hair-alligator-pin",
     "price": 70,
-    "image": "https://aura.devshubh.me/images/web/1000070038-mqfbystk9e8837.png",
+    "image": "/images/web/1000070038-mqfbystk9e8837.webp",
     "description": "",
     "tags": []
   },
@@ -888,7 +888,7 @@
     "name": "Dark Red Lipstick",
     "collection": "makeup",
     "price": 60,
-    "image": "https://aura.devshubh.me/images/web/1000070034-mqfc2r6r9ab380.png",
+    "image": "/images/web/1000070034-mqfc2r6r9ab380.webp",
     "description": "",
     "tags": []
   },
@@ -898,7 +898,7 @@
     "name": "Light Red Lipstick",
     "collection": "makeup",
     "price": 60,
-    "image": "https://aura.devshubh.me/images/web/1000070036-mqfc3qen428783.png",
+    "image": "/images/web/1000070036-mqfc3qen428783.webp",
     "description": "",
     "tags": []
   },
@@ -908,7 +908,7 @@
     "name": "Pink shade Charm Bracelet",
     "collection": "bracelets",
     "price": 60,
-    "image": "https://aura.devshubh.me/images/web/1000070000-mqfc8oss9218ae.png",
+    "image": "/images/web/1000070000-mqfc8oss9218ae.webp",
     "description": "",
     "tags": []
   },
@@ -918,7 +918,7 @@
     "name": "Blue-pink shade Charm Bracelet",
     "collection": "bracelets",
     "price": 60,
-    "image": "https://aura.devshubh.me/images/web/1000070004-mqfc9qz4f44ebb.png",
+    "image": "/images/web/1000070004-mqfc9qz4f44ebb.webp",
     "description": "",
     "tags": []
   },
@@ -928,7 +928,7 @@
     "name": "White-colour Charm Bracelet",
     "collection": "bracelets",
     "price": 60,
-    "image": "https://aura.devshubh.me/images/web/1000070008-mqfcauf1903de5.png",
+    "image": "/images/web/1000070008-mqfcauf1903de5.webp",
     "description": "",
     "tags": []
   },
@@ -938,7 +938,7 @@
     "name": "Green colour Charm Bracelet",
     "collection": "bracelets",
     "price": 60,
-    "image": "https://aura.devshubh.me/images/web/1000070006-mqfcbdq513dad3.png",
+    "image": "/images/web/1000070006-mqfcbdq513dad3.webp",
     "description": "",
     "tags": []
   },
@@ -948,7 +948,7 @@
     "name": "White teddy keychain",
     "collection": "keychains",
     "price": 95,
-    "image": "https://aura.devshubh.me/images/web/1000075688-mr2387bta48bc6.png",
+    "image": "/images/web/1000075688-mr2387bta48bc6.webp",
     "description": "",
     "tags": []
   },
@@ -958,7 +958,7 @@
     "name": "Brown Teddy keychain",
     "collection": "keychains",
     "price": 95,
-    "image": "https://aura.devshubh.me/images/web/1000075689-mr239cur8e5c04.png",
+    "image": "/images/web/1000075689-mr239cur8e5c04.webp",
     "description": "",
     "tags": []
   },
@@ -968,7 +968,7 @@
     "name": "Pink Teddy keychain",
     "collection": "keychains",
     "price": 95,
-    "image": "https://aura.devshubh.me/images/web/1000075760-mr239sih6ca2ec.png",
+    "image": "/images/web/1000075760-mr239sih6ca2ec.webp",
     "description": "",
     "tags": []
   },
@@ -978,7 +978,7 @@
     "name": "Blue Mini bag",
     "collection": "other-gift-items",
     "price": 75,
-    "image": "https://aura.devshubh.me/images/web/1000075761-mr23b8y1f7b8b7.png",
+    "image": "/images/web/1000075761-mr23b8y1f7b8b7.webp",
     "description": "",
     "tags": []
   },
@@ -988,7 +988,7 @@
     "name": "Lavender Mini bag",
     "collection": "other-gift-items",
     "price": 75,
-    "image": "https://aura.devshubh.me/images/web/1000075764-mr23do6zcaa65b.png",
+    "image": "/images/web/1000075764-mr23do6zcaa65b.webp",
     "description": "",
     "tags": []
   },
@@ -998,7 +998,7 @@
     "name": "Pink Mini bag",
     "collection": "other-gift-items",
     "price": 75,
-    "image": "https://aura.devshubh.me/images/web/1000075775-mr23e98vd4711c.png",
+    "image": "/images/web/1000075775-mr23e98vd4711c.webp",
     "description": "",
     "tags": []
   },
@@ -1008,7 +1008,7 @@
     "name": "Grey Silicon Jwellery Case",
     "collection": "other-gift-items",
     "price": 120,
-    "image": "https://aura.devshubh.me/images/web/1000075686-mr23f2zk98243a.png",
+    "image": "/images/web/1000075686-mr23f2zk98243a.webp",
     "description": "",
     "tags": []
   },
@@ -1018,7 +1018,7 @@
     "name": "Green Silicon Jwellery Case",
     "collection": "other-gift-items",
     "price": 120,
-    "image": "https://aura.devshubh.me/images/web/1000075687-mr23fuehd3c8a3.png",
+    "image": "/images/web/1000075687-mr23fuehd3c8a3.webp",
     "description": "",
     "tags": []
   },
@@ -1028,7 +1028,7 @@
     "name": "Orange Silicon Jwellery Case",
     "collection": "other-gift-items",
     "price": 120,
-    "image": "https://aura.devshubh.me/images/web/1000075683-mr23get5257325.png",
+    "image": "/images/web/1000075683-mr23get5257325.webp",
     "description": "",
     "tags": []
   },
@@ -1038,7 +1038,7 @@
     "name": "Medium Hamper box with Shredded Paper and decorative lights",
     "collection": "add-ons",
     "price": 180,
-    "image": "https://aura.devshubh.me/images/web/1000062732-mr23p4loda76e9.jpg",
+    "image": "/images/web/1000062732-mr23p4loda76e9.jpg",
     "description": "",
     "tags": []
   },
@@ -1048,7 +1048,7 @@
     "name": "Stylish Rose Gold Pendent with Droplet",
     "collection": "pendants",
     "price": 110,
-    "image": "https://aura.devshubh.me/images/web/1000053632-mr23ydqicc1dd0.jpg",
+    "image": "/images/web/1000053632-mr23ydqicc1dd0.jpg",
     "description": "",
     "tags": []
   },
@@ -1058,7 +1058,7 @@
     "name": "Infinity Stainless steel Pendent",
     "collection": "pendants",
     "price": 110,
-    "image": "https://aura.devshubh.me/images/web/1000079999-mrgkfri8e0a3d7.png",
+    "image": "/images/web/1000079999-mrgkfri8e0a3d7.webp",
     "description": "",
     "tags": []
   },
@@ -1068,7 +1068,7 @@
     "name": "Heart Design Gold plated Pendant",
     "collection": "pendants",
     "price": 110,
-    "image": "https://aura.devshubh.me/images/web/1000080002-mrgkhyewf55958.jpg",
+    "image": "/images/web/1000080002-mrgkhyewf55958.jpg",
     "description": "",
     "tags": []
   },
@@ -1078,7 +1078,7 @@
     "name": "Interlocking Circle Ring",
     "collection": "rings",
     "price": 40,
-    "image": "https://aura.devshubh.me/images/web/1000080061-mrgkr1n8bfc885.jpg",
+    "image": "/images/web/1000080061-mrgkr1n8bfc885.jpg",
     "description": "",
     "tags": []
   },
@@ -1088,7 +1088,7 @@
     "name": "Luna Shine Ring",
     "collection": "rings",
     "price": 40,
-    "image": "https://aura.devshubh.me/images/web/1000079992-mrgkva6c7d4b8e.jpg",
+    "image": "/images/web/1000079992-mrgkva6c7d4b8e.jpg",
     "description": "",
     "tags": []
   },
@@ -1098,7 +1098,7 @@
     "name": "Essential everyday Ring",
     "collection": "rings",
     "price": 35,
-    "image": "https://aura.devshubh.me/images/web/1000079993-mrgkxkam326c45.jpg",
+    "image": "/images/web/1000079993-mrgkxkam326c45.jpg",
     "description": "",
     "tags": []
   },
@@ -1108,7 +1108,7 @@
     "name": "Luna Disc Ring",
     "collection": "rings",
     "price": 35,
-    "image": "https://aura.devshubh.me/images/web/1000079994-mrgkzji2e2ebc9.jpg",
+    "image": "/images/web/1000079994-mrgkzji2e2ebc9.jpg",
     "description": "",
     "tags": []
   },
@@ -1118,7 +1118,7 @@
     "name": "Luna Solitaire ring",
     "collection": "rings",
     "price": 40,
-    "image": "https://aura.devshubh.me/images/web/1000079995-mrgl14r29186d6.jpg",
+    "image": "/images/web/1000079995-mrgl14r29186d6.jpg",
     "description": "",
     "tags": []
   },
@@ -1128,7 +1128,7 @@
     "name": "Golden leaf whisper Ring",
     "collection": "rings",
     "price": 45,
-    "image": "https://aura.devshubh.me/images/web/1000080212-mrgl76xs734711.jpg",
+    "image": "/images/web/1000080212-mrgl76xs734711.jpg",
     "description": "",
     "tags": []
   },
@@ -1138,7 +1138,7 @@
     "name": "Trinity pearl Ring",
     "collection": "rings",
     "price": 40,
-    "image": "https://aura.devshubh.me/images/web/1000080213-mrgl88n88b92cf.jpg",
+    "image": "/images/web/1000080213-mrgl88n88b92cf.jpg",
     "description": "",
     "tags": []
   },
@@ -1148,7 +1148,7 @@
     "name": "Minimal Luxe Ring",
     "collection": "rings",
     "price": 30,
-    "image": "https://aura.devshubh.me/images/web/1000080214-mrgl9air6ec6d4.jpg",
+    "image": "/images/web/1000080214-mrgl9air6ec6d4.jpg",
     "description": "",
     "tags": []
   },
@@ -1158,7 +1158,7 @@
     "name": "Golden Bar Ring",
     "collection": "rings",
     "price": 35,
-    "image": "https://aura.devshubh.me/images/web/1000080216-mrglacv16603bf.jpg",
+    "image": "/images/web/1000080216-mrglacv16603bf.jpg",
     "description": "",
     "tags": []
   },
@@ -1168,7 +1168,7 @@
     "name": "Abstract petal Ring",
     "collection": "rings",
     "price": 40,
-    "image": "https://aura.devshubh.me/images/web/1000080218-mrglcraa46a950.jpg",
+    "image": "/images/web/1000080218-mrglcraa46a950.jpg",
     "description": "",
     "tags": []
   },
@@ -1178,7 +1178,7 @@
     "name": "Endless elegance Ring",
     "collection": "rings",
     "price": 40,
-    "image": "https://aura.devshubh.me/images/web/1000080221-mrgldq3qbd0193.jpg",
+    "image": "/images/web/1000080221-mrgldq3qbd0193.jpg",
     "description": "",
     "tags": []
   },
@@ -1188,7 +1188,7 @@
     "name": "Silver Lotus Ring",
     "collection": "rings",
     "price": 45,
-    "image": "https://aura.devshubh.me/images/web/1000080222-mrglgqqu846d44.jpg",
+    "image": "/images/web/1000080222-mrglgqqu846d44.jpg",
     "description": "",
     "tags": []
   },
@@ -1198,7 +1198,7 @@
     "name": "Black onyx bloom Ring",
     "collection": "rings",
     "price": 45,
-    "image": "https://aura.devshubh.me/images/web/1000080227-mrglhwdmec1668.jpg",
+    "image": "/images/web/1000080227-mrglhwdmec1668.jpg",
     "description": "",
     "tags": []
   },
@@ -1208,7 +1208,7 @@
     "name": "Triple daisy Ring",
     "collection": "rings",
     "price": 40,
-    "image": "https://aura.devshubh.me/images/web/1000080229-mrglj2rn2b8c9c.jpg",
+    "image": "/images/web/1000080229-mrglj2rn2b8c9c.jpg",
     "description": "",
     "tags": []
   },
@@ -1218,7 +1218,7 @@
     "name": "Luna Texture Ring",
     "collection": "rings",
     "price": 40,
-    "image": "https://aura.devshubh.me/images/web/1000080230-mrglkdije1b2de.jpg",
+    "image": "/images/web/1000080230-mrglkdije1b2de.jpg",
     "description": "",
     "tags": []
   },
@@ -1228,7 +1228,7 @@
     "name": "Royal filigree Ring",
     "collection": "rings",
     "price": 45,
-    "image": "https://aura.devshubh.me/images/web/1000080231-mrglkrx06d9a1e.jpg",
+    "image": "/images/web/1000080231-mrglkrx06d9a1e.jpg",
     "description": "",
     "tags": []
   },
@@ -1238,7 +1238,7 @@
     "name": "Vogue V Ring",
     "collection": "rings",
     "price": 40,
-    "image": "https://aura.devshubh.me/images/web/1000080232-mrglm3xhee8373.jpg",
+    "image": "/images/web/1000080232-mrglm3xhee8373.jpg",
     "description": "",
     "tags": []
   },
@@ -1248,7 +1248,7 @@
     "name": "Vintage Bloom Ring",
     "collection": "rings",
     "price": 40,
-    "image": "https://aura.devshubh.me/images/web/1000080233-mrgln0r41a12b0.jpg",
+    "image": "/images/web/1000080233-mrgln0r41a12b0.jpg",
     "description": "",
     "tags": []
   },
@@ -1258,7 +1258,7 @@
     "name": "Boho Bloom Ring",
     "collection": "rings",
     "price": 40,
-    "image": "https://aura.devshubh.me/images/web/1000080235-mrglpk3db7c9e9.jpg",
+    "image": "/images/web/1000080235-mrglpk3db7c9e9.jpg",
     "description": "",
     "tags": []
   },
@@ -1268,7 +1268,7 @@
     "name": "Tribal Luxe Ring",
     "collection": "rings",
     "price": 40,
-    "image": "https://aura.devshubh.me/images/web/1000080236-mrglqf8623f50b.jpg",
+    "image": "/images/web/1000080236-mrglqf8623f50b.jpg",
     "description": "",
     "tags": []
   }

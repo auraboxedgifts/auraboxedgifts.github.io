@@ -38,7 +38,7 @@
 
       <div class="col-item col-item-reveal" style="animation-delay: 0.0s" data-idx="0" data-id="pend_1" data-name="Anti- tarnish Flowery Pendant" data-price="170" data-img="../images/web/pendents-1.jpeg" data-description="Butterfly pendant necklace in elegant finish.">
         <div class="col-item-img-wrapper">
-          <img src="../images/web/pendents-1.jpeg" alt="Anti- tarnish Flowery Pendant" loading="lazy">
+          <img src="../images/web/pendents-1.jpeg" alt="Anti- tarnish Flowery Pendant" loading="lazy" decoding="async">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
@@ -50,7 +50,7 @@
 
       <div class="col-item col-item-reveal" style="animation-delay: 0.1s" data-idx="1" data-id="pend_3" data-name="Anti- tarnish Butterfly Pendant" data-price="175" data-img="../images/web/pendents-3.jpeg" data-description="Floral motif pendant with delicate chain.">
         <div class="col-item-img-wrapper">
-          <img src="../images/web/pendents-3.jpeg" alt="Anti- tarnish Butterfly Pendant" loading="lazy">
+          <img src="../images/web/pendents-3.jpeg" alt="Anti- tarnish Butterfly Pendant" loading="lazy" decoding="async">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
@@ -60,9 +60,9 @@
         </div>
       </div>
 
-      <div class="col-item col-item-reveal" style="animation-delay: 0.2s" data-idx="2" data-id="prod_1782912369929_e0bba2" data-name="Stylish Rose Gold Pendent with Droplet" data-price="110" data-img="https://aura.devshubh.me/images/web/1000053632-mr23ydqicc1dd0.jpg" data-description="">
+      <div class="col-item col-item-reveal" style="animation-delay: 0.2s" data-idx="2" data-id="prod_1782912369929_e0bba2" data-name="Stylish Rose Gold Pendent with Droplet" data-price="110" data-img="../images/web/1000053632-mr23ydqicc1dd0.jpg" data-description="">
         <div class="col-item-img-wrapper">
-          <img src="https://aura.devshubh.me/images/web/1000053632-mr23ydqicc1dd0.jpg" alt="Stylish Rose Gold Pendent with Droplet" loading="lazy">
+          <img src="../images/web/1000053632-mr23ydqicc1dd0.jpg" alt="Stylish Rose Gold Pendent with Droplet" loading="lazy" decoding="async">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
@@ -72,9 +72,9 @@
         </div>
       </div>
 
-      <div class="col-item col-item-reveal" style="animation-delay: 0.3s" data-idx="3" data-id="prod_1783786593808_4f1827" data-name="Infinity Stainless steel Pendent" data-price="110" data-img="https://aura.devshubh.me/images/web/1000079999-mrgkfri8e0a3d7.png" data-description="">
+      <div class="col-item col-item-reveal" style="animation-delay: 0.3s" data-idx="3" data-id="prod_1783786593808_4f1827" data-name="Infinity Stainless steel Pendent" data-price="110" data-img="../images/web/1000079999-mrgkfri8e0a3d7.webp" data-description="">
         <div class="col-item-img-wrapper">
-          <img src="https://aura.devshubh.me/images/web/1000079999-mrgkfri8e0a3d7.png" alt="Infinity Stainless steel Pendent" loading="lazy">
+          <img src="../images/web/1000079999-mrgkfri8e0a3d7.webp" alt="Infinity Stainless steel Pendent" loading="lazy" decoding="async">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
@@ -84,9 +84,9 @@
         </div>
       </div>
 
-      <div class="col-item col-item-reveal" style="animation-delay: 0.4s" data-idx="4" data-id="prod_1783786833321_c524a9" data-name="Heart Design Gold plated Pendant" data-price="110" data-img="https://aura.devshubh.me/images/web/1000080002-mrgkhyewf55958.jpg" data-description="">
+      <div class="col-item col-item-reveal" style="animation-delay: 0.4s" data-idx="4" data-id="prod_1783786833321_c524a9" data-name="Heart Design Gold plated Pendant" data-price="110" data-img="../images/web/1000080002-mrgkhyewf55958.jpg" data-description="">
         <div class="col-item-img-wrapper">
-          <img src="https://aura.devshubh.me/images/web/1000080002-mrgkhyewf55958.jpg" alt="Heart Design Gold plated Pendant" loading="lazy">
+          <img src="../images/web/1000080002-mrgkhyewf55958.jpg" alt="Heart Design Gold plated Pendant" loading="lazy" decoding="async">
           <div class="col-item-zoom"><i class="fas fa-search-plus"></i></div>
         </div>
         <div class="col-item-info">
@@ -108,12 +108,27 @@
     <p>&copy; 2026 Aura Boxed Gifts. All rights reserved.</p>
   </footer>
 
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script src="../js/api.js"></script>
-  <script src="../js/auth.js"></script>
-  <script src="../js/cart.js"></script>
-  <script src="../js/checkout.js"></script>
-  <script src="../js/admin.js"></script>
-  <script src="../js/lightbox.js"></script>
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/cart.js" defer></script>
+  <script src="../js/checkout.js" defer></script>
+  <script src="../js/lightbox.js" defer></script>
+  <script>
+    (function () {
+      function loadAdmin() {
+        if (window.__auraAdminLoading || window.AuraAdmin) return;
+        window.__auraAdminLoading = true;
+        var s = document.createElement('script');
+        s.src = '../js/admin.js';
+        s.defer = true;
+        document.body.appendChild(s);
+      }
+      if (location.hash === '#admin' || localStorage.getItem('auraAdminToken')) loadAdmin();
+      window.addEventListener('hashchange', function () {
+        if (location.hash === '#admin') loadAdmin();
+      });
+      window.AuraLoadAdmin = loadAdmin;
+    })();
+  </script>
 </body>
 </html>
