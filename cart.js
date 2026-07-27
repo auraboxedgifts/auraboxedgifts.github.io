@@ -112,7 +112,7 @@ function openCheckoutPage() {
     el.innerHTML =
     '<div class="checkout-page">' +
       '<div class="ck-left">' +
-        '<div class="ck-brand"><img src="images/logo.jpeg" alt="Aura" class="ck-logo"><span>Aura Boxed Gifts</span></div>' +
+        '<div class="ck-brand"><img src="images/logo.webp" alt="Aura" class="ck-logo"><span>Aura Boxed Gifts</span></div>' +
 
         '<!-- STEP 1: CONTACT -->' +
         '<section class="ck-section" id="stepContact">' +

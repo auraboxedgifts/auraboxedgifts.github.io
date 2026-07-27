@@ -45,6 +45,8 @@ async function optimizeFile(filePath) {
   const before = fs.statSync(filePath).size;
   const maxEdge = maxEdgeFor(filePath);
   const tmp = `${filePath}.opt-tmp`;
+  const base = path.basename(filePath).toLowerCase();
+  const isLogo = base.startsWith('logo.');
 
   try {
     let pipeline = sharp(filePath, { failOn: 'none' })
@@ -57,11 +59,17 @@ async function optimizeFile(filePath) {
       });
 
     if (ext === '.jpg' || ext === '.jpeg') {
-      pipeline = pipeline.jpeg({ quality: JPEG_QUALITY, mozjpeg: true });
+      // Logos with transparency must never be forced into opaque black JPEG.
+      if (isLogo) {
+        pipeline = pipeline.flatten({ background: { r: 255, g: 255, b: 255 } })
+          .jpeg({ quality: 85, mozjpeg: true });
+      } else {
+        pipeline = pipeline.jpeg({ quality: JPEG_QUALITY, mozjpeg: true });
+      }
     } else if (ext === '.png') {
       pipeline = pipeline.png({ quality: PNG_QUALITY, compressionLevel: 9, effort: 8, palette: false });
     } else if (ext === '.webp') {
-      pipeline = pipeline.webp({ quality: WEBP_QUALITY });
+      pipeline = pipeline.webp({ quality: isLogo ? 90 : WEBP_QUALITY, alphaQuality: 100 });
     }
 
     await pipeline.toFile(tmp);

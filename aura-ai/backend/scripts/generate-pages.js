@@ -52,12 +52,12 @@ function renderPage(collection, products) {
   <link rel="stylesheet" href="collection.css">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="icon" type="image/jpeg" href="../images/logo.jpeg">
+  <link rel="icon" type="image/png" href="../images/logo.png">
 </head>
 <body>
   <nav class="col-nav">
     <a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html';} return false;" class="col-nav-back"><i class="fas fa-arrow-left"></i> Back</a>
-    <a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html';} return false;" class="col-nav-logo"><img src="../images/logo.jpeg" alt="Aura Boxed Gifts"></a>
+    <a href="#" onclick="if(window.parent!==window){window.parent.postMessage('closeCollection','*');}else{window.location.href='../index.html';} return false;" class="col-nav-logo"><img src="../images/logo.webp" alt="Aura Boxed Gifts"></a>
     <div class="col-nav-links">
       <a href="#" id="navCartIcon" aria-label="Cart" style="position: relative; margin-right: 15px;">
         <i class="fas fa-shopping-cart"></i>
