@@ -339,6 +339,7 @@
     if (window.location.hash !== '#checkout') {
       const overlay = document.getElementById('checkoutPageOverlay');
       if (overlay) overlay.remove();
+      document.body.style.overflow = '';
       const w = document.getElementById('auraAIWidget');
       if (w) w.classList.remove('aura-docked');
     }
