@@ -174,7 +174,10 @@
         </div>
         <p class="aura-auth-subtitle">Sign in with the admin credentials configured on the server.</p>
         <div class="ck-field"><input type="email" id="aapLoginEmail" placeholder="Admin email" autocomplete="username"></div>
-        <div class="ck-field"><input type="password" id="aapLoginPassword" placeholder="Admin password" autocomplete="current-password"></div>
+        <div class="ck-field ck-field-password">
+          <input type="password" id="aapLoginPassword" placeholder="Admin password" autocomplete="current-password">
+          <button type="button" class="ck-password-toggle" aria-label="Show password" data-target="aapLoginPassword"><i class="fas fa-eye"></i></button>
+        </div>
         <button class="ck-pay-now-btn" id="aapLoginBtn">Login to dashboard</button>
       </div>`;
     document.body.appendChild(overlay);
@@ -189,6 +192,16 @@
     overlay.querySelectorAll('input').forEach((input) => {
       input.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') handleAdminLogin();
+      });
+    });
+    overlay.querySelectorAll('.ck-password-toggle').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const input = overlay.querySelector('#' + btn.getAttribute('data-target'));
+        if (!input) return;
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        btn.innerHTML = show ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
       });
     });
     return overlay;

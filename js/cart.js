@@ -25,6 +25,11 @@
     });
   }
 
+  function getQtyById(productId) {
+    const item = cart.find(c => c.productId === productId);
+    return item ? (item.qty || 1) : 0;
+  }
+
   function updateQtyById(productId, delta) {
     const idx = cart.findIndex(c => c.productId === productId);
     if (idx >= 0) {
@@ -41,6 +46,14 @@
     if (overlay && overlay.classList.contains('active')) {
       renderCartPage();
     }
+  }
+
+  // Product/hamper steppers: increase freely; decrease stops at 1 (does not remove).
+  function bumpQtyFloor1(productId, delta) {
+    if (!productId) return;
+    const current = getQtyById(productId);
+    if (delta < 0 && current <= 1) return;
+    updateQtyById(productId, delta);
   }
 
   function itemCount() {
@@ -192,7 +205,8 @@
     if (e.data && e.data.type === 'addToCart') addToCart(e.data);
     if (e.data && e.data.type === 'openCart') openCartPage();
     if (e.data && e.data.type === 'updateQtyById') {
-      updateQtyById(e.data.productId, e.data.delta);
+      if (e.data.floor1) bumpQtyFloor1(e.data.productId, e.data.delta);
+      else updateQtyById(e.data.productId, e.data.delta);
     }
     // Cross-origin iframe requests current cart state on init
     if (e.data && e.data.type === 'requestCart') {
@@ -229,7 +243,17 @@
     updateBadge();
   });
 
-  window.AuraCart = { addToCart, addToCartById, openCartPage, closeCartPage, updateQty, updateQtyById, getItems: () => cart.slice() };
+  window.AuraCart = {
+    addToCart,
+    addToCartById,
+    openCartPage,
+    closeCartPage,
+    updateQty,
+    updateQtyById,
+    getQtyById,
+    bumpQtyFloor1,
+    getItems: () => cart.slice()
+  };
   window.addToCart = addToCart;
   window.openCartPage = openCartPage;
 })();

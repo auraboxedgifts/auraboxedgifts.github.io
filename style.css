@@ -1440,6 +1440,35 @@ button { cursor: pointer; border: none; font-family: inherit; }
   border-color: var(--rose-gold);
   box-shadow: 0 0 0 2px rgba(183,110,121,0.12);
 }
+.ck-field-password input {
+  padding-right: 44px;
+}
+.ck-password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--text-medium);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  padding: 0;
+  z-index: 2;
+}
+.ck-password-toggle:hover {
+  color: var(--text-dark);
+  background: rgba(0,0,0,0.04);
+}
+.ck-password-toggle:focus-visible {
+  outline: 2px solid var(--rose-gold);
+  outline-offset: 1px;
+}
 .ck-row { display: flex; gap: 12px; }
 .ck-half { flex: 1; }
 .ck-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
@@ -2812,6 +2841,33 @@ textarea.aap-input { resize: vertical; min-height: 70px; line-height: 1.5; }
   font-size: 0.85rem;
   font-weight: 600;
   padding: 10px 0;
+}
+.btn-qty-control button.is-disabled,
+.btn-qty-control button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.btn-qty-control.in-cart {
+  background: rgba(0,0,0,0.02);
+}
+.hamper-qty-control,
+.hamper-lb-qty {
+  margin-top: 4px;
+}
+.hamper-lb-qty {
+  width: 100%;
+  max-width: 220px;
+  margin: 8px auto 0;
+  border-color: rgba(255,255,255,0.55);
+  background: rgba(255,255,255,0.12);
+}
+.hamper-lb-qty button,
+.hamper-lb-qty span {
+  color: #fff;
+}
+.hamper-lb-qty button:hover {
+  background: rgba(255,255,255,0.14);
 }
 
 /* ─── Delete Product Item in Modal ─── */

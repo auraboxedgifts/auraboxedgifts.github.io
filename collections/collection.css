@@ -505,6 +505,15 @@ button { cursor: pointer; border: none; font-family: inherit; }
   font-weight: 600;
   padding: 10px 0;
 }
+.btn-qty-control button.is-disabled,
+.btn-qty-control button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.btn-qty-control.in-cart {
+  background: rgba(0,0,0,0.02);
+}
 
 /* ─── Cart Badge Bounce ─── */
 @keyframes cartBadgeBounce {

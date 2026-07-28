@@ -31,7 +31,11 @@ function renderPage(collection, products) {
         <div class="col-item-info">
           <h3 class="col-item-title">${escapeAttr(p.name)}</h3>
           <p class="col-item-price">${formatInr(p.price)}</p>
-          <button class="btn-add-cart" data-add-idx="${idx}"><i class="fas fa-shopping-cart"></i> Add to cart</button>
+          <div class="btn-qty-control" data-product-id="${escapeAttr(p.id)}" data-add-idx="${idx}">
+            <button type="button" class="qty-minus is-disabled" aria-label="Decrease quantity" disabled>−</button>
+            <span class="qty-value">1</span>
+            <button type="button" class="qty-plus" aria-label="Increase quantity">+</button>
+          </div>
         </div>
       </div>`;
     }).join('\n');
