@@ -226,6 +226,7 @@
     if (window.location.hash !== '#cart') {
       const overlay = document.getElementById('cartPageOverlay');
       if (overlay) overlay.classList.remove('active');
+      document.body.style.overflow = '';
       const w = document.getElementById('auraAIWidget');
       if (w) w.classList.remove('aura-docked');
     }
