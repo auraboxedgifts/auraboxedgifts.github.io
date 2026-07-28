@@ -180,6 +180,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const fmtPrice = (p) => (Number(p) > 0 ? '₹' + Number(p).toLocaleString('en-IN') : '');
 
+    function getHamperCartQty(id) {
+      if (window.AuraCart && typeof window.AuraCart.getQtyById === 'function') {
+        return window.AuraCart.getQtyById(id) || 0;
+      }
+      try {
+        const cart = JSON.parse(localStorage.getItem('aura_cart_v2') || '[]');
+        const item = cart.find((c) => c.productId === id);
+        return item ? (item.qty || 1) : 0;
+      } catch (e) {
+        return 0;
+      }
+    }
+
     function bumpHamperQty(h, delta) {
       if (!h || !h.id) return;
       if (window.AuraCart && typeof window.AuraCart.bumpQtyFloor1 === 'function') {
@@ -187,28 +200,18 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (window.parent !== window) {
         window.parent.postMessage({ type: 'updateQtyById', productId: h.id, delta: delta, floor1: true }, '*');
       } else if (window.AuraCart && typeof window.AuraCart.updateQtyById === 'function') {
-        const qty = window.AuraCart.getQtyById ? window.AuraCart.getQtyById(h.id) : 0;
+        const qty = getHamperCartQty(h.id);
         if (delta < 0 && qty <= 1) return;
         window.AuraCart.updateQtyById(h.id, delta);
       }
-      syncHamperQtyControls();
+      syncHamperCartActions();
     }
 
-    function getHamperDisplayQty(id) {
-      if (window.AuraCart && typeof window.AuraCart.getQtyById === 'function') {
-        return Math.max(1, window.AuraCart.getQtyById(id) || 1);
-      }
-      try {
-        const cart = JSON.parse(localStorage.getItem('aura_cart_v2') || '[]');
-        const item = cart.find((c) => c.productId === id);
-        return item ? (item.qty || 1) : 1;
-      } catch (e) {
-        return 1;
-      }
+    function hamperAddMarkup(idx) {
+      return `<button type="button" class="hamper-add-btn" data-add="${idx}"><i class="fas fa-bag-shopping"></i> Add to cart</button>`;
     }
 
-    function hamperQtyMarkup(h, idx) {
-      const qty = getHamperDisplayQty(h.id);
+    function hamperQtyMarkup(h, idx, qty) {
       const atFloor = qty <= 1;
       return `<div class="btn-qty-control hamper-qty-control" data-hamper-id="${esc(h.id)}" data-add="${idx}">
         <button type="button" class="qty-minus${atFloor ? ' is-disabled' : ''}" aria-label="Decrease quantity" ${atFloor ? 'disabled' : ''}>−</button>
@@ -217,20 +220,94 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     }
 
-    function syncHamperQtyControls() {
-      document.querySelectorAll('.hamper-qty-control, #hamperLightbox .btn-qty-control').forEach((control) => {
-        const id = control.dataset.hamperId || control.dataset.productId;
-        if (!id) return;
-        const qty = getHamperDisplayQty(id);
-        const span = control.querySelector('.qty-value');
-        const minus = control.querySelector('.qty-minus');
-        if (span) span.textContent = String(qty);
-        if (minus) {
-          const atFloor = qty <= 1;
-          minus.disabled = atFloor;
-          minus.classList.toggle('is-disabled', atFloor);
+    function hamperActionMarkup(h, idx) {
+      const qty = getHamperCartQty(h.id);
+      return qty > 0 ? hamperQtyMarkup(h, idx, qty) : hamperAddMarkup(idx);
+    }
+
+    function bindHamperAction(el, hampers) {
+      if (!el || el.dataset.bound === '1') return;
+      el.dataset.bound = '1';
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (el.classList.contains('hamper-add-btn')) {
+          const h = hampers[Number(el.dataset.add || 0)];
+          if (h) bumpHamperQty(h, 1);
+          return;
         }
+        const btn = e.target.closest('button');
+        if (!btn || !el.classList.contains('hamper-qty-control')) return;
+        const h = hampers[Number(el.dataset.add || 0)];
+        if (!h) return;
+        if (btn.classList.contains('qty-plus')) bumpHamperQty(h, 1);
+        else if (btn.classList.contains('qty-minus')) bumpHamperQty(h, -1);
       });
+    }
+
+    function setHamperAction(host, h, idx) {
+      if (!host || !h) return;
+      const qty = getHamperCartQty(h.id);
+      const existing = host.querySelector('.hamper-add-btn, .hamper-qty-control, .hamper-lb-qty, .hamper-lb-add');
+      const isLb = host.classList.contains('hamper-lb-info');
+      const html = qty > 0
+        ? (isLb
+          ? `<div class="btn-qty-control hamper-lb-qty" data-hamper-id="${esc(h.id)}" data-add="${idx}">
+              <button type="button" class="qty-minus${qty <= 1 ? ' is-disabled' : ''}" aria-label="Decrease quantity" ${qty <= 1 ? 'disabled' : ''}>−</button>
+              <span class="qty-value">${qty}</span>
+              <button type="button" class="qty-plus" aria-label="Increase quantity">+</button>
+            </div>`
+          : hamperQtyMarkup(h, idx, qty))
+        : (isLb
+          ? `<button type="button" class="hamper-lb-cta hamper-lb-add" data-add="${idx}"><i class="fas fa-bag-shopping"></i> Add to cart</button>`
+          : hamperAddMarkup(idx));
+
+      if (existing) {
+        const isQty = existing.classList.contains('btn-qty-control');
+        if (qty > 0 && isQty) {
+          const span = existing.querySelector('.qty-value');
+          const minus = existing.querySelector('.qty-minus');
+          if (span) span.textContent = String(qty);
+          if (minus) {
+            const atFloor = qty <= 1;
+            minus.disabled = atFloor;
+            minus.classList.toggle('is-disabled', atFloor);
+          }
+          existing.dataset.hamperId = h.id;
+          existing.dataset.add = String(idx);
+          return;
+        }
+        if (qty <= 0 && (existing.classList.contains('hamper-add-btn') || existing.classList.contains('hamper-lb-add'))) {
+          existing.dataset.add = String(idx);
+          return;
+        }
+        existing.outerHTML = html;
+        return;
+      }
+
+      const customise = host.querySelector('.hamper-lb-customise');
+      if (customise) customise.insertAdjacentHTML('beforebegin', html);
+      else host.insertAdjacentHTML('beforeend', html);
+    }
+
+    function syncHamperCartActions() {
+      document.querySelectorAll('.hamper-card').forEach((card) => {
+        const idx = Number(card.dataset.index || 0);
+        const h = currentHampers[idx];
+        if (!h) return;
+        const host = card.querySelector('.hamper-card-info');
+        setHamperAction(host, h, idx);
+        const action = host && host.querySelector('.hamper-add-btn, .hamper-qty-control');
+        bindHamperAction(action, currentHampers);
+      });
+
+      const lb = document.getElementById('hamperLightbox');
+      if (lb && lb.classList.contains('active') && typeof lb._hamperCurrent === 'number') {
+        const h = currentHampers[lb._hamperCurrent];
+        if (h) {
+          setHamperAction(lb.querySelector('.hamper-lb-info'), h, lb._hamperCurrent);
+        }
+      }
     }
 
     let currentHampers = [];
@@ -250,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="hamper-card-info">
             <h3 class="hamper-card-title">${esc(h.title)}</h3>
             ${fmtPrice(h.price) ? `<div class="hamper-card-price">${fmtPrice(h.price)}</div>` : ''}
-            ${hamperQtyMarkup(h, idx)}
+            ${hamperActionMarkup(h, idx)}
           </div>
         </article>
       `).join('');
@@ -263,19 +340,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
 
-      hampersContainer.querySelectorAll('.hamper-qty-control').forEach((control) => {
-        control.addEventListener('click', function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          const btn = e.target.closest('button');
-          if (!btn) return;
-          const h = hampers[Number(this.dataset.add || 0)];
-          if (!h) return;
-          if (btn.classList.contains('qty-plus')) bumpHamperQty(h, 1);
-          else if (btn.classList.contains('qty-minus')) bumpHamperQty(h, -1);
-        });
+      hampersContainer.querySelectorAll('.hamper-add-btn, .hamper-qty-control').forEach((el) => {
+        bindHamperAction(el, hampers);
       });
-      syncHamperQtyControls();
+      syncHamperCartActions();
     }
 
     function openHamperLightbox(hampers, startIndex) {
@@ -293,11 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <h3 class="hamper-lb-title"></h3>
               <div class="hamper-lb-price"></div>
               <p class="hamper-lb-sub">Fully customisable — choose your theme, colours, and items.</p>
-              <div class="btn-qty-control hamper-lb-qty" data-hamper-id="">
-                <button type="button" class="qty-minus is-disabled" aria-label="Decrease quantity" disabled>−</button>
-                <span class="qty-value">1</span>
-                <button type="button" class="qty-plus" aria-label="Increase quantity">+</button>
-              </div>
+              <button type="button" class="hamper-lb-cta hamper-lb-add" data-add="0"><i class="fas fa-bag-shopping"></i> Add to cart</button>
               <a class="hamper-lb-customise" href="${INSTAGRAM_URL}" target="_blank" rel="noopener"><i class="fab fa-instagram"></i> Or customise on Instagram</a>
             </div>
           </div>
@@ -306,15 +370,31 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(lb);
         lb.querySelector('.hamper-lb-close').addEventListener('click', closeHamperLightbox);
         lb.addEventListener('click', (e) => { if (e.target === lb) closeHamperLightbox(); });
+        lb.querySelector('.hamper-lb-info').addEventListener('click', (e) => {
+          e.stopPropagation();
+          const current = lb._hamperCurrent || 0;
+          const h = currentHampers[current];
+          if (!h) return;
+          const addBtn = e.target.closest('.hamper-lb-add, .hamper-add-btn');
+          const qtyBtn = e.target.closest('.btn-qty-control button');
+          if (addBtn) {
+            bumpHamperQty(h, 1);
+            return;
+          }
+          if (qtyBtn) {
+            if (qtyBtn.classList.contains('qty-plus')) bumpHamperQty(h, 1);
+            else if (qtyBtn.classList.contains('qty-minus')) bumpHamperQty(h, -1);
+          }
+        });
       }
       let current = startIndex;
       const imgEl = lb.querySelector('.hamper-lb-img');
       const titleEl = lb.querySelector('.hamper-lb-title');
       const priceEl = lb.querySelector('.hamper-lb-price');
-      const qtyEl = lb.querySelector('.hamper-lb-qty');
       const counterEl = lb.querySelector('.hamper-lb-counter');
       function show(i) {
         current = (i + hampers.length) % hampers.length;
+        lb._hamperCurrent = current;
         const h = hampers[current];
         imgEl.src = resolve(h.image);
         imgEl.alt = h.title;
@@ -322,19 +402,8 @@ document.addEventListener('DOMContentLoaded', () => {
         priceEl.textContent = fmtPrice(h.price);
         priceEl.style.display = fmtPrice(h.price) ? '' : 'none';
         counterEl.textContent = `${current + 1} / ${hampers.length}`;
-        qtyEl.dataset.hamperId = h.id;
-        syncHamperQtyControls();
+        setHamperAction(lb.querySelector('.hamper-lb-info'), h, current);
       }
-      qtyEl.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const btn = e.target.closest('button');
-        if (!btn) return;
-        const h = hampers[current];
-        if (!h) return;
-        if (btn.classList.contains('qty-plus')) bumpHamperQty(h, 1);
-        else if (btn.classList.contains('qty-minus')) bumpHamperQty(h, -1);
-      };
       lb.querySelector('.hamper-lb-prev').onclick = () => show(current - 1);
       lb.querySelector('.hamper-lb-next').onclick = () => show(current + 1);
       show(startIndex);
@@ -388,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.addEventListener('message', function (e) {
-      if (e.data && e.data.type === 'cartUpdated') syncHamperQtyControls();
+      if (e.data && e.data.type === 'cartUpdated') syncHamperCartActions();
     });
 
     // Dynamic collections hydration
