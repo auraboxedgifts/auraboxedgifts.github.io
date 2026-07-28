@@ -58,9 +58,11 @@
           <button class="ck-pay-now-btn" id="authContinueBtn">Continue</button>
         </div>
         <div id="authPasswordLoginBlock" style="display:none;">
-          <div class="ck-field ck-field-password">
-            <input type="password" id="authPasswordInput" placeholder="Password" autocomplete="current-password">
-            <button type="button" class="ck-password-toggle" aria-label="Show password" data-target="authPasswordInput"><i class="fas fa-eye"></i></button>
+          <div class="ck-field">
+            <div class="ck-password-wrap">
+              <input type="password" id="authPasswordInput" placeholder="Password" autocomplete="current-password">
+              <button type="button" class="ck-password-toggle" aria-label="Show password" data-target="authPasswordInput"><i class="fas fa-eye"></i></button>
+            </div>
           </div>
           <button class="ck-pay-now-btn" id="authPasswordLoginBtn">Login with password</button>
           <div style="display: flex; justify-content: space-between; margin-top: 8px;">
@@ -75,13 +77,17 @@
         </div>
         <div id="authSetPasswordBlock" style="display:none;">
           <div class="ck-field"><input type="text" id="authSetNameInput" placeholder="Full Name" autocomplete="name"></div>
-          <div class="ck-field ck-field-password">
-            <input type="password" id="authNewPasswordInput" placeholder="New password (min 6 chars)" autocomplete="new-password">
-            <button type="button" class="ck-password-toggle" aria-label="Show password" data-target="authNewPasswordInput"><i class="fas fa-eye"></i></button>
+          <div class="ck-field">
+            <div class="ck-password-wrap">
+              <input type="password" id="authNewPasswordInput" placeholder="New password (min 6 chars)" autocomplete="new-password">
+              <button type="button" class="ck-password-toggle" aria-label="Show password" data-target="authNewPasswordInput"><i class="fas fa-eye"></i></button>
+            </div>
           </div>
-          <div class="ck-field ck-field-password">
-            <input type="password" id="authConfirmPasswordInput" placeholder="Confirm password" autocomplete="new-password">
-            <button type="button" class="ck-password-toggle" aria-label="Show password" data-target="authConfirmPasswordInput"><i class="fas fa-eye"></i></button>
+          <div class="ck-field">
+            <div class="ck-password-wrap">
+              <input type="password" id="authConfirmPasswordInput" placeholder="Confirm password" autocomplete="new-password">
+              <button type="button" class="ck-password-toggle" aria-label="Show password" data-target="authConfirmPasswordInput"><i class="fas fa-eye"></i></button>
+            </div>
           </div>
           <button class="ck-pay-now-btn" id="authSetPasswordBtn">Save & login</button>
         </div>
@@ -91,13 +97,17 @@
           <button class="ck-back-btn aura-auth-resend" id="authForgotResendBtn">Resend OTP</button>
         </div>
         <div id="authResetPasswordBlock" style="display:none;">
-          <div class="ck-field ck-field-password">
-            <input type="password" id="authResetPasswordInput" placeholder="New password (min 6 chars)" autocomplete="new-password">
-            <button type="button" class="ck-password-toggle" aria-label="Show password" data-target="authResetPasswordInput"><i class="fas fa-eye"></i></button>
+          <div class="ck-field">
+            <div class="ck-password-wrap">
+              <input type="password" id="authResetPasswordInput" placeholder="New password (min 6 chars)" autocomplete="new-password">
+              <button type="button" class="ck-password-toggle" aria-label="Show password" data-target="authResetPasswordInput"><i class="fas fa-eye"></i></button>
+            </div>
           </div>
-          <div class="ck-field ck-field-password">
-            <input type="password" id="authResetConfirmPasswordInput" placeholder="Confirm new password" autocomplete="new-password">
-            <button type="button" class="ck-password-toggle" aria-label="Show password" data-target="authResetConfirmPasswordInput"><i class="fas fa-eye"></i></button>
+          <div class="ck-field">
+            <div class="ck-password-wrap">
+              <input type="password" id="authResetConfirmPasswordInput" placeholder="Confirm new password" autocomplete="new-password">
+              <button type="button" class="ck-password-toggle" aria-label="Show password" data-target="authResetConfirmPasswordInput"><i class="fas fa-eye"></i></button>
+            </div>
           </div>
           <button class="ck-pay-now-btn" id="authResetPasswordBtn">Reset password</button>
         </div>

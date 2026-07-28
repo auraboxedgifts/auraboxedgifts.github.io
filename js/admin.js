@@ -174,9 +174,11 @@
         </div>
         <p class="aura-auth-subtitle">Sign in with the admin credentials configured on the server.</p>
         <div class="ck-field"><input type="email" id="aapLoginEmail" placeholder="Admin email" autocomplete="username"></div>
-        <div class="ck-field ck-field-password">
-          <input type="password" id="aapLoginPassword" placeholder="Admin password" autocomplete="current-password">
-          <button type="button" class="ck-password-toggle" aria-label="Show password" data-target="aapLoginPassword"><i class="fas fa-eye"></i></button>
+        <div class="ck-field">
+          <div class="ck-password-wrap">
+            <input type="password" id="aapLoginPassword" placeholder="Admin password" autocomplete="current-password">
+            <button type="button" class="ck-password-toggle" aria-label="Show password" data-target="aapLoginPassword"><i class="fas fa-eye"></i></button>
+          </div>
         </div>
         <button class="ck-pay-now-btn" id="aapLoginBtn">Login to dashboard</button>
       </div>`;
