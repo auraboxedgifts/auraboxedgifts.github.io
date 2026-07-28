@@ -195,14 +195,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function bumpHamperQty(h, delta) {
       if (!h || !h.id) return;
-      if (window.AuraCart && typeof window.AuraCart.bumpQtyFloor1 === 'function') {
-        window.AuraCart.bumpQtyFloor1(h.id, delta);
-      } else if (window.parent !== window) {
-        window.parent.postMessage({ type: 'updateQtyById', productId: h.id, delta: delta, floor1: true }, '*');
-      } else if (window.AuraCart && typeof window.AuraCart.updateQtyById === 'function') {
-        const qty = getHamperCartQty(h.id);
-        if (delta < 0 && qty <= 1) return;
+      if (window.AuraCart && typeof window.AuraCart.updateQtyById === 'function') {
         window.AuraCart.updateQtyById(h.id, delta);
+      } else if (window.parent !== window) {
+        window.parent.postMessage({ type: 'updateQtyById', productId: h.id, delta: delta }, '*');
       }
       syncHamperCartActions();
     }
@@ -212,9 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function hamperQtyMarkup(h, idx, qty) {
-      const atFloor = qty <= 1;
       return `<div class="btn-qty-control hamper-qty-control" data-hamper-id="${esc(h.id)}" data-add="${idx}">
-        <button type="button" class="qty-minus${atFloor ? ' is-disabled' : ''}" aria-label="Decrease quantity" ${atFloor ? 'disabled' : ''}>−</button>
+        <button type="button" class="qty-minus" aria-label="Decrease quantity">−</button>
         <span class="qty-value">${qty}</span>
         <button type="button" class="qty-plus" aria-label="Increase quantity">+</button>
       </div>`;
@@ -253,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const html = qty > 0
         ? (isLb
           ? `<div class="btn-qty-control hamper-lb-qty" data-hamper-id="${esc(h.id)}" data-add="${idx}">
-              <button type="button" class="qty-minus${qty <= 1 ? ' is-disabled' : ''}" aria-label="Decrease quantity" ${qty <= 1 ? 'disabled' : ''}>−</button>
+              <button type="button" class="qty-minus" aria-label="Decrease quantity">−</button>
               <span class="qty-value">${qty}</span>
               <button type="button" class="qty-plus" aria-label="Increase quantity">+</button>
             </div>`
@@ -266,13 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isQty = existing.classList.contains('btn-qty-control');
         if (qty > 0 && isQty) {
           const span = existing.querySelector('.qty-value');
-          const minus = existing.querySelector('.qty-minus');
           if (span) span.textContent = String(qty);
-          if (minus) {
-            const atFloor = qty <= 1;
-            minus.disabled = atFloor;
-            minus.classList.toggle('is-disabled', atFloor);
-          }
           existing.dataset.hamperId = h.id;
           existing.dataset.add = String(idx);
           return;

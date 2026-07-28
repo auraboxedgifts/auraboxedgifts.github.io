@@ -54,9 +54,8 @@
   }
 
   function qtyControlMarkup(productId, idx, qty) {
-    const atFloor = qty <= 1;
     return `<div class="btn-qty-control" data-product-id="${escapeAttr(productId)}" data-add-idx="${idx}">
-      <button type="button" class="qty-minus${atFloor ? ' is-disabled' : ''}" aria-label="Decrease quantity" ${atFloor ? 'disabled' : ''}>−</button>
+      <button type="button" class="qty-minus" aria-label="Decrease quantity">−</button>
       <span class="qty-value">${qty}</span>
       <button type="button" class="qty-plus" aria-label="Increase quantity">+</button>
     </div>`;
@@ -72,10 +71,9 @@
     const snapshot = getCartSnapshot();
     const current = snapshot.find(function (c) { return c.productId === productId; });
     const qty = current ? (current.qty || 1) : 0;
-    if (delta < 0 && qty <= 1) return;
 
     if (window.parent !== window) {
-      window.parent.postMessage({ type: 'updateQtyById', productId: productId, delta: delta, floor1: true }, '*');
+      window.parent.postMessage({ type: 'updateQtyById', productId: productId, delta: delta }, '*');
       let next = localCart.slice();
       if (!next.length && cartMirrorReady) next = [];
       else if (!next.length) next = snapshot.map(function (c) { return { productId: c.productId, qty: c.qty || 1 }; });
@@ -92,9 +90,7 @@
       return;
     }
 
-    if (window.AuraCart && typeof window.AuraCart.bumpQtyFloor1 === 'function') {
-      window.AuraCart.bumpQtyFloor1(productId, delta);
-    } else if (window.AuraCart && typeof window.AuraCart.updateQtyById === 'function') {
+    if (window.AuraCart && typeof window.AuraCart.updateQtyById === 'function') {
       window.AuraCart.updateQtyById(productId, delta);
     }
     syncCartActions();
@@ -140,13 +136,7 @@
       const isQty = current.classList.contains('btn-qty-control');
       if (qty > 0 && isQty) {
         const span = current.querySelector('.qty-value');
-        const minus = current.querySelector('.qty-minus');
         if (span) span.textContent = String(qty);
-        if (minus) {
-          const atFloor = qty <= 1;
-          minus.disabled = atFloor;
-          minus.classList.toggle('is-disabled', atFloor);
-        }
         current.dataset.productId = productId;
         current.dataset.addIdx = String(idx);
         return;
