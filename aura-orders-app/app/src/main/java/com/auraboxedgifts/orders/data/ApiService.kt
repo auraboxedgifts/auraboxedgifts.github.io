@@ -432,12 +432,44 @@ class AuraRepository(private val api: AuraApiService) {
     }
 
     suspend fun updateShippingRate(token: String, rate: Double): StoreSettings {
-        val response = api.updateSettings(bearer(token), ShippingSettingsRequest(rate))
+        val response = api.updateSettings(
+            bearer(token),
+            ShippingSettingsRequest(shippingFlatRate = rate)
+        )
         val body = response.body()
         if (!response.isSuccessful || body?.success != true) {
             throw ApiException(body?.error ?: "Could not save shipping rate")
         }
-        return body.data ?: StoreSettings(shippingFlatRate = rate)
+        return body.data ?: StoreSettings(shippingFlatRate = rate, shippingBelowRate = rate, shippingAboveRate = rate)
+    }
+
+    suspend fun updateShippingSettings(
+        token: String,
+        belowThreshold: Double,
+        belowRate: Double,
+        aboveThreshold: Double,
+        aboveRate: Double
+    ): StoreSettings {
+        val response = api.updateSettings(
+            bearer(token),
+            ShippingSettingsRequest(
+                shippingBelowThreshold = belowThreshold,
+                shippingBelowRate = belowRate,
+                shippingAboveThreshold = aboveThreshold,
+                shippingAboveRate = aboveRate
+            )
+        )
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true) {
+            throw ApiException(body?.error ?: "Could not save shipping settings")
+        }
+        return body.data ?: StoreSettings(
+            shippingBelowThreshold = belowThreshold,
+            shippingBelowRate = belowRate,
+            shippingAboveThreshold = aboveThreshold,
+            shippingAboveRate = aboveRate,
+            shippingFlatRate = belowRate
+        )
     }
 
     suspend fun fetchCheckoutInfo(token: String): CheckoutInfo? {

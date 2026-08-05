@@ -122,6 +122,11 @@ const DEFAULT_SITE = {
     hampers: [],
     about: { ...DEFAULT_ABOUT },
     settings: {
+        shippingBelowThreshold: 500,
+        shippingBelowRate: 120,
+        shippingAboveThreshold: 2000,
+        shippingAboveRate: 120,
+        // Kept for older app builds; mirrors shippingBelowRate.
         shippingFlatRate: 120
     }
 };
@@ -294,9 +299,48 @@ function getSite() {
 
 function getSettings() {
     const settings = getSite().settings || DEFAULT_SITE.settings;
-    const raw = Number(settings.shippingFlatRate);
-    const shippingFlatRate = Number.isFinite(raw) && raw >= 0 ? raw : 120;
-    return { shippingFlatRate };
+    const flatFallback = Number(settings.shippingFlatRate);
+    const flat = Number.isFinite(flatFallback) && flatFallback >= 0 ? Math.round(flatFallback) : 120;
+
+    const belowThresholdRaw = Number(settings.shippingBelowThreshold);
+    const aboveThresholdRaw = Number(settings.shippingAboveThreshold);
+    const belowRateRaw = Number(settings.shippingBelowRate);
+    const aboveRateRaw = Number(settings.shippingAboveRate);
+
+    let shippingBelowThreshold = Number.isFinite(belowThresholdRaw) && belowThresholdRaw >= 0
+        ? Math.round(belowThresholdRaw)
+        : 500;
+    let shippingAboveThreshold = Number.isFinite(aboveThresholdRaw) && aboveThresholdRaw >= 0
+        ? Math.round(aboveThresholdRaw)
+        : 2000;
+    if (shippingBelowThreshold > shippingAboveThreshold) {
+        const swap = shippingBelowThreshold;
+        shippingBelowThreshold = shippingAboveThreshold;
+        shippingAboveThreshold = swap;
+    }
+
+    const shippingBelowRate = Number.isFinite(belowRateRaw) && belowRateRaw >= 0
+        ? Math.round(belowRateRaw)
+        : flat;
+    const shippingAboveRate = Number.isFinite(aboveRateRaw) && aboveRateRaw >= 0
+        ? Math.round(aboveRateRaw)
+        : flat;
+
+    return {
+        shippingBelowThreshold,
+        shippingBelowRate,
+        shippingAboveThreshold,
+        shippingAboveRate,
+        // Backward compatible alias used by older app builds.
+        shippingFlatRate: shippingBelowRate
+    };
+}
+
+function resolveShipping(subtotal, hasItems) {
+    if (!hasItems) return 0;
+    const s = getSettings();
+    if (Number(subtotal) >= s.shippingAboveThreshold) return s.shippingAboveRate;
+    return s.shippingBelowRate;
 }
 
 function saveSite(site) {
@@ -333,7 +377,7 @@ function calculateCart(items) {
             lineTotal
         });
     }
-    const shipping = lines.length ? getSettings().shippingFlatRate : 0;
+    const shipping = resolveShipping(subtotal, lines.length > 0);
     const discount = 0;
     const tax = 0;
     const grandTotal = subtotal + shipping + tax - discount;
@@ -562,11 +606,61 @@ app.get('/api/admin/settings', requireAdmin, (req, res) => {
 
 app.put('/api/admin/settings', requireAdmin, (req, res) => {
     const site = getSite();
-    const rate = Number(req.body?.shippingFlatRate);
-    if (!Number.isFinite(rate) || rate < 0) {
-        return jsonErr(res, 400, 'shippingFlatRate must be a non-negative number');
+    const body = req.body || {};
+    const current = getSettings();
+
+    function hasVal(name) {
+        return Object.prototype.hasOwnProperty.call(body, name) && body[name] != null && body[name] !== '';
     }
-    site.settings = { ...(site.settings || {}), shippingFlatRate: Math.round(rate) };
+
+    // Older clients may still send only shippingFlatRate — treat as both tier rates.
+    const onlyFlat = hasVal('shippingFlatRate')
+        && !hasVal('shippingBelowRate')
+        && !hasVal('shippingAboveRate')
+        && !hasVal('shippingBelowThreshold')
+        && !hasVal('shippingAboveThreshold');
+
+    function readNonNeg(name, fallback) {
+        if (!hasVal(name)) return fallback;
+        const n = Number(body[name]);
+        if (!Number.isFinite(n) || n < 0) {
+            return null;
+        }
+        return Math.round(n);
+    }
+
+    let shippingBelowThreshold = readNonNeg('shippingBelowThreshold', current.shippingBelowThreshold);
+    let shippingAboveThreshold = readNonNeg('shippingAboveThreshold', current.shippingAboveThreshold);
+    let shippingBelowRate = readNonNeg('shippingBelowRate', current.shippingBelowRate);
+    let shippingAboveRate = readNonNeg('shippingAboveRate', current.shippingAboveRate);
+
+    if (onlyFlat) {
+        const flat = readNonNeg('shippingFlatRate', current.shippingFlatRate);
+        if (flat === null) return jsonErr(res, 400, 'shippingFlatRate must be a non-negative number');
+        shippingBelowRate = flat;
+        shippingAboveRate = flat;
+    }
+
+    if (
+        shippingBelowThreshold === null ||
+        shippingAboveThreshold === null ||
+        shippingBelowRate === null ||
+        shippingAboveRate === null
+    ) {
+        return jsonErr(res, 400, 'Shipping thresholds and rates must be non-negative numbers');
+    }
+    if (shippingBelowThreshold > shippingAboveThreshold) {
+        return jsonErr(res, 400, 'Below-threshold must be less than or equal to the above-threshold');
+    }
+
+    site.settings = {
+        ...(site.settings || {}),
+        shippingBelowThreshold,
+        shippingBelowRate,
+        shippingAboveThreshold,
+        shippingAboveRate,
+        shippingFlatRate: shippingBelowRate
+    };
     saveSite(site);
     return jsonOk(res, getSettings());
 });

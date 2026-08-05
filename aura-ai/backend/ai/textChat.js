@@ -22,7 +22,7 @@ function buildCatalogContext(getCatalog, getSite) {
         'TRENDING HAMPERS:',
         hamperLines || 'No hampers configured.',
         '',
-        'Shipping: flat rate from store settings when cart is not empty. Currency: INR.'
+        'Shipping: tiered by cart subtotal from store settings (small-cart rate under the large threshold; large-cart rate at/above it). Currency: INR.'
     ].join('\n');
 }
 

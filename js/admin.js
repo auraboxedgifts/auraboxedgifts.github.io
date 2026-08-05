@@ -1680,6 +1680,75 @@
     setTimeout(bindUploader, 0);
   }
 
+  // ─── Shipping helpers (website + orders admin) ───
+  function formatShippingStatus(s) {
+    if (!s) return '';
+    return `Under ₹${s.shippingAboveThreshold} → ₹${s.shippingBelowRate} shipping · ₹${s.shippingAboveThreshold}+ → ₹${s.shippingAboveRate} shipping`;
+  }
+
+  function fillShippingInputs(root, prefix, s) {
+    if (!root || !s) return;
+    const map = {
+      BelowThreshold: 'shippingBelowThreshold',
+      BelowRate: 'shippingBelowRate',
+      AboveThreshold: 'shippingAboveThreshold',
+      AboveRate: 'shippingAboveRate'
+    };
+    Object.keys(map).forEach((suffix) => {
+      const el = root.querySelector(`#${prefix}${suffix}`);
+      if (el) el.value = s[map[suffix]];
+    });
+  }
+
+  function readShippingPayload(root, prefix) {
+    const belowThreshold = Number(root.querySelector(`#${prefix}BelowThreshold`)?.value);
+    const belowRate = Number(root.querySelector(`#${prefix}BelowRate`)?.value);
+    const aboveThreshold = Number(root.querySelector(`#${prefix}AboveThreshold`)?.value);
+    const aboveRate = Number(root.querySelector(`#${prefix}AboveRate`)?.value);
+    if (![belowThreshold, belowRate, aboveThreshold, aboveRate].every((n) => Number.isFinite(n) && n >= 0)) {
+      return { error: 'Enter valid non-negative numbers for all shipping fields' };
+    }
+    if (belowThreshold > aboveThreshold) {
+      return { error: 'Small-cart threshold must be ≤ large-cart threshold' };
+    }
+    return {
+      payload: {
+        shippingBelowThreshold: Math.round(belowThreshold),
+        shippingBelowRate: Math.round(belowRate),
+        shippingAboveThreshold: Math.round(aboveThreshold),
+        shippingAboveRate: Math.round(aboveRate)
+      }
+    };
+  }
+
+  function shippingEditorHtml(prefix, s) {
+    const d = s || {
+      shippingBelowThreshold: 500,
+      shippingBelowRate: 120,
+      shippingAboveThreshold: 2000,
+      shippingAboveRate: 120
+    };
+    return `
+      <div style="display:grid;gap:10px;margin-top:8px;">
+        <div>
+          <label class="aap-label">Small carts — under ₹ (reference) + shipping ₹</label>
+          <div class="aap-tool-row">
+            <input class="aap-input" id="${prefix}BelowThreshold" type="number" min="0" step="1" value="${d.shippingBelowThreshold}" placeholder="250">
+            <input class="aap-input" id="${prefix}BelowRate" type="number" min="0" step="1" value="${d.shippingBelowRate}" placeholder="99">
+          </div>
+          <p class="aap-hint" style="margin:4px 0 0;">Applies to all carts under the large threshold (right box = shipping amount).</p>
+        </div>
+        <div>
+          <label class="aap-label">Large carts — from ₹ + shipping ₹</label>
+          <div class="aap-tool-row">
+            <input class="aap-input" id="${prefix}AboveThreshold" type="number" min="0" step="1" value="${d.shippingAboveThreshold}" placeholder="2000">
+            <input class="aap-input" id="${prefix}AboveRate" type="number" min="0" step="1" value="${d.shippingAboveRate}" placeholder="0">
+          </div>
+          <p class="aap-hint" style="margin:4px 0 0;">From this cart total upward (0 = free shipping).</p>
+        </div>
+      </div>`;
+  }
+
   // ─── Testing & Setup tools ───
   async function renderToolsView() {
     const content = document.getElementById('aapContent');
@@ -1732,11 +1801,11 @@
         </div>
 
         <div class="aap-tool-card">
-          <h3><i class="fas fa-truck"></i> Shipping rate</h3>
-          <p class="aap-hint">Flat shipping added once per cart at checkout (website + Android app).</p>
-          <div class="aap-tool-row">
-            <input class="aap-input" id="aapShippingRate" type="number" min="0" step="1" placeholder="120">
-            <button class="aap-btn-primary" id="aapSaveShipping"><i class="fas fa-save"></i> Save rate</button>
+          <h3><i class="fas fa-truck"></i> Shipping (2 tiers)</h3>
+          <p class="aap-hint">Carts under the large threshold pay the small-cart rate. Carts at/above the large threshold pay the large-cart rate. (Website + Android app.)</p>
+          <div id="aapShipEditor"></div>
+          <div style="margin-top:10px;">
+            <button class="aap-btn-primary" id="aapSaveShipping"><i class="fas fa-save"></i> Save shipping</button>
           </div>
           <p class="aap-hint" id="aapShippingStatus" style="margin-top:8px;"></p>
         </div>
@@ -1796,23 +1865,25 @@
         <div id="aapTestOrderResult"></div>
       </div>`;
 
-    const shippingInput = content.querySelector('#aapShippingRate');
     const shippingStatus = content.querySelector('#aapShippingStatus');
+    const shipEditor = content.querySelector('#aapShipEditor');
     try {
       const settingsRes = await fetch('/api/settings');
       const settingsJson = await settingsRes.json();
-      if (settingsJson.success && settingsJson.data && shippingInput) {
-        shippingInput.value = settingsJson.data.shippingFlatRate ?? 120;
-        if (shippingStatus) {
-          shippingStatus.textContent = `Current flat rate: ₹${settingsJson.data.shippingFlatRate ?? 120}`;
-        }
+      if (settingsJson.success && settingsJson.data) {
+        if (shipEditor) shipEditor.innerHTML = shippingEditorHtml('aapShip', settingsJson.data);
+        if (shippingStatus) shippingStatus.textContent = formatShippingStatus(settingsJson.data);
+      } else if (shipEditor) {
+        shipEditor.innerHTML = shippingEditorHtml('aapShip');
       }
-    } catch (_) { }
+    } catch (_) {
+      if (shipEditor) shipEditor.innerHTML = shippingEditorHtml('aapShip');
+    }
 
     content.querySelector('#aapSaveShipping')?.addEventListener('click', async function () {
-      const rate = Number(shippingInput?.value);
-      if (!Number.isFinite(rate) || rate < 0) {
-        toast('Enter a valid shipping amount', 'error');
+      const parsed = readShippingPayload(content, 'aapShip');
+      if (parsed.error) {
+        toast(parsed.error, 'error');
         return;
       }
       this.disabled = true;
@@ -1821,12 +1892,10 @@
       try {
         const res = await adminFetch('/api/admin/settings', {
           method: 'PUT',
-          body: JSON.stringify({ shippingFlatRate: Math.round(rate) })
+          body: JSON.stringify(parsed.payload)
         });
-        if (shippingStatus) {
-          shippingStatus.textContent = `Saved — flat rate is now ₹${res.data.shippingFlatRate}`;
-        }
-        toast('Shipping rate updated', 'success');
+        if (shippingStatus) shippingStatus.textContent = `Saved — ${formatShippingStatus(res.data)}`;
+        toast('Shipping updated', 'success');
       } catch (err) {
         toast(err.message, 'error');
       }
@@ -2098,12 +2167,12 @@
     const content = document.getElementById('aapContent');
     content.innerHTML = '<p style="color:#999;text-align:center;padding:40px;">Loading orders…</p>';
 
-    let shippingRate = 120;
+    let shippingSettings = null;
     try {
       const settingsRes = await fetch('/api/settings');
       const settingsJson = await settingsRes.json();
       if (settingsJson.success && settingsJson.data) {
-        shippingRate = settingsJson.data.shippingFlatRate ?? 120;
+        shippingSettings = settingsJson.data;
       }
     } catch (_) { }
 
@@ -2111,15 +2180,15 @@
       <div class="aap-section-block" style="margin-bottom:18px;">
         <div class="aap-block-head">
           <div>
-            <h3 style="margin:0;"><i class="fas fa-truck"></i> Flat shipping rate</h3>
-            <p class="aap-hint" style="margin:4px 0 0;">Applied once per cart at checkout (website + Android app).</p>
+            <h3 style="margin:0;"><i class="fas fa-truck"></i> Shipping (2 tiers)</h3>
+            <p class="aap-hint" style="margin:4px 0 0;">Under large threshold → small-cart rate. At/above large threshold → large-cart rate.</p>
           </div>
         </div>
-        <div class="aap-tool-row">
-          <input class="aap-input" id="aapOrdersShippingRate" type="number" min="0" step="1" value="${shippingRate}">
-          <button type="button" class="aap-btn-primary" id="aapOrdersSaveShipping"><i class="fas fa-save"></i> Save rate</button>
+        <div id="aapOrdersShipEditor">${shippingEditorHtml('aapOrdersShip', shippingSettings)}</div>
+        <div style="margin-top:10px;">
+          <button type="button" class="aap-btn-primary" id="aapOrdersSaveShipping"><i class="fas fa-save"></i> Save shipping</button>
         </div>
-        <p class="aap-hint" id="aapOrdersShippingStatus" style="margin-top:8px;">Current flat rate: ₹${shippingRate}</p>
+        <p class="aap-hint" id="aapOrdersShippingStatus" style="margin-top:8px;">${formatShippingStatus(shippingSettings) || 'Load settings to edit shipping.'}</p>
       </div>`;
 
     try {
@@ -2127,12 +2196,11 @@
       const orders = Array.isArray(res.data) ? res.data : [];
 
       const bindShippingControls = () => {
-        const shippingInput = content.querySelector('#aapOrdersShippingRate');
         const shippingStatus = content.querySelector('#aapOrdersShippingStatus');
         content.querySelector('#aapOrdersSaveShipping')?.addEventListener('click', async function () {
-          const rate = Number(shippingInput?.value);
-          if (!Number.isFinite(rate) || rate < 0) {
-            toast('Enter a valid shipping amount', 'error');
+          const parsed = readShippingPayload(content, 'aapOrdersShip');
+          if (parsed.error) {
+            toast(parsed.error, 'error');
             return;
           }
           this.disabled = true;
@@ -2141,12 +2209,12 @@
           try {
             const saveRes = await adminFetch('/api/admin/settings', {
               method: 'PUT',
-              body: JSON.stringify({ shippingFlatRate: Math.round(rate) })
+              body: JSON.stringify(parsed.payload)
             });
             if (shippingStatus) {
-              shippingStatus.textContent = `Saved — flat rate is now ₹${saveRes.data.shippingFlatRate}`;
+              shippingStatus.textContent = `Saved — ${formatShippingStatus(saveRes.data)}`;
             }
-            toast('Shipping rate updated', 'success');
+            toast('Shipping updated', 'success');
           } catch (err) {
             toast(err.message, 'error');
           }
@@ -2270,23 +2338,22 @@
       });
     } catch (err) {
       content.innerHTML = `${shippingBar}<p style="color:#ef4444;text-align:center;padding:40px;">Failed to load orders: ${escapeHtml(err.message)}</p>`;
-      const shippingInput = content.querySelector('#aapOrdersShippingRate');
       const shippingStatus = content.querySelector('#aapOrdersShippingStatus');
       content.querySelector('#aapOrdersSaveShipping')?.addEventListener('click', async function () {
-        const rate = Number(shippingInput?.value);
-        if (!Number.isFinite(rate) || rate < 0) {
-          toast('Enter a valid shipping amount', 'error');
+        const parsed = readShippingPayload(content, 'aapOrdersShip');
+        if (parsed.error) {
+          toast(parsed.error, 'error');
           return;
         }
         try {
           const saveRes = await adminFetch('/api/admin/settings', {
             method: 'PUT',
-            body: JSON.stringify({ shippingFlatRate: Math.round(rate) })
+            body: JSON.stringify(parsed.payload)
           });
           if (shippingStatus) {
-            shippingStatus.textContent = `Saved — flat rate is now ₹${saveRes.data.shippingFlatRate}`;
+            shippingStatus.textContent = `Saved — ${formatShippingStatus(saveRes.data)}`;
           }
-          toast('Shipping rate updated', 'success');
+          toast('Shipping updated', 'success');
         } catch (saveErr) {
           toast(saveErr.message, 'error');
         }

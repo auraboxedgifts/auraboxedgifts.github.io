@@ -160,6 +160,10 @@
     "ctaLink": "https://www.instagram.com/aura_boxedgifts?utm_source=qr&igsh=MTYwbTYzNjJ6anUwdA=="
   },
   "settings": {
+    "shippingBelowThreshold": 500,
+    "shippingBelowRate": 260,
+    "shippingAboveThreshold": 2000,
+    "shippingAboveRate": 260,
     "shippingFlatRate": 260
   }
 }

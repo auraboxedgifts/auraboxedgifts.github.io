@@ -763,7 +763,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         val subtotal = cart?.subtotal ?: showcaseItems.sumOf { it.price }
-        val shipping = cart?.shipping ?: if (items.isNotEmpty()) _storeSettings.value.shippingFlatRate else 0.0
+        val shipping = cart?.shipping
+            ?: _storeSettings.value.resolveShipping(subtotal, items.isNotEmpty())
         val grandTotal = cart?.grandTotal ?: (subtotal + shipping)
         val cartSection = AuraShowcaseSection(cartSectionTitle, showcaseItems)
         val updatedSections = listOf(cartSection) + otherSections
@@ -820,7 +821,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             val product = productForCartItem(item.productId)
             (product?.price ?: 0.0) * item.qty
         }
-        val shipping = if (state.items.isNotEmpty()) _storeSettings.value.shippingFlatRate else 0.0
+        val shipping = _storeSettings.value.resolveShipping(subtotal, true)
         return subtotal + shipping
     }
 
@@ -833,7 +834,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun shippingRate(): Double = _storeSettings.value.shippingFlatRate
+    fun shippingRate(): Double = _storeSettings.value.shippingBelowRate.takeIf { it >= 0 }
+        ?: _storeSettings.value.shippingFlatRate
+
+    fun storeSettingsValue(): StoreSettings = _storeSettings.value
 
     fun refreshStoreSettings() {
         viewModelScope.launch {
@@ -1476,6 +1480,33 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 onError(e.message ?: "Could not save")
             } catch (_: Exception) {
                 onError("Could not save shipping rate")
+            }
+        }
+    }
+
+    fun updateShippingSettings(
+        belowThreshold: Double,
+        belowRate: Double,
+        aboveThreshold: Double,
+        aboveRate: Double,
+        onDone: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        val token = adminToken.value ?: return
+        viewModelScope.launch {
+            try {
+                _storeSettings.value = repository.updateShippingSettings(
+                    token,
+                    belowThreshold,
+                    belowRate,
+                    aboveThreshold,
+                    aboveRate
+                )
+                onDone()
+            } catch (e: ApiException) {
+                onError(e.message ?: "Could not save")
+            } catch (_: Exception) {
+                onError("Could not save shipping settings")
             }
         }
     }

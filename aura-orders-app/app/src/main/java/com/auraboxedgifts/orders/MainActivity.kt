@@ -390,7 +390,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                         }
                         CartScreen(
                             state = cartState,
-                            shippingRate = storeSettings.shippingFlatRate,
+                            storeSettings = storeSettings,
                             isLoggedIn = !customerToken.isNullOrBlank(),
                             productForId = viewModel::productForCartItem,
                             onBack = { navController.popBackStack() },
@@ -480,8 +480,8 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                                     popUpTo("admin") { inclusive = true }
                                 }
                             },
-                            shippingRate = storeSettings.shippingFlatRate,
-                            onShippingRateChange = viewModel::updateShippingRate,
+                            storeSettings = storeSettings,
+                            onShippingSettingsChange = viewModel::updateShippingSettings,
                             onSendCustomerPush = { title, body, image, onDone, onError ->
                                 viewModel.sendCustomerFcmBroadcast(title, body, image, onDone, onError)
                             }

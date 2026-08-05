@@ -14,7 +14,7 @@ const MOBILE_LIVE_KICKOFF =
 function buildMobileLiveInstruction(getCatalog, getSite, getSettings) {
     const products = getCatalog().slice(0, 50);
     const hampers = (getSite().hampers || []).slice(0, 10);
-    const shipping = getSettings().shippingFlatRate;
+    const shipping = getSettings();
     const productLines = products
         .map((p) => `id=${p.id} | ${p.name} | ${p.collection} | ₹${p.price}`)
         .join('\n');
@@ -37,7 +37,7 @@ function buildMobileLiveInstruction(getCatalog, getSite, getSettings) {
         'HAMPERS:',
         hamperLines || 'None',
         '',
-        `Flat shipping: ₹${shipping} when cart is not empty.`
+        `Shipping tiers: under ₹${shipping.shippingAboveThreshold} → ₹${shipping.shippingBelowRate}; ₹${shipping.shippingAboveThreshold}+ → ₹${shipping.shippingAboveRate}.`
     ].join('\n');
 }
 

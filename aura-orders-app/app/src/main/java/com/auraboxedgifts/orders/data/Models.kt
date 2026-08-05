@@ -241,7 +241,14 @@ data class UploadResult(
 
 data class CartCalculateRequest(val items: List<LocalCartItem>)
 data class CreatePaymentRequest(val items: List<LocalCartItem>, val amount: Double)
-data class ShippingSettingsRequest(val shippingFlatRate: Double)
+data class ShippingSettingsRequest(
+    val shippingBelowThreshold: Double? = null,
+    val shippingBelowRate: Double? = null,
+    val shippingAboveThreshold: Double? = null,
+    val shippingAboveRate: Double? = null,
+    val shippingFlatRate: Double? = null
+)
+
 data class AppConfig(
     val googleMapsApiKey: String? = null,
     val mapsEnabled: Boolean = false
@@ -302,8 +309,27 @@ data class CheckoutInfo(
 )
 
 data class StoreSettings(
+    val shippingBelowThreshold: Double = 500.0,
+    val shippingBelowRate: Double = 120.0,
+    val shippingAboveThreshold: Double = 2000.0,
+    val shippingAboveRate: Double = 120.0,
     val shippingFlatRate: Double = 120.0
-)
+) {
+    fun resolveShipping(subtotal: Double, hasItems: Boolean): Double {
+        if (!hasItems) return 0.0
+        val belowRate = if (shippingBelowRate >= 0) shippingBelowRate else shippingFlatRate
+        val aboveRate = if (shippingAboveRate >= 0) shippingAboveRate else shippingFlatRate
+        val aboveThreshold = if (shippingAboveThreshold > 0) shippingAboveThreshold else 2000.0
+        return if (subtotal >= aboveThreshold) aboveRate else belowRate
+    }
+
+    fun statusLine(): String {
+        val below = shippingBelowRate.takeIf { it >= 0 } ?: shippingFlatRate
+        val above = shippingAboveRate.takeIf { it >= 0 } ?: shippingFlatRate
+        val threshold = shippingAboveThreshold.takeIf { it > 0 } ?: 2000.0
+        return "Under ₹${threshold.toLong()} → ₹${below.toLong()} · ₹${threshold.toLong()}+ → ₹${above.toLong()}"
+    }
+}
 
 data class AuraShowcaseItem(
     val id: String,

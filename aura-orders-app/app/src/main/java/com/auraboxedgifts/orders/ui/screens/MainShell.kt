@@ -70,8 +70,10 @@ fun MainShell(
     onNavigateToCatalog: () -> Unit,
     onAddProduct: () -> Unit,
     onLogout: () -> Unit,
-    shippingRate: Double = 120.0,
-    onShippingRateChange: (Double, () -> Unit, (String) -> Unit) -> Unit = { _, _, _ -> },
+    storeSettings: com.auraboxedgifts.orders.data.StoreSettings = com.auraboxedgifts.orders.data.StoreSettings(),
+    onShippingSettingsChange: (
+        Double, Double, Double, Double, () -> Unit, (String) -> Unit
+    ) -> Unit = { _, _, _, _, _, _ -> },
     onSendCustomerPush: (String, String, String?, (String) -> Unit, (String) -> Unit) -> Unit = { _, _, _, _, _ -> }
 ) {
     Scaffold(
@@ -165,8 +167,8 @@ fun MainShell(
                 modifier = Modifier.padding(padding),
                 adminEmail = adminEmail,
                 stats = dashboardStats,
-                shippingRate = shippingRate,
-                onShippingRateChange = onShippingRateChange,
+                storeSettings = storeSettings,
+                onShippingSettingsChange = onShippingSettingsChange,
                 onSendCustomerPush = onSendCustomerPush,
                 onLogout = onLogout
             )

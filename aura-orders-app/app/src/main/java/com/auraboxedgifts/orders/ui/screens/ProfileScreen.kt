@@ -46,7 +46,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.auraboxedgifts.orders.BuildConfig
 import com.auraboxedgifts.orders.DashboardStats
-import com.auraboxedgifts.orders.data.formatRupee
 import com.auraboxedgifts.orders.ui.components.BrandLogo
 import com.auraboxedgifts.orders.ui.theme.Cream
 import com.auraboxedgifts.orders.ui.theme.CreamDark
@@ -61,12 +60,17 @@ fun ProfileScreen(
     modifier: Modifier = Modifier,
     adminEmail: String?,
     stats: DashboardStats,
-    shippingRate: Double = 120.0,
-    onShippingRateChange: (Double, () -> Unit, (String) -> Unit) -> Unit = { _, _, _ -> },
+    storeSettings: com.auraboxedgifts.orders.data.StoreSettings = com.auraboxedgifts.orders.data.StoreSettings(),
+    onShippingSettingsChange: (
+        Double, Double, Double, Double, () -> Unit, (String) -> Unit
+    ) -> Unit = { _, _, _, _, _, _ -> },
     onSendCustomerPush: (String, String, String?, (String) -> Unit, (String) -> Unit) -> Unit = { _, _, _, _, _ -> },
     onLogout: () -> Unit
 ) {
-    var rateInput by remember { mutableStateOf("") }
+    var belowThresholdInput by remember { mutableStateOf("") }
+    var belowRateInput by remember { mutableStateOf("") }
+    var aboveThresholdInput by remember { mutableStateOf("") }
+    var aboveRateInput by remember { mutableStateOf("") }
     var shippingMessage by remember { mutableStateOf<String?>(null) }
     var pushTitle by remember { mutableStateOf("") }
     var pushBody by remember { mutableStateOf("") }
@@ -74,8 +78,11 @@ fun ProfileScreen(
     var pushMessage by remember { mutableStateOf<String?>(null) }
     var pushSending by remember { mutableStateOf(false) }
 
-    LaunchedEffect(shippingRate) {
-        rateInput = shippingRate.toLong().toString()
+    LaunchedEffect(storeSettings) {
+        belowThresholdInput = storeSettings.shippingBelowThreshold.toLong().toString()
+        belowRateInput = storeSettings.shippingBelowRate.toLong().toString()
+        aboveThresholdInput = storeSettings.shippingAboveThreshold.toLong().toString()
+        aboveRateInput = storeSettings.shippingAboveRate.toLong().toString()
     }
 
     Column(
@@ -149,42 +156,101 @@ fun ProfileScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Icon(Icons.Outlined.LocalShipping, contentDescription = null, tint = RoseGold)
-                    Text("Flat shipping rate", style = MaterialTheme.typography.titleMedium, color = TextDark)
+                    Text("Shipping (2 tiers)", style = MaterialTheme.typography.titleMedium, color = TextDark)
                 }
                 Text(
-                    "Applied once per cart at checkout (website + app).",
+                    "Small carts pay one rate. Large carts (from a threshold you set) pay another — often free.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextMedium
                 )
                 Text(
-                    text = "Current rate: ${formatRupee(shippingRate)}",
+                    text = storeSettings.statusLine(),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
                     color = RoseGold
                 )
-                OutlinedTextField(
-                    value = rateInput,
-                    onValueChange = { rateInput = it.filter { ch -> ch.isDigit() } },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Shipping (₹)") },
-                    placeholder = { Text(shippingRate.toLong().toString()) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = RoseGold,
-                        unfocusedBorderColor = RoseLight,
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
+                Text("Small carts — under ₹ (reference) + shipping ₹", style = MaterialTheme.typography.bodySmall, color = TextMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = belowThresholdInput,
+                        onValueChange = { belowThresholdInput = it.filter { ch -> ch.isDigit() } },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("Under ₹") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = RoseGold,
+                            unfocusedBorderColor = RoseLight,
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White
+                        )
                     )
-                )
+                    OutlinedTextField(
+                        value = belowRateInput,
+                        onValueChange = { belowRateInput = it.filter { ch -> ch.isDigit() } },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("Ship ₹") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = RoseGold,
+                            unfocusedBorderColor = RoseLight,
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White
+                        )
+                    )
+                }
+                Text("Large carts — from ₹ + shipping ₹", style = MaterialTheme.typography.bodySmall, color = TextMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = aboveThresholdInput,
+                        onValueChange = { aboveThresholdInput = it.filter { ch -> ch.isDigit() } },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("From ₹") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = RoseGold,
+                            unfocusedBorderColor = RoseLight,
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White
+                        )
+                    )
+                    OutlinedTextField(
+                        value = aboveRateInput,
+                        onValueChange = { aboveRateInput = it.filter { ch -> ch.isDigit() } },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("Ship ₹") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = RoseGold,
+                            unfocusedBorderColor = RoseLight,
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White
+                        )
+                    )
+                }
                 Button(
                     onClick = {
-                        val rate = rateInput.toDoubleOrNull()
-                        if (rate == null || rate < 0) {
-                            shippingMessage = "Enter a valid amount"
+                        val belowThreshold = belowThresholdInput.toDoubleOrNull()
+                        val belowRate = belowRateInput.toDoubleOrNull()
+                        val aboveThreshold = aboveThresholdInput.toDoubleOrNull()
+                        val aboveRate = aboveRateInput.toDoubleOrNull()
+                        if (
+                            belowThreshold == null || belowRate == null ||
+                            aboveThreshold == null || aboveRate == null ||
+                            belowThreshold < 0 || belowRate < 0 ||
+                            aboveThreshold < 0 || aboveRate < 0
+                        ) {
+                            shippingMessage = "Enter valid amounts"
                             return@Button
                         }
-                        onShippingRateChange(rate, {
-                            shippingMessage = "Shipping updated to ${formatRupee(rate)}"
+                        if (belowThreshold > aboveThreshold) {
+                            shippingMessage = "Small threshold must be ≤ large threshold"
+                            return@Button
+                        }
+                        onShippingSettingsChange(belowThreshold, belowRate, aboveThreshold, aboveRate, {
+                            shippingMessage = "Shipping saved"
                         }, { err ->
                             shippingMessage = err
                         })
@@ -193,7 +259,7 @@ fun ProfileScreen(
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = RoseGold)
                 ) {
-                    Text("Save shipping rate")
+                    Text("Save shipping")
                 }
                 shippingMessage?.let {
                     Text(it, style = MaterialTheme.typography.bodySmall, color = RoseGold)
