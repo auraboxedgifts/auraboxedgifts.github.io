@@ -129,3 +129,28 @@ email/WhatsApp values won't take effect.
 | `PUBLIC_BASE_URL` | Public URL of this backend, e.g. `https://aura.devshubh.me` (so uploaded images load on the static site) |
 
 Always `pm2 restart aura-backend --update-env` after editing `.env`.
+
+---
+
+## 6. Updating code on Oracle (`git pull` without fights)
+
+Admin edits write live files under `aura-ai/backend/data/` (`site.json`, `products.json`,
+`collections.json`). Those are tracked by git, so a plain `git pull` often fails with
+“unstaged changes”.
+
+**Use this instead** (from the repo root on Oracle):
+
+```bash
+cd ~/auraboxedgifts.github.io
+git pull origin main          # get the helper script first if you don't have it yet
+chmod +x scripts/oracle-pull.sh
+
+# One-time: stop live data files from blocking future pulls
+./scripts/oracle-pull.sh --setup
+
+# Every deploy after that (pull + keep live data + restart pm2)
+./scripts/oracle-pull.sh
+```
+
+After `--setup`, plain `git pull origin main` usually works too. Prefer `./scripts/oracle-pull.sh`
+so shipping / products / collections on the server are never wiped by a pull.
