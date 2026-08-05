@@ -401,10 +401,12 @@
       };
       dropdown.style.display = 'none';
     }
-    if (user && user.isAdmin && window.AuraLoadAdmin) {
-      window.AuraLoadAdmin();
-    }
-    if (window.AuraAdmin && typeof window.AuraAdmin.updateAdminIcon === 'function') {
+    if (user && user.isAdmin) {
+      if (window.AuraLoadAdmin) window.AuraLoadAdmin();
+      else if (window.AuraAdmin && typeof window.AuraAdmin.updateAdminIcon === 'function') {
+        window.AuraAdmin.updateAdminIcon();
+      }
+    } else if (window.AuraAdmin && typeof window.AuraAdmin.updateAdminIcon === 'function') {
       window.AuraAdmin.updateAdminIcon();
     }
   }

@@ -127,12 +127,32 @@
   <script src="../js/lightbox.js" defer></script>
   <script>
     (function () {
+      function showAdminIconIfReady() {
+        if (window.AuraAdmin && typeof window.AuraAdmin.updateAdminIcon === 'function') {
+          window.AuraAdmin.updateAdminIcon();
+        }
+      }
       function loadAdmin() {
-        if (window.__auraAdminLoading || window.AuraAdmin) return;
+        if (window.AuraAdmin) {
+          showAdminIconIfReady();
+          return;
+        }
+        if (window.__auraAdminLoading) {
+          window.__auraAdminPendingIcon = true;
+          return;
+        }
         window.__auraAdminLoading = true;
         var s = document.createElement('script');
         s.src = '../js/admin.js';
-        s.defer = true;
+        s.onload = function () {
+          window.__auraAdminLoading = false;
+          showAdminIconIfReady();
+          if (window.__auraAdminPendingIcon) {
+            window.__auraAdminPendingIcon = false;
+            showAdminIconIfReady();
+          }
+        };
+        s.onerror = function () { window.__auraAdminLoading = false; };
         document.body.appendChild(s);
       }
       if (location.hash === '#admin' || localStorage.getItem('auraAdminToken')) loadAdmin();

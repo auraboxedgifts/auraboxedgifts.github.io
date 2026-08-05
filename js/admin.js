@@ -2155,11 +2155,9 @@
   });
 
   document.addEventListener('DOMContentLoaded', function () {
+    // Kept for early static loads; bootAdminChrome also covers lazy inject.
     ensureAdminIcon();
     updateAdminIcon();
-    if (window.location.hash === '#admin') {
-      setTimeout(openAdminModal, 200);
-    }
   });
 
   // ─── Orders View ───
@@ -2380,4 +2378,20 @@
   }
 
   window.AuraAdmin = { openAdminModal, updateAdminIcon };
+
+  function bootAdminChrome() {
+    ensureAdminIcon();
+    updateAdminIcon();
+    if (window.location.hash === '#admin') {
+      setTimeout(openAdminModal, 200);
+    }
+  }
+
+  // Admin is lazy-loaded after first paint / login. DOMContentLoaded may already
+  // have fired, so boot immediately when the script evaluates in that case.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootAdminChrome);
+  } else {
+    bootAdminChrome();
+  }
 })();
