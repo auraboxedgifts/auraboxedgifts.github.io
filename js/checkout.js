@@ -207,13 +207,13 @@
       loginBtn.style.display = 'none';
       loginHint.textContent = `Logged in as ${meAtLoad.email}`;
       const profile = meAtLoad.checkoutInfo || {};
-      if (profile.name) overlay.querySelector('#ckName').value = profile.name;
-      if (profile.phone) overlay.querySelector('#ckPhone').value = profile.phone;
+      if (profile.name || meAtLoad.name) overlay.querySelector('#ckName').value = profile.name || meAtLoad.name || '';
+      if (profile.phone || meAtLoad.phone) overlay.querySelector('#ckPhone').value = profile.phone || meAtLoad.phone || '';
       if (profile.address) overlay.querySelector('#ckAddress').value = profile.address;
       if (profile.city) overlay.querySelector('#ckCity').value = profile.city;
       if (profile.state) overlay.querySelector('#ckState').value = profile.state;
       if (profile.pincode) overlay.querySelector('#ckPincode').value = profile.pincode;
-      if (profile.name || profile.phone || profile.address) {
+      if (profile.name || profile.phone || profile.address || meAtLoad.name) {
         overlay.querySelector('#ckSaveInfo').checked = true;
       }
     } else {

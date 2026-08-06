@@ -152,5 +152,38 @@ chmod +x scripts/oracle-pull.sh
 ./scripts/oracle-pull.sh
 ```
 
-After `--setup`, plain `git pull origin main` usually works too. Prefer `./scripts/oracle-pull.sh`
-so shipping / products / collections on the server are never wiped by a pull.
+## 7. Google Sign-In (website)
+
+Uses **Google Identity Services** (current Google policy — not the old `platform.js` library).
+
+### What you need from Google Cloud Console
+
+1. Open [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials)
+2. Create / select a project (e.g. `Aura Boxed Gifts`)
+3. Configure **OAuth consent screen** (External):
+   - App name: `Aura Boxed Gifts`
+   - User support email + developer contact: your email
+   - Scopes: default (`openid`, `email`, `profile`) is enough
+4. Create credentials → **OAuth client ID** → Application type **Web application**
+5. **Authorized JavaScript origins** (scheme + host only, no path):
+   - `https://auraboxedgifts.in`
+   - `https://www.auraboxedgifts.in` (if you use www)
+   - `http://localhost:5500` (optional local testing)
+6. Copy the **Client ID** (looks like `123456789-xxxx.apps.googleusercontent.com`)
+
+You do **not** need the client secret for the button flow (ID token is verified server-side with the Client ID).
+
+### Enable on Oracle
+
+```bash
+cd ~/auraboxedgifts.github.io/aura-ai/backend
+nano .env
+# add:
+# GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+
+pm2 restart aura-ai --update-env
+```
+
+Then hard-refresh the website. The login modal shows **Continue with Google**; name/email are saved automatically for checkout.
+
+Android Google Sign-In can reuse the same `/api/auth/google` endpoint later (needs a separate Android OAuth client ID).

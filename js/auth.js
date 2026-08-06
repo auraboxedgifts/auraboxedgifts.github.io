@@ -31,7 +31,7 @@
     modal.querySelector('#authForgotOtpBlock').style.display = step === 'forgotOtp' ? '' : 'none';
     modal.querySelector('#authResetPasswordBlock').style.display = step === 'resetPassword' ? '' : 'none';
     const subtitle = modal.querySelector('.aura-auth-subtitle');
-    if (step === 'email') subtitle.textContent = 'Enter your email to continue.';
+    if (step === 'email') subtitle.textContent = 'Sign in with Google or continue with email.';
     if (step === 'password') subtitle.textContent = 'Welcome back — enter your password.';
     if (step === 'otp') subtitle.textContent = 'First time? Verify with the OTP sent to your email.';
     if (step === 'setPassword') subtitle.textContent = 'Create your account profile.';
@@ -54,6 +54,10 @@
         </div>
         <p class="aura-auth-subtitle">Enter your email to continue.</p>
         <div id="authEmailBlock">
+          <div id="authGoogleWrap" class="aura-google-wrap" style="display:none;">
+            <div id="authGoogleBtn" class="aura-google-btn-host"></div>
+            <div class="aura-auth-divider"><span>or continue with email</span></div>
+          </div>
           <div class="ck-field"><input type="email" id="authEmailInput" placeholder="Email" autocomplete="email"></div>
           <button class="ck-pay-now-btn" id="authContinueBtn">Continue</button>
         </div>
@@ -328,7 +332,112 @@
     const modal = ensureAuthModal();
     setAuthStep(modal, 'email');
     modal.style.display = 'flex';
+    mountGoogleButton(modal);
     history.pushState({ auraOverlay: 'auth' }, '', '#auth');
+  }
+
+  let googleClientId = '';
+  let googleSdkReady = false;
+  let googleConfigLoaded = false;
+
+  function loadGoogleSdk() {
+    return new Promise(function (resolve) {
+      if (window.google && window.google.accounts && window.google.accounts.id) {
+        googleSdkReady = true;
+        resolve(true);
+        return;
+      }
+      const existing = document.querySelector('script[data-aura-gis="1"]');
+      if (existing) {
+        existing.addEventListener('load', function () {
+          googleSdkReady = true;
+          resolve(true);
+        });
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.async = true;
+      s.defer = true;
+      s.dataset.auraGis = '1';
+      s.onload = function () {
+        googleSdkReady = true;
+        resolve(true);
+      };
+      s.onerror = function () { resolve(false); };
+      document.head.appendChild(s);
+    });
+  }
+
+  async function ensureGoogleConfig() {
+    if (googleConfigLoaded) return Boolean(googleClientId);
+    googleConfigLoaded = true;
+    try {
+      const res = await AuraApi.apiFetch('/api/config');
+      googleClientId = String(res.data?.googleClientId || '').trim();
+    } catch (err) {
+      googleClientId = '';
+    }
+    return Boolean(googleClientId);
+  }
+
+  async function handleGoogleCredential(response) {
+    const credential = response && response.credential;
+    if (!credential) {
+      alert('Google Sign-In did not return a credential. Please try again.');
+      return;
+    }
+    try {
+      const result = await AuraApi.apiFetch('/api/auth/google', {
+        method: 'POST',
+        body: JSON.stringify({ credential })
+      });
+      if (!result.token) throw new Error('Token missing from Google Sign-In response');
+      localStorage.setItem('auraAuthToken', result.token);
+      user = result.user || null;
+      await refreshUser();
+      renderAccountState();
+      closeAuthModal();
+      window.dispatchEvent(new Event('auraAuthSuccess'));
+    } catch (err) {
+      alert('Google Sign-In failed: ' + (err.message || 'Unknown error'));
+    }
+  }
+
+  async function mountGoogleButton(modal) {
+    const wrap = modal.querySelector('#authGoogleWrap');
+    const host = modal.querySelector('#authGoogleBtn');
+    if (!wrap || !host) return;
+    const enabled = await ensureGoogleConfig();
+    if (!enabled) {
+      wrap.style.display = 'none';
+      return;
+    }
+    const ok = await loadGoogleSdk();
+    if (!ok || !(window.google && window.google.accounts && window.google.accounts.id)) {
+      wrap.style.display = 'none';
+      return;
+    }
+    wrap.style.display = '';
+    host.innerHTML = '';
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: handleGoogleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+      context: 'signin',
+      ux_mode: 'popup'
+    });
+    const width = Math.min(360, Math.max(240, host.clientWidth || 320));
+    window.google.accounts.id.renderButton(host, {
+      type: 'standard',
+      theme: 'outline',
+      size: 'large',
+      text: 'continue_with',
+      shape: 'rectangular',
+      logo_alignment: 'left',
+      width
+    });
   }
 
   function closeAuthModal() {

@@ -11,9 +11,13 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const sharp = require('sharp');
+const { OAuth2Client } = require('google-auth-library');
 require('dotenv').config();
 
 const { generateAllPages } = require('./scripts/generate-pages');
+
+const GOOGLE_CLIENT_ID = String(process.env.GOOGLE_CLIENT_ID || '').trim();
+const googleOAuthClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
 
 const UPLOAD_MAX_EDGE = 1400;
 const UPLOAD_WEBP_QUALITY = 76;
@@ -87,13 +91,72 @@ function sanitizeUser(user, email) {
         email: user.email || email,
         name: user.name || '',
         phone: user.phone || '',
+        picture: user.picture || '',
         addresses: user.addresses || [],
         checkoutInfo: user.checkoutInfo || null,
         hasPassword: Boolean(user.passwordHash),
+        authProvider: user.authProvider || (user.googleId ? 'google' : 'email'),
         isAdmin: isAdminEmail(user.email || email),
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
     };
+}
+
+async function verifyGoogleIdToken(idToken) {
+    if (!googleOAuthClient || !GOOGLE_CLIENT_ID) {
+        const err = new Error('Google Sign-In is not configured on the server');
+        err.status = 503;
+        throw err;
+    }
+    const ticket = await googleOAuthClient.verifyIdToken({
+        idToken,
+        audience: GOOGLE_CLIENT_ID
+    });
+    const payload = ticket.getPayload() || {};
+    if (!payload.email || payload.email_verified !== true) {
+        const err = new Error('Google account email is not verified');
+        err.status = 401;
+        throw err;
+    }
+    return payload;
+}
+
+function upsertGoogleUser(payload) {
+    const email = String(payload.email || '').trim().toLowerCase();
+    const name = String(payload.name || '').trim();
+    const picture = String(payload.picture || '').trim();
+    const googleId = String(payload.sub || '').trim();
+    const users = readJson(USERS_FILE, {});
+    const now = new Date().toISOString();
+    let user = users[email];
+    if (!user) {
+        user = {
+            email,
+            name: name || '',
+            phone: '',
+            picture: picture || '',
+            googleId,
+            authProvider: 'google',
+            addresses: [],
+            checkoutInfo: name ? { name, phone: '', address: '', city: '', state: '', pincode: '' } : null,
+            createdAt: now,
+            updatedAt: now
+        };
+    } else {
+        user.googleId = googleId || user.googleId || '';
+        user.authProvider = user.passwordHash ? 'both' : 'google';
+        if (name && !user.name) user.name = name;
+        if (picture) user.picture = picture;
+        if (name) {
+            const ck = user.checkoutInfo && typeof user.checkoutInfo === 'object' ? { ...user.checkoutInfo } : {};
+            if (!ck.name) ck.name = name;
+            user.checkoutInfo = ck;
+        }
+        user.updatedAt = now;
+    }
+    users[email] = user;
+    writeJson(USERS_FILE, users);
+    return user;
 }
 
 const DATA_DIR = path.join(__dirname, 'data');
@@ -1370,6 +1433,29 @@ app.post('/api/auth/login', (req, res) => {
     return res.json({ success: true, token, email, user: sanitizeUser(user, email) });
 });
 
+// Google Identity Services — verify ID token, upsert user, issue Aura JWT.
+app.post('/api/auth/google', async (req, res) => {
+    try {
+        const credential = String(req.body?.credential || req.body?.idToken || '').trim();
+        if (!credential) return jsonErr(res, 400, 'Google credential required');
+        const payload = await verifyGoogleIdToken(credential);
+        const user = upsertGoogleUser(payload);
+        const email = user.email;
+        const token = jwt.sign({ email, role: isAdminEmail(email) ? 'admin' : 'user' }, JWT_SECRET, { expiresIn: '30d' });
+        return res.json({
+            success: true,
+            token,
+            email,
+            needsPasswordSetup: false,
+            user: sanitizeUser(user, email)
+        });
+    } catch (err) {
+        const status = err.status || 401;
+        console.error('[AUTH/GOOGLE]', err.message);
+        return jsonErr(res, status, err.message || 'Google Sign-In failed');
+    }
+});
+
 app.post('/api/auth/set-password', requireAuth, (req, res) => {
     const password = String(req.body?.password || '');
     if (password.length < 6) return jsonErr(res, 400, 'Password must be at least 6 characters');
@@ -1863,10 +1949,12 @@ app.post('/api/verify-payment', async (req, res) => {
 app.get('/api/config', (req, res) => {
     const key = process.env.GOOGLE_MAPS_API_KEY || '';
     const masked = key ? `${key.slice(0, 6)}...${key.slice(-4)}` : '(empty)';
-    console.log(`[CONFIG] googleMapsApiKey=${masked} origin=${req.headers.origin || 'unknown'}`);
+    console.log(`[CONFIG] googleMapsApiKey=${masked} googleSignIn=${Boolean(GOOGLE_CLIENT_ID)} origin=${req.headers.origin || 'unknown'}`);
     return jsonOk(res, {
         googleMapsApiKey: key,
-        mapsEnabled: Boolean(key)
+        mapsEnabled: Boolean(key),
+        googleClientId: GOOGLE_CLIENT_ID || '',
+        googleSignInEnabled: Boolean(GOOGLE_CLIENT_ID)
     });
 });
 
