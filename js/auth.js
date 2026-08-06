@@ -339,9 +339,13 @@
   let googleClientId = '';
   let googleSdkReady = false;
   let googleConfigLoaded = false;
+  let googleConfigPromise = null;
+  let googleSdkPromise = null;
+  let googlePrefetchStarted = false;
 
   function loadGoogleSdk() {
-    return new Promise(function (resolve) {
+    if (googleSdkPromise) return googleSdkPromise;
+    googleSdkPromise = new Promise(function (resolve) {
       if (window.google && window.google.accounts && window.google.accounts.id) {
         googleSdkReady = true;
         resolve(true);
@@ -349,9 +353,18 @@
       }
       const existing = document.querySelector('script[data-aura-gis="1"]');
       if (existing) {
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+          googleSdkReady = true;
+          resolve(true);
+          return;
+        }
         existing.addEventListener('load', function () {
           googleSdkReady = true;
           resolve(true);
+        });
+        existing.addEventListener('error', function () {
+          googleSdkPromise = null;
+          resolve(false);
         });
         return;
       }
@@ -364,21 +377,48 @@
         googleSdkReady = true;
         resolve(true);
       };
-      s.onerror = function () { resolve(false); };
+      s.onerror = function () {
+        googleSdkPromise = null;
+        resolve(false);
+      };
       document.head.appendChild(s);
     });
+    return googleSdkPromise;
   }
 
-  async function ensureGoogleConfig() {
-    if (googleConfigLoaded) return Boolean(googleClientId);
-    googleConfigLoaded = true;
-    try {
-      const res = await AuraApi.apiFetch('/api/config');
-      googleClientId = String(res.data?.googleClientId || '').trim();
-    } catch (err) {
-      googleClientId = '';
+  function ensureGoogleConfig() {
+    if (googleConfigPromise) return googleConfigPromise;
+    googleConfigPromise = (async function () {
+      if (googleConfigLoaded) return Boolean(googleClientId);
+      googleConfigLoaded = true;
+      try {
+        const res = await AuraApi.apiFetch('/api/config');
+        googleClientId = String(res.data?.googleClientId || '').trim();
+      } catch (err) {
+        googleClientId = '';
+        googleConfigLoaded = false;
+        googleConfigPromise = null;
+      }
+      return Boolean(googleClientId);
+    })();
+    return googleConfigPromise;
+  }
+
+  /** Warm config + Google script early so the button is ready when login opens. */
+  function prefetchGoogleSignIn() {
+    if (googlePrefetchStarted || user) return;
+    googlePrefetchStarted = true;
+    const run = async function () {
+      try {
+        const enabled = await ensureGoogleConfig();
+        if (enabled) await loadGoogleSdk();
+      } catch (_) { /* ignore */ }
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(function () { run(); }, { timeout: 2500 });
+    } else {
+      setTimeout(run, 400);
     }
-    return Boolean(googleClientId);
   }
 
   async function handleGoogleCredential(response) {
@@ -408,14 +448,20 @@
     const wrap = modal.querySelector('#authGoogleWrap');
     const host = modal.querySelector('#authGoogleBtn');
     if (!wrap || !host) return;
+    wrap.style.display = '';
+    if (!host.querySelector('iframe') && !host.querySelector('div[role="button"]')) {
+      host.innerHTML = '<div class="aura-google-skeleton" aria-hidden="true"></div>';
+    }
     const enabled = await ensureGoogleConfig();
     if (!enabled) {
       wrap.style.display = 'none';
+      host.innerHTML = '';
       return;
     }
     const ok = await loadGoogleSdk();
     if (!ok || !(window.google && window.google.accounts && window.google.accounts.id)) {
       wrap.style.display = 'none';
+      host.innerHTML = '';
       return;
     }
     wrap.style.display = '';
@@ -530,6 +576,7 @@
   document.addEventListener('DOMContentLoaded', async function () {
     await refreshUser();
     renderAccountState();
+    prefetchGoogleSignIn();
   });
 
   window.AuraAuth = { getUser, refreshUser, openAuthModal, closeAuthModal };
