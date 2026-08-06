@@ -1669,6 +1669,31 @@ button { cursor: pointer; border: none; font-family: inherit; }
   color: var(--text-medium);
   font-size: 0.92rem;
 }
+.aura-google-wrap {
+  margin-bottom: 14px;
+}
+.aura-google-btn-host {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+.aura-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0 4px;
+  color: var(--text-light);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.aura-auth-divider::before,
+.aura-auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e6ddd4;
+}
 .aura-auth-resend {
   margin-top: 8px;
   text-decoration: underline;
