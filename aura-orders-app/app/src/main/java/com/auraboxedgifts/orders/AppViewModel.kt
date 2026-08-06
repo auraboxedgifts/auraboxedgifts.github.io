@@ -1,11 +1,15 @@
 package com.auraboxedgifts.orders
 
+import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.media.AudioManager
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.auraboxedgifts.orders.auth.GoogleAuthCancelledException
+import com.auraboxedgifts.orders.auth.GoogleAuthHelper
+import com.auraboxedgifts.orders.auth.GoogleAuthUnavailableException
 import com.auraboxedgifts.orders.data.ApiClient
 import com.auraboxedgifts.orders.data.ApiException
 import com.auraboxedgifts.orders.data.AppConfig
@@ -578,6 +582,53 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 _customerAuthState.value = s.copy(isLoading = false, error = e.message)
             } catch (_: Exception) {
                 _customerAuthState.value = s.copy(isLoading = false, error = "Could not sign in")
+            }
+        }
+    }
+
+    fun customerSignInWithGoogle(activity: Activity, onSuccess: () -> Unit) {
+        val s = _customerAuthState.value
+        viewModelScope.launch {
+            _customerAuthState.value = s.copy(isLoading = true, error = null, successMessage = null)
+            try {
+                val config = repository.fetchConfig()
+                val clientId = config.googleClientId?.trim().orEmpty()
+                if (clientId.isEmpty() || !config.googleSignInEnabled) {
+                    _customerAuthState.value = s.copy(
+                        isLoading = false,
+                        error = "Google Sign-In is not enabled on the server yet"
+                    )
+                    return@launch
+                }
+                val idToken = GoogleAuthHelper.requestIdToken(activity, clientId)
+                val (token, user) = repository.customerGoogleLogin(idToken)
+                val email = (user?.email ?: "").trim().lowercase()
+                if (email.isBlank()) {
+                    _customerAuthState.value = s.copy(isLoading = false, error = "Google account email missing")
+                    return@launch
+                }
+                if (user?.isAdmin == true) {
+                    tokenStore.saveAdminSession(token, email)
+                    OrderPollWorker.schedule(getApplication())
+                    registerPushTokenIfAvailable()
+                    loadOrders(token)
+                    _customerAuthState.value = CustomerAuthUiState()
+                    onSuccess()
+                    return@launch
+                }
+                tokenStore.saveCustomerSession(token, email, user?.name.orEmpty())
+                _customerAuthState.value = CustomerAuthUiState()
+                registerPushTokenIfAvailable()
+                loadCustomerOrders()
+                onSuccess()
+            } catch (_: GoogleAuthCancelledException) {
+                _customerAuthState.value = s.copy(isLoading = false, error = null)
+            } catch (e: GoogleAuthUnavailableException) {
+                _customerAuthState.value = s.copy(isLoading = false, error = e.message)
+            } catch (e: ApiException) {
+                _customerAuthState.value = s.copy(isLoading = false, error = e.message)
+            } catch (_: Exception) {
+                _customerAuthState.value = s.copy(isLoading = false, error = "Google Sign-In failed")
             }
         }
     }

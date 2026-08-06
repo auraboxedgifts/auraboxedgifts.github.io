@@ -5,10 +5,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -66,7 +67,8 @@ fun CustomerAuthScreen(
     onSignInWithOtp: () -> Unit,
     onUseOtpSignIn: (Boolean) -> Unit,
     onSignUp: () -> Unit,
-    onResetPassword: () -> Unit
+    onResetPassword: () -> Unit,
+    onGoogleSignIn: () -> Unit = {}
 ) {
     Scaffold(
         containerColor = Cream,
@@ -134,7 +136,49 @@ fun CustomerAuthScreen(
                 }
             }
 
-            StaggeredFadeIn(index = 2, modifier = Modifier.fillMaxWidth()) {
+            if (state.mode == AuthMode.SIGN_IN || state.mode == AuthMode.SIGN_UP) {
+                StaggeredFadeIn(index = 2, modifier = Modifier.fillMaxWidth()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(
+                            onClick = onGoogleSignIn,
+                            enabled = !state.isLoading,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextMedium),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            if (state.isLoading) {
+                                CircularProgressIndicator(
+                                    color = RoseGold,
+                                    modifier = Modifier.height(20.dp)
+                                )
+                            } else {
+                                Text("Continue with Google")
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(1.dp)
+                                    .background(Color(0xFFE6DDD4))
+                            )
+                            Text("or", color = TextMedium, style = MaterialTheme.typography.labelMedium)
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(1.dp)
+                                    .background(Color(0xFFE6DDD4))
+                            )
+                        }
+                    }
+                }
+            }
+
+            StaggeredFadeIn(index = 3, modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
                     value = state.email,
                     onValueChange = onEmailChange,

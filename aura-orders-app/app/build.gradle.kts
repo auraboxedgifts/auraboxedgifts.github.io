@@ -24,8 +24,8 @@ android {
         applicationId = "com.auraboxedgifts.orders"
         minSdk = 26
         targetSdk = 35
-        versionCode = 14
-        versionName = "1.3.7"
+        versionCode = 15
+        versionName = "1.3.8"
 
         ndk {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a")
@@ -122,6 +122,10 @@ dependencies {
 
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-messaging-ktx")
+
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

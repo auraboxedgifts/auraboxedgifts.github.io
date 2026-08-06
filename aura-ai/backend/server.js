@@ -16,7 +16,19 @@ require('dotenv').config();
 
 const { generateAllPages } = require('./scripts/generate-pages');
 
-const GOOGLE_CLIENT_ID = String(process.env.GOOGLE_CLIENT_ID || '').trim();
+// Web Client ID is primary (GIS + Android Credential Manager serverClientId).
+// Optional comma-separated extras / GOOGLE_ANDROID_CLIENT_ID for extra audiences.
+const GOOGLE_CLIENT_IDS = [
+    ...String(process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_IDS || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ...String(process.env.GOOGLE_ANDROID_CLIENT_ID || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+].filter((id, i, arr) => arr.indexOf(id) === i);
+const GOOGLE_CLIENT_ID = GOOGLE_CLIENT_IDS[0] || '';
 const googleOAuthClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
 
 const UPLOAD_MAX_EDGE = 1400;
@@ -110,7 +122,7 @@ async function verifyGoogleIdToken(idToken) {
     }
     const ticket = await googleOAuthClient.verifyIdToken({
         idToken,
-        audience: GOOGLE_CLIENT_ID
+        audience: GOOGLE_CLIENT_IDS.length > 1 ? GOOGLE_CLIENT_IDS : GOOGLE_CLIENT_ID
     });
     const payload = ticket.getPayload() || {};
     if (!payload.email || payload.email_verified !== true) {

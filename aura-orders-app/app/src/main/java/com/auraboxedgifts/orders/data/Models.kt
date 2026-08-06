@@ -217,6 +217,7 @@ data class EmailCheckData(
     val isAdmin: Boolean = false
 )
 
+data class GoogleAuthRequest(val credential: String)
 data class OtpRequest(val email: String, val signUp: Boolean = false)
 data class VerifyOtpRequest(val email: String, val otp: String)
 
@@ -251,7 +252,9 @@ data class ShippingSettingsRequest(
 
 data class AppConfig(
     val googleMapsApiKey: String? = null,
-    val mapsEnabled: Boolean = false
+    val mapsEnabled: Boolean = false,
+    val googleClientId: String? = null,
+    val googleSignInEnabled: Boolean = false
 )
 data class CartItemRequest(val productId: String, val qty: Int)
 

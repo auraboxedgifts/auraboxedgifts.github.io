@@ -108,6 +108,9 @@ interface AuraApiService {
     @POST("/api/auth/login")
     suspend fun customerLogin(@Body body: LoginRequest): Response<AuthTokenResponse>
 
+    @POST("/api/auth/google")
+    suspend fun customerGoogleLogin(@Body body: GoogleAuthRequest): Response<AuthTokenResponse>
+
     @POST("/api/auth/send-otp")
     suspend fun sendOtp(@Body body: OtpRequest): Response<AuthTokenResponse>
 
@@ -198,6 +201,15 @@ class AuraRepository(private val api: AuraApiService) {
         val body = response.body()
         if (!response.isSuccessful || body?.success != true || body.token.isNullOrBlank()) {
             throw ApiException(body?.error ?: "Login failed")
+        }
+        return body.token to body.user
+    }
+
+    suspend fun customerGoogleLogin(idToken: String): Pair<String, UserProfile?> {
+        val response = api.customerGoogleLogin(GoogleAuthRequest(idToken.trim()))
+        val body = response.body()
+        if (!response.isSuccessful || body?.success != true || body.token.isNullOrBlank()) {
+            throw ApiException(body?.error ?: "Google Sign-In failed")
         }
         return body.token to body.user
     }

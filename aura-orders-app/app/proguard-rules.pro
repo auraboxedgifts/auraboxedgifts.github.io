@@ -31,5 +31,7 @@
 # Coil
 -dontwarn coil.**
 
-# Compose
--dontwarn androidx.compose.**
+# Google Credential Manager / Sign-In
+-keep class com.google.android.libraries.identity.googleid.** { *; }
+-dontwarn androidx.credentials.**
+-dontwarn com.google.android.libraries.identity.googleid.**

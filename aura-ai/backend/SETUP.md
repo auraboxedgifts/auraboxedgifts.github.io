@@ -186,4 +186,29 @@ pm2 restart aura-ai --update-env
 
 Then hard-refresh the website. The login modal shows **Continue with Google**; name/email are saved automatically for checkout.
 
-Android Google Sign-In can reuse the same `/api/auth/google` endpoint later (needs a separate Android OAuth client ID).
+## 8. Google Sign-In (Android app)
+
+Same backend endpoint: `POST /api/auth/google`. Keep `GOOGLE_CLIENT_ID` as the **Web** client ID.
+
+### Extra Google Cloud step (Android OAuth client)
+
+1. Same project → Create credentials → **OAuth client ID** → **Android**
+2. Name: `Aura Boxed Gifts Android`
+3. Package name: `com.auraboxedgifts.orders`
+4. SHA-1 fingerprints (add **two** Android clients, or one client and update SHA-1s — Google allows one SHA-1 per Android client, so create two):
+
+**Debug** (local `assembleDebug`):
+```
+6E:60:67:3D:C9:A5:BE:72:19:E1:21:78:27:9B:1A:99:22:8E:B2:C7
+```
+
+**Release** (Play Store / signed APK):
+```
+74:98:D7:23:BF:6B:BA:AC:99:B6:22:1C:15:D3:1E:66:CA:91:A8:76
+```
+
+5. You do **not** put the Android Client ID in `.env` for the normal flow. The app requests an ID token with the **Web** Client ID (`GOOGLE_CLIENT_ID`). Optionally set `GOOGLE_ANDROID_CLIENT_ID` if Google returns a different `aud`.
+
+6. Rebuild the app after creating the Android clients (Google needs a few minutes to propagate).
+
+No Oracle `.env` change needed if website Google Sign-In already works.

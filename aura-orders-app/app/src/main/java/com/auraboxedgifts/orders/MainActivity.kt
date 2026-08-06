@@ -585,6 +585,20 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                                         navController.popBackStack()
                                     }
                                 }
+                            },
+                            onGoogleSignIn = {
+                                viewModel.customerSignInWithGoogle(this@MainActivity) {
+                                    if (!adminToken.isNullOrBlank()) {
+                                        navController.navigate("admin") { popUpTo("shop") }
+                                    } else if (redirect == "checkout") {
+                                        viewModel.prepareCheckout()
+                                        navController.navigate("checkout") {
+                                            popUpTo("shop")
+                                        }
+                                    } else {
+                                        navController.popBackStack()
+                                    }
+                                }
                             }
                         )
                     }
