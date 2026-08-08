@@ -472,7 +472,10 @@
       auto_select: false,
       cancel_on_tap_outside: true,
       context: 'signin',
-      ux_mode: 'popup'
+      // FedCM button UX: bottom sheet on mobile Chrome, side dialog on desktop —
+      // instead of opening a full new tab/window. Falls back to popup elsewhere.
+      ux_mode: 'popup',
+      use_fedcm_for_button: true
     });
     const width = Math.min(360, Math.max(240, host.clientWidth || 320));
     window.google.accounts.id.renderButton(host, {
