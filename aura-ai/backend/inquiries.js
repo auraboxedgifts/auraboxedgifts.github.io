@@ -130,27 +130,25 @@ async function processCustomerInquiry({
         return { response: { result: 'error', error: contactCheck.error }, outcome };
     }
 
+    // Always keep the request in the admin panel. Mail is a notification, not the record.
+    const { notifyAdminsNewRequest } = require('./fcm');
+    const saved = await saveInquiryAndNotify(
+        requestsFile,
+        toolName,
+        args,
+        source,
+        notifyAdminsNewRequest
+    );
+    const inquiryId = saved.record.id;
+    const fcmResult = saved.fcmResult;
+
     const emailResult = await sendEmailNotification(
         emailHtml,
         formatInquiryContact(args),
         inquiryType
     );
-
-    let inquiryId = null;
-    let fcmResult = null;
-    if (emailResult.success) {
-        const { notifyAdminsNewRequest } = require('./fcm');
-        const saved = await saveInquiryAndNotify(
-            requestsFile,
-            toolName,
-            args,
-            source,
-            notifyAdminsNewRequest
-        );
-        inquiryId = saved.record.id;
-        fcmResult = saved.fcmResult;
-    } else {
-        console.error(`[Inquiries] Email failed for ${toolName}: ${emailResult.error || 'unknown'}`);
+    if (!emailResult.success) {
+        console.error(`[Inquiries] Email failed for ${toolName} (${inquiryId}): ${emailResult.error || 'unknown'}`);
     }
 
     const outcome = {
@@ -165,7 +163,13 @@ async function processCustomerInquiry({
     };
     logInquiryToolOutcome(toolName, args, outcome);
     return {
-        response: emailResult.success ? emailResult : { result: 'error', error: emailResult.error },
+        response: {
+            success: true,
+            result: 'saved',
+            inquiryId,
+            emailSent: Boolean(emailResult.success),
+            to: emailResult.to || null
+        },
         outcome
     };
 }

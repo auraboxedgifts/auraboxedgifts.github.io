@@ -45,6 +45,7 @@
         <li><a href="#collections">Collections</a></li>
         <li><a href="#gallery">Gallery</a></li>
         <li><a href="#about">About</a></li>
+        <li><a href="#feedback">Feedback</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
       <div class="nav-icons">
@@ -68,6 +69,7 @@
     <a href="#collections" onclick="closeMobileNav()">Collections</a>
     <a href="#gallery" onclick="closeMobileNav()">Gallery</a>
     <a href="#about" onclick="closeMobileNav()">About</a>
+    <a href="#feedback" onclick="closeMobileNav()">Feedback</a>
     <a href="#contact" onclick="closeMobileNav()">Contact</a>
     <a href="https://www.instagram.com/aura_boxedgifts?utm_source=qr&igsh=MTYwbTYzNjJ6anUwdA==" target="_blank">Instagram</a>
   </div>
@@ -299,6 +301,37 @@
     </div>
   </section>
 
+  <!-- ═══ FEEDBACK ═══ -->
+  <section class="feedback-section" id="feedback">
+    <div class="section-header reveal">
+      <p class="section-label">Kind Words</p>
+      <h2 class="section-title">Feedback</h2>
+      <div class="section-divider"></div>
+    </div>
+    <div class="feedback-grid" id="feedbackGrid">
+      <p class="feedback-empty">Customer notes will appear here once they are approved.</p>
+    </div>
+    <form class="feedback-form reveal" id="feedbackForm">
+      <h3>Share your experience</h3>
+      <p>Tell us how your hamper felt. We read every note before it appears here.</p>
+      <div class="feedback-stars" id="feedbackStars" role="radiogroup" aria-label="Rating">
+        <button type="button" class="is-on" data-star="1" aria-label="1 star">★</button>
+        <button type="button" class="is-on" data-star="2" aria-label="2 stars">★</button>
+        <button type="button" class="is-on" data-star="3" aria-label="3 stars">★</button>
+        <button type="button" class="is-on" data-star="4" aria-label="4 stars">★</button>
+        <button type="button" class="is-on" data-star="5" aria-label="5 stars">★</button>
+      </div>
+      <div class="feedback-fields">
+        <input type="text" id="feedbackName" name="name" placeholder="Your name" maxlength="80" required>
+        <input type="text" id="feedbackPlace" name="place" placeholder="City (optional)" maxlength="80">
+      </div>
+      <textarea id="feedbackMessage" name="message" rows="4" maxlength="600" placeholder="What did you love about your gift?" required></textarea>
+      <input type="hidden" id="feedbackRating" value="5">
+      <button type="submit" class="btn-primary" id="feedbackSubmit">Send feedback</button>
+      <p class="feedback-note" id="feedbackNote" hidden></p>
+    </form>
+  </section>
+
   <!-- ═══ INSTAGRAM CTA ═══ -->
   <section class="instagram-section" id="contact">
     <div class="section-header reveal">
@@ -335,6 +368,7 @@
           <li><a href="#collections">Collections</a></li>
           <li><a href="#gallery">Gallery</a></li>
           <li><a href="#about">About Us</a></li>
+          <li><a href="#feedback">Feedback</a></li>
           <li><a href="#contact">Contact</a></li>
         </ul>
       </div>

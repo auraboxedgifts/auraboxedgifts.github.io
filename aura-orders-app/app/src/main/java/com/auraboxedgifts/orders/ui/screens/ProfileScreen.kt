@@ -67,9 +67,8 @@ fun ProfileScreen(
     onSendCustomerPush: (String, String, String?, (String) -> Unit, (String) -> Unit) -> Unit = { _, _, _, _, _ -> },
     onLogout: () -> Unit
 ) {
-    var belowThresholdInput by remember { mutableStateOf("") }
+    var thresholdInput by remember { mutableStateOf("") }
     var belowRateInput by remember { mutableStateOf("") }
-    var aboveThresholdInput by remember { mutableStateOf("") }
     var aboveRateInput by remember { mutableStateOf("") }
     var shippingMessage by remember { mutableStateOf<String?>(null) }
     var pushTitle by remember { mutableStateOf("") }
@@ -79,9 +78,8 @@ fun ProfileScreen(
     var pushSending by remember { mutableStateOf(false) }
 
     LaunchedEffect(storeSettings) {
-        belowThresholdInput = storeSettings.shippingBelowThreshold.toLong().toString()
+        thresholdInput = storeSettings.shippingAboveThreshold.toLong().toString()
         belowRateInput = storeSettings.shippingBelowRate.toLong().toString()
-        aboveThresholdInput = storeSettings.shippingAboveThreshold.toLong().toString()
         aboveRateInput = storeSettings.shippingAboveRate.toLong().toString()
     }
 
@@ -156,10 +154,10 @@ fun ProfileScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Icon(Icons.Outlined.LocalShipping, contentDescription = null, tint = RoseGold)
-                    Text("Shipping (2 tiers)", style = MaterialTheme.typography.titleMedium, color = TextDark)
+                    Text("Shipping charges", style = MaterialTheme.typography.titleMedium, color = TextDark)
                 }
                 Text(
-                    "Small carts pay one rate. Large carts (from a threshold you set) pay another — often free.",
+                    "Set the cart total where the second charge begins, then the two shipping amounts. Checkout uses these exact numbers.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextMedium
                 )
@@ -168,88 +166,61 @@ fun ProfileScreen(
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
                     color = RoseGold
                 )
-                Text("Small carts — under ₹ (reference) + shipping ₹", style = MaterialTheme.typography.bodySmall, color = TextMedium)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    OutlinedTextField(
-                        value = belowThresholdInput,
-                        onValueChange = { belowThresholdInput = it.filter { ch -> ch.isDigit() } },
-                        modifier = Modifier.weight(1f),
-                        label = { Text("Under ₹") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = RoseGold,
-                            unfocusedBorderColor = RoseLight,
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White
-                        )
+                OutlinedTextField(
+                    value = thresholdInput,
+                    onValueChange = { thresholdInput = it.filter { ch -> ch.isDigit() } },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Second charge starts at cart ₹") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = RoseGold,
+                        unfocusedBorderColor = RoseLight,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
                     )
-                    OutlinedTextField(
-                        value = belowRateInput,
-                        onValueChange = { belowRateInput = it.filter { ch -> ch.isDigit() } },
-                        modifier = Modifier.weight(1f),
-                        label = { Text("Ship ₹") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = RoseGold,
-                            unfocusedBorderColor = RoseLight,
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White
-                        )
+                )
+                OutlinedTextField(
+                    value = belowRateInput,
+                    onValueChange = { belowRateInput = it.filter { ch -> ch.isDigit() } },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Shipping ₹ under that amount") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = RoseGold,
+                        unfocusedBorderColor = RoseLight,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
                     )
-                }
-                Text("Large carts — from ₹ + shipping ₹", style = MaterialTheme.typography.bodySmall, color = TextMedium)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    OutlinedTextField(
-                        value = aboveThresholdInput,
-                        onValueChange = { aboveThresholdInput = it.filter { ch -> ch.isDigit() } },
-                        modifier = Modifier.weight(1f),
-                        label = { Text("From ₹") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = RoseGold,
-                            unfocusedBorderColor = RoseLight,
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White
-                        )
+                )
+                OutlinedTextField(
+                    value = aboveRateInput,
+                    onValueChange = { aboveRateInput = it.filter { ch -> ch.isDigit() } },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Shipping ₹ at or above it (0 = free)") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = RoseGold,
+                        unfocusedBorderColor = RoseLight,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
                     )
-                    OutlinedTextField(
-                        value = aboveRateInput,
-                        onValueChange = { aboveRateInput = it.filter { ch -> ch.isDigit() } },
-                        modifier = Modifier.weight(1f),
-                        label = { Text("Ship ₹") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = RoseGold,
-                            unfocusedBorderColor = RoseLight,
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White
-                        )
-                    )
-                }
+                )
                 Button(
                     onClick = {
-                        val belowThreshold = belowThresholdInput.toDoubleOrNull()
+                        val threshold = thresholdInput.toDoubleOrNull()
                         val belowRate = belowRateInput.toDoubleOrNull()
-                        val aboveThreshold = aboveThresholdInput.toDoubleOrNull()
                         val aboveRate = aboveRateInput.toDoubleOrNull()
                         if (
-                            belowThreshold == null || belowRate == null ||
-                            aboveThreshold == null || aboveRate == null ||
-                            belowThreshold < 0 || belowRate < 0 ||
-                            aboveThreshold < 0 || aboveRate < 0
+                            threshold == null || belowRate == null || aboveRate == null ||
+                            threshold < 0 || belowRate < 0 || aboveRate < 0
                         ) {
                             shippingMessage = "Enter valid amounts"
                             return@Button
                         }
-                        if (belowThreshold > aboveThreshold) {
-                            shippingMessage = "Small threshold must be ≤ large threshold"
-                            return@Button
-                        }
-                        onShippingSettingsChange(belowThreshold, belowRate, aboveThreshold, aboveRate, {
+                        onShippingSettingsChange(0.0, belowRate, threshold, aboveRate, {
                             shippingMessage = "Shipping saved"
                         }, { err ->
                             shippingMessage = err

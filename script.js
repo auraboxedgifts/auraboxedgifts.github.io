@@ -566,3 +566,71 @@ function initCollectionsGrid() {
     render(FALLBACK_COLLECTIONS);
   }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  const grid = document.getElementById('feedbackGrid');
+  const form = document.getElementById('feedbackForm');
+  if (!grid || !form || !(window.AuraApi && window.AuraApi.apiFetch)) return;
+
+  const esc = (str) => String(str == null ? '' : str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  function stars(n) {
+    const rating = Math.max(0, Math.min(5, Number(n) || 0));
+    return '★'.repeat(rating) + '☆'.repeat(5 - rating);
+  }
+
+  function renderFeedback(rows) {
+    if (!rows.length) {
+      grid.innerHTML = '<p class="feedback-empty">Be the first to share how your Aura gift felt.</p>';
+      return;
+    }
+    grid.innerHTML = rows.map((row) => `
+      <article class="feedback-card">
+        <div class="stars" aria-label="${Number(row.rating) || 0} out of 5">${stars(row.rating)}</div>
+        <p>${esc(row.message)}</p>
+        <strong>${esc(row.name)}</strong>
+        ${row.place ? `<span>${esc(row.place)}</span>` : ''}
+      </article>`).join('');
+  }
+
+  window.AuraApi.apiFetch('/api/feedback')
+    .then((resp) => renderFeedback(Array.isArray(resp.data) ? resp.data : []))
+    .catch(() => renderFeedback([]));
+
+  const ratingInput = document.getElementById('feedbackRating');
+  form.querySelectorAll('[data-star]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const value = btn.dataset.star;
+      ratingInput.value = value;
+      form.querySelectorAll('[data-star]').forEach((star) => {
+        star.classList.toggle('is-on', Number(star.dataset.star) <= Number(value));
+      });
+    });
+  });
+
+  const note = document.getElementById('feedbackNote');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submit = document.getElementById('feedbackSubmit');
+    const payload = {
+      name: document.getElementById('feedbackName').value.trim(),
+      place: document.getElementById('feedbackPlace').value.trim(),
+      message: document.getElementById('feedbackMessage').value.trim(),
+      rating: Number(ratingInput.value) || 5
+    };
+    submit.disabled = true;
+    note.hidden = false;
+    note.textContent = 'Sending…';
+    try {
+      await window.AuraApi.apiFetch('/api/feedback', { method: 'POST', body: JSON.stringify(payload) });
+      form.reset();
+      ratingInput.value = '5';
+      form.querySelectorAll('[data-star]').forEach((star) => star.classList.add('is-on'));
+      note.textContent = 'Thank you. Your note is with us and will show here after we approve it.';
+    } catch (err) {
+      note.textContent = err.message || 'Could not send feedback. Please try again.';
+    }
+    submit.disabled = false;
+  });
+});

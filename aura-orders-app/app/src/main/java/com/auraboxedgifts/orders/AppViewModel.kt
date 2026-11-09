@@ -1543,7 +1543,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         onDone: () -> Unit = {},
         onError: (String) -> Unit = {}
     ) {
-        val token = adminToken.value ?: return
+        val token = adminToken.value
+        if (token.isNullOrBlank()) {
+            onError("Sign in to the admin account again, then save.")
+            return
+        }
         viewModelScope.launch {
             try {
                 _storeSettings.value = repository.updateShippingSettings(

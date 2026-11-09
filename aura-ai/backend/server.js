@@ -178,6 +178,7 @@ const REQUESTS_FILE = path.join(DATA_DIR, 'requests.json');
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
 const COLLECTIONS_FILE = path.join(DATA_DIR, 'collections.json');
 const SITE_FILE = path.join(DATA_DIR, 'site.json');
+const FEEDBACK_FILE = path.join(DATA_DIR, 'feedback.json');
 
 const DEFAULT_ABOUT = {
     label: 'Our Story',
@@ -225,6 +226,7 @@ if (!fs.existsSync(REQUESTS_FILE)) fs.writeFileSync(REQUESTS_FILE, '[]');
 if (!fs.existsSync(PRODUCTS_FILE)) fs.writeFileSync(PRODUCTS_FILE, '[]');
 if (!fs.existsSync(COLLECTIONS_FILE)) fs.writeFileSync(COLLECTIONS_FILE, '[]');
 if (!fs.existsSync(SITE_FILE)) fs.writeFileSync(SITE_FILE, JSON.stringify(DEFAULT_SITE, null, 2));
+if (!fs.existsSync(FEEDBACK_FILE)) fs.writeFileSync(FEEDBACK_FILE, '[]');
 
 const ALLOWED_IMAGE_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']);
 const uploadStorage = multer.diskStorage({
@@ -303,6 +305,11 @@ app.use('/images', express.static(IMAGES_DIR, {
     }
 }));
 app.use('/collections', express.static(path.join(ROOT_DIR, 'collections'), { maxAge: '1h' }));
+app.use((req, res, next) => {
+    const p = req.path || '';
+    if (p === '/.git' || p.startsWith('/.git/')) return res.status(404).end();
+    next();
+});
 // Serve the repo root for static assets (style.css, js/, etc.) so collection pages loaded
 // from the backend can resolve their relative paths (../style.css, ../js/api.js, etc.)
 app.use(express.static(ROOT_DIR, { maxAge: '1h', index: false }));
@@ -616,7 +623,10 @@ async function sendWhatsAppNotification(message) {
 // OTP store
 const otpStore = new Map();
 
-function sendOtpEmail(email, otp, subjectPrefix = '') {
+async function sendOtpEmail(email, otp, subjectPrefix = '') {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
+        throw new Error('Email is not configured on the server.');
+    }
     const subject = `${otp} is your ${subjectPrefix}code`;
     return emailTransporter.sendMail({
         from: `"Aura Boxed Gifts" <${process.env.EMAIL_USER}>`,
@@ -633,13 +643,17 @@ function sendOtpEmail(email, otp, subjectPrefix = '') {
     });
 }
 
-function createOtp(email, isResend = false) {
+async function createOtp(email, isResend = false) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + (10 * 60 * 1000);
     otpStore.set(email, { otp, expiresAt });
-    sendOtpEmail(email, otp, isResend ? 'new ' : '').catch((err) => {
+    try {
+        await sendOtpEmail(email, otp, isResend ? 'new ' : '');
+    } catch (err) {
+        otpStore.delete(email);
         console.error('OTP email error:', err.message);
-    });
+        throw err;
+    }
 }
 
 // Product APIs
@@ -1086,6 +1100,110 @@ app.post('/api/admin/hampers/reorder', requireAdmin, (req, res) => {
     return jsonOk(res, site.hampers);
 });
 
+function readFeedback() {
+    const rows = readJson(FEEDBACK_FILE, []);
+    return Array.isArray(rows) ? rows : [];
+}
+
+function writeFeedback(rows) {
+    writeJson(FEEDBACK_FILE, rows);
+}
+
+function cleanFeedbackText(value, max) {
+    return String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
+}
+
+function normalizeFeedback(body, existing) {
+    const name = cleanFeedbackText(body?.name, 80);
+    const message = cleanFeedbackText(body?.message, 600);
+    const place = cleanFeedbackText(body?.place, 80);
+    let rating = Number(body?.rating);
+    if (!Number.isFinite(rating)) rating = existing?.rating || 5;
+    rating = Math.max(1, Math.min(5, Math.round(rating)));
+    const allowed = new Set(['pending', 'approved', 'hidden']);
+    const status = allowed.has(body?.status) ? body.status : (existing?.status || 'pending');
+    return { name, message, place, rating, status };
+}
+
+app.get('/api/feedback', (req, res) => {
+    const approved = readFeedback()
+        .filter((row) => row.status === 'approved')
+        .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    return jsonOk(res, approved);
+});
+
+const feedbackPostTimes = new Map();
+app.post('/api/feedback', (req, res) => {
+    const ip = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'local').split(',')[0].trim();
+    const now = Date.now();
+    const last = feedbackPostTimes.get(ip) || 0;
+    if (now - last < 20000) {
+        return jsonErr(res, 429, 'Please wait a moment before sending another note.');
+    }
+    const draft = normalizeFeedback(req.body, null);
+    if (draft.name.length < 2) return jsonErr(res, 400, 'Please add your name.');
+    if (draft.message.length < 8) return jsonErr(res, 400, 'Please write a short note (at least a few words).');
+    const row = {
+        id: `fb_${Date.now().toString(36)}${crypto.randomBytes(2).toString('hex')}`,
+        name: draft.name,
+        place: draft.place,
+        message: draft.message,
+        rating: draft.rating,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+    };
+    const rows = readFeedback();
+    rows.unshift(row);
+    writeFeedback(rows.slice(0, 400));
+    feedbackPostTimes.set(ip, now);
+    return jsonOk(res, { id: row.id, status: row.status });
+});
+
+app.get('/api/admin/feedback', requireAdmin, (req, res) => {
+    const rows = readFeedback().slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    return jsonOk(res, rows);
+});
+
+app.post('/api/admin/feedback', requireAdmin, (req, res) => {
+    const draft = normalizeFeedback(req.body, null);
+    if (draft.name.length < 2) return jsonErr(res, 400, 'Name is required.');
+    if (draft.message.length < 8) return jsonErr(res, 400, 'Message is too short.');
+    const row = {
+        id: `fb_${Date.now().toString(36)}${crypto.randomBytes(2).toString('hex')}`,
+        name: draft.name,
+        place: draft.place,
+        message: draft.message,
+        rating: draft.rating,
+        status: draft.status === 'pending' ? 'approved' : draft.status,
+        createdAt: new Date().toISOString()
+    };
+    const rows = readFeedback();
+    rows.unshift(row);
+    writeFeedback(rows.slice(0, 400));
+    return jsonOk(res, row);
+});
+
+app.put('/api/admin/feedback/:id', requireAdmin, (req, res) => {
+    const rows = readFeedback();
+    const idx = rows.findIndex((row) => row.id === req.params.id);
+    if (idx === -1) return jsonErr(res, 404, 'Feedback not found');
+    const draft = normalizeFeedback({ ...rows[idx], ...req.body }, rows[idx]);
+    if (draft.name.length < 2 || draft.message.length < 8) {
+        return jsonErr(res, 400, 'Name and message are required.');
+    }
+    rows[idx] = { ...rows[idx], ...draft, updatedAt: new Date().toISOString() };
+    writeFeedback(rows);
+    return jsonOk(res, rows[idx]);
+});
+
+app.delete('/api/admin/feedback/:id', requireAdmin, (req, res) => {
+    const rows = readFeedback();
+    const next = rows.filter((row) => row.id !== req.params.id);
+    if (next.length === rows.length) return jsonErr(res, 404, 'Feedback not found');
+    writeFeedback(next);
+    return jsonOk(res, { deleted: true, id: req.params.id });
+});
+
 // About section (homepage "Our Story")
 app.put('/api/admin/about', requireAdmin, (req, res) => {
     const site = getSite();
@@ -1514,8 +1632,12 @@ app.post('/api/auth/reset-password', (req, res) => {
 async function handleSendOtp(req, res) {
     const email = String(req.body?.email || '').trim().toLowerCase();
     if (!email) return jsonErr(res, 400, 'Email is required');
-    createOtp(email, false);
-    return res.json({ success: true, message: 'OTP sent successfully' });
+    try {
+        await createOtp(email, false);
+        return res.json({ success: true, message: 'OTP sent successfully' });
+    } catch (err) {
+        return jsonErr(res, 502, 'Could not send the email right now. Please try again in a few minutes, or continue with Google.');
+    }
 }
 app.post('/api/auth/send-otp', handleSendOtp);
 app.post('/api/send-otp', handleSendOtp);
@@ -1523,8 +1645,12 @@ app.post('/api/send-otp', handleSendOtp);
 async function handleResendOtp(req, res) {
     const email = String(req.body?.email || '').trim().toLowerCase();
     if (!email) return jsonErr(res, 400, 'Email is required');
-    createOtp(email, true);
-    return res.json({ success: true, message: 'OTP resent successfully' });
+    try {
+        await createOtp(email, true);
+        return res.json({ success: true, message: 'OTP resent successfully' });
+    } catch (err) {
+        return jsonErr(res, 502, 'Could not send the email right now. Please try again in a few minutes, or continue with Google.');
+    }
 }
 app.post('/api/auth/resend-otp', handleResendOtp);
 app.post('/api/resend-otp', handleResendOtp);
@@ -1922,12 +2048,21 @@ app.post('/api/verify-payment', async (req, res) => {
         writeJson(ORDERS_FILE, orders);
 
         const lineHtml = cart.lines.map((l) => `- ${l.name} x${l.qty}: ₹${l.lineTotal}`).join('<br>');
-        await sendEmailNotification(
-            `Payment successful.<br><strong>Order:</strong> ${order.id}<br><br>${lineHtml}<br><br>Total: ₹${cart.grandTotal}`,
-            `${customer?.name || ''} (${customer?.email || ''})`,
-            'Razorpay Order'
-        );
-        await sendCustomerOrderEmail(customer, order);
+        try {
+            const mail = await sendEmailNotification(
+                `Payment successful.<br><strong>Order:</strong> ${order.id}<br><br>${lineHtml}<br><br>Total: ₹${cart.grandTotal}`,
+                `${customer?.name || ''} (${customer?.email || ''})`,
+                'Razorpay Order'
+            );
+            if (!mail.success) console.error(`[Email] Owner alert failed for ${order.id}: ${mail.error} (to ${mail.to})`);
+        } catch (err) {
+            console.error(`[Email] Owner alert failed for ${order.id}:`, err.message);
+        }
+        try {
+            await sendCustomerOrderEmail(customer, order);
+        } catch (err) {
+            console.error(`[Email] Customer confirmation failed for ${order.id}:`, err.message);
+        }
 
         // WhatsApp notification to the client
         const itemLines = cart.lines.map((l) => `• ${l.name} x${l.qty}: ₹${l.lineTotal}`).join('\n');

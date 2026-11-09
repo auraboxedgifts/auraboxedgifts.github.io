@@ -24,8 +24,8 @@ android {
         applicationId = "com.auraboxedgifts.orders"
         minSdk = 26
         targetSdk = 35
-        versionCode = 15
-        versionName = "1.3.8"
+        versionCode = 16
+        versionName = "1.3.9"
 
         ndk {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a")

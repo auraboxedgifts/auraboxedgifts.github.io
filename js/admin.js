@@ -108,6 +108,7 @@
             <button class="aap-nav-item" data-view="collections"><i class="fas fa-layer-group"></i><span>Collections</span></button>
             <button class="aap-nav-item" data-view="homepage"><i class="fas fa-house"></i><span>Homepage</span></button>
             <button class="aap-nav-item" data-view="orders"><i class="fas fa-receipt"></i><span>Orders</span></button>
+            <button class="aap-nav-item" data-view="feedback"><i class="fas fa-comment-dots"></i><span>Feedback</span></button>
             <button class="aap-nav-item" data-view="preview"><i class="fas fa-eye"></i><span>Home Preview</span></button>
             <button class="aap-nav-item" data-view="tools"><i class="fas fa-flask"></i><span>Testing &amp; Setup</span></button>
             <button class="aap-nav-item" data-view="history"><i class="fas fa-clock-rotate-left"></i><span>History</span></button>
@@ -322,6 +323,10 @@
       title.textContent = 'Orders';
       sub.textContent = 'View and manage customer orders.';
       renderOrdersView();
+    } else if (state.view === 'feedback') {
+      title.textContent = 'Feedback';
+      sub.textContent = 'Approve customer notes so they show on the homepage.';
+      renderFeedbackView();
     } else if (state.view === 'preview') {
       title.textContent = 'Home Preview';
       sub.textContent = 'See how your storefront looks to customers right now.';
@@ -1689,33 +1694,28 @@
   function fillShippingInputs(root, prefix, s) {
     if (!root || !s) return;
     const map = {
-      BelowThreshold: 'shippingBelowThreshold',
+      Threshold: 'shippingAboveThreshold',
       BelowRate: 'shippingBelowRate',
-      AboveThreshold: 'shippingAboveThreshold',
       AboveRate: 'shippingAboveRate'
     };
     Object.keys(map).forEach((suffix) => {
       const el = root.querySelector(`#${prefix}${suffix}`);
-      if (el) el.value = s[map[suffix]];
+      if (el && s[map[suffix]] != null) el.value = s[map[suffix]];
     });
   }
 
   function readShippingPayload(root, prefix) {
-    const belowThreshold = Number(root.querySelector(`#${prefix}BelowThreshold`)?.value);
+    const threshold = Number(root.querySelector(`#${prefix}Threshold`)?.value);
     const belowRate = Number(root.querySelector(`#${prefix}BelowRate`)?.value);
-    const aboveThreshold = Number(root.querySelector(`#${prefix}AboveThreshold`)?.value);
     const aboveRate = Number(root.querySelector(`#${prefix}AboveRate`)?.value);
-    if (![belowThreshold, belowRate, aboveThreshold, aboveRate].every((n) => Number.isFinite(n) && n >= 0)) {
-      return { error: 'Enter valid non-negative numbers for all shipping fields' };
-    }
-    if (belowThreshold > aboveThreshold) {
-      return { error: 'Small-cart threshold must be ≤ large-cart threshold' };
+    if (![threshold, belowRate, aboveRate].every((n) => Number.isFinite(n) && n >= 0)) {
+      return { error: 'Enter valid amounts for the cutoff and both shipping charges' };
     }
     return {
       payload: {
-        shippingBelowThreshold: Math.round(belowThreshold),
+        shippingBelowThreshold: 0,
         shippingBelowRate: Math.round(belowRate),
-        shippingAboveThreshold: Math.round(aboveThreshold),
+        shippingAboveThreshold: Math.round(threshold),
         shippingAboveRate: Math.round(aboveRate)
       }
     };
@@ -1723,7 +1723,6 @@
 
   function shippingEditorHtml(prefix, s) {
     const d = s || {
-      shippingBelowThreshold: 500,
       shippingBelowRate: 120,
       shippingAboveThreshold: 2000,
       shippingAboveRate: 120
@@ -1731,20 +1730,17 @@
     return `
       <div style="display:grid;gap:10px;margin-top:8px;">
         <div>
-          <label class="aap-label">Small carts — under ₹ (reference) + shipping ₹</label>
-          <div class="aap-tool-row">
-            <input class="aap-input" id="${prefix}BelowThreshold" type="number" min="0" step="1" value="${d.shippingBelowThreshold}" placeholder="250">
-            <input class="aap-input" id="${prefix}BelowRate" type="number" min="0" step="1" value="${d.shippingBelowRate}" placeholder="99">
-          </div>
-          <p class="aap-hint" style="margin:4px 0 0;">Applies to all carts under the large threshold (right box = shipping amount).</p>
+          <label class="aap-label">Free-or-cheaper shipping starts at cart total ₹</label>
+          <input class="aap-input" id="${prefix}Threshold" type="number" min="0" step="1" value="${d.shippingAboveThreshold}" placeholder="2000">
+          <p class="aap-hint" style="margin:4px 0 0;">Carts below this amount use the first shipping charge. Carts at or above it use the second. This is the number checkout actually uses.</p>
         </div>
         <div>
-          <label class="aap-label">Large carts — from ₹ + shipping ₹</label>
-          <div class="aap-tool-row">
-            <input class="aap-input" id="${prefix}AboveThreshold" type="number" min="0" step="1" value="${d.shippingAboveThreshold}" placeholder="2000">
-            <input class="aap-input" id="${prefix}AboveRate" type="number" min="0" step="1" value="${d.shippingAboveRate}" placeholder="0">
-          </div>
-          <p class="aap-hint" style="margin:4px 0 0;">From this cart total upward (0 = free shipping).</p>
+          <label class="aap-label">Shipping ₹ when the cart is under that amount</label>
+          <input class="aap-input" id="${prefix}BelowRate" type="number" min="0" step="1" value="${d.shippingBelowRate}" placeholder="99">
+        </div>
+        <div>
+          <label class="aap-label">Shipping ₹ when the cart reaches that amount (0 = free)</label>
+          <input class="aap-input" id="${prefix}AboveRate" type="number" min="0" step="1" value="${d.shippingAboveRate}" placeholder="0">
         </div>
       </div>`;
   }
@@ -1802,7 +1798,7 @@
 
         <div class="aap-tool-card">
           <h3><i class="fas fa-truck"></i> Shipping (2 tiers)</h3>
-          <p class="aap-hint">Carts under the large threshold pay the small-cart rate. Carts at/above the large threshold pay the large-cart rate. (Website + Android app.)</p>
+          <p class="aap-hint">One cutoff, two charges. Example: under ₹2000 shipping is ₹99, and ₹2000 or more is free (₹0). Website checkout and the Android app both use these numbers.</p>
           <div id="aapShipEditor"></div>
           <div style="margin-top:10px;">
             <button class="aap-btn-primary" id="aapSaveShipping"><i class="fas fa-save"></i> Save shipping</button>
@@ -1868,9 +1864,8 @@
     const shippingStatus = content.querySelector('#aapShippingStatus');
     const shipEditor = content.querySelector('#aapShipEditor');
     try {
-      const settingsRes = await fetch('/api/settings');
-      const settingsJson = await settingsRes.json();
-      if (settingsJson.success && settingsJson.data) {
+      const settingsJson = await window.AuraApi.apiFetch('/api/settings');
+      if (settingsJson.data) {
         if (shipEditor) shipEditor.innerHTML = shippingEditorHtml('aapShip', settingsJson.data);
         if (shippingStatus) shippingStatus.textContent = formatShippingStatus(settingsJson.data);
       } else if (shipEditor) {
@@ -1895,6 +1890,7 @@
           body: JSON.stringify(parsed.payload)
         });
         if (shippingStatus) shippingStatus.textContent = `Saved — ${formatShippingStatus(res.data)}`;
+        fillShippingInputs(content, 'aapShip', res.data);
         toast('Shipping updated', 'success');
       } catch (err) {
         toast(err.message, 'error');
@@ -2160,6 +2156,112 @@
     updateAdminIcon();
   });
 
+  async function renderFeedbackView() {
+    const content = document.getElementById('aapContent');
+    content.innerHTML = renderLoadingState();
+    let rows = [];
+    try {
+      const res = await adminFetch('/api/admin/feedback');
+      rows = Array.isArray(res.data) ? res.data : [];
+    } catch (err) {
+      content.innerHTML = `<div class="aap-empty">Failed to load feedback: ${escapeHtml(err.message)}</div>`;
+      return;
+    }
+
+    const statusLabel = (status) => status === 'approved' ? 'On the website' : (status === 'hidden' ? 'Hidden' : 'Waiting for approval');
+
+    content.innerHTML = `
+      <div class="aap-section-block" style="margin-bottom:18px;">
+        <h3 style="margin:0 0 8px;"><i class="fas fa-plus"></i> Add a note yourself</h3>
+        <p class="aap-hint">Use this for compliments you already have. It is published on the homepage immediately.</p>
+        <form class="aap-form" id="aapFeedbackAdd" style="margin-top:12px;">
+          <div class="aap-form-row">
+            <div><label class="aap-label">Name</label><input class="aap-input" id="aapFbName" type="text" placeholder="Priya"></div>
+            <div><label class="aap-label">City <span class="aap-label-sub">(optional)</span></label><input class="aap-input" id="aapFbPlace" type="text" placeholder="Jaipur"></div>
+          </div>
+          <label class="aap-label">Stars</label>
+          <select class="aap-input" id="aapFbRating">
+            <option value="5">5</option>
+            <option value="4">4</option>
+            <option value="3">3</option>
+            <option value="2">2</option>
+            <option value="1">1</option>
+          </select>
+          <label class="aap-label">Message</label>
+          <textarea class="aap-input" id="aapFbMessage" rows="3" placeholder="The hamper was beautiful and reached on time."></textarea>
+          <div style="margin-top:12px;"><button type="submit" class="aap-btn-primary">Publish on website</button></div>
+        </form>
+      </div>
+      ${rows.length ? rows.map((row) => `
+        <div class="aap-section-block" style="margin-bottom:12px;" data-id="${escapeHtml(row.id)}">
+          <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <div>
+              <strong>${escapeHtml(row.name || '')}</strong>
+              ${row.place ? `<span class="aap-hint"> · ${escapeHtml(row.place)}</span>` : ''}
+              <div style="color:#b76e79;letter-spacing:2px;">${'★'.repeat(Number(row.rating) || 0)}${'☆'.repeat(Math.max(0, 5 - (Number(row.rating) || 0)))}</div>
+            </div>
+            <span class="aap-hint">${escapeHtml(statusLabel(row.status))}</span>
+          </div>
+          <p style="margin:10px 0;">${escapeHtml(row.message || '')}</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            ${row.status !== 'approved' ? `<button type="button" class="aap-btn-primary" data-fb-status="approved">Show on website</button>` : `<button type="button" class="aap-btn-secondary" data-fb-status="hidden">Hide</button>`}
+            <button type="button" class="aap-btn-secondary" data-fb-delete>Delete</button>
+          </div>
+        </div>`).join('') : '<div class="aap-empty">No feedback yet. Notes customers send from the homepage will wait here until you approve them.</div>'}
+    `;
+
+    content.querySelector('#aapFeedbackAdd')?.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const payload = {
+        name: content.querySelector('#aapFbName').value.trim(),
+        place: content.querySelector('#aapFbPlace').value.trim(),
+        rating: Number(content.querySelector('#aapFbRating').value),
+        message: content.querySelector('#aapFbMessage').value.trim(),
+        status: 'approved'
+      };
+      if (payload.name.length < 2 || payload.message.length < 8) {
+        toast('Add a name and a short message.', 'error');
+        return;
+      }
+      try {
+        await adminFetch('/api/admin/feedback', { method: 'POST', body: JSON.stringify(payload) });
+        toast('Feedback published', 'success');
+        renderFeedbackView();
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    });
+
+    content.querySelectorAll('[data-fb-status]').forEach((btn) => {
+      btn.addEventListener('click', async function () {
+        const id = this.closest('[data-id]')?.dataset.id;
+        if (!id) return;
+        try {
+          await adminFetch(`/api/admin/feedback/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ status: this.dataset.fbStatus })
+          });
+          renderFeedbackView();
+        } catch (err) {
+          toast(err.message, 'error');
+        }
+      });
+    });
+
+    content.querySelectorAll('[data-fb-delete]').forEach((btn) => {
+      btn.addEventListener('click', async function () {
+        const id = this.closest('[data-id]')?.dataset.id;
+        if (!id || !confirm('Delete this feedback?')) return;
+        try {
+          await adminFetch(`/api/admin/feedback/${id}`, { method: 'DELETE' });
+          renderFeedbackView();
+        } catch (err) {
+          toast(err.message, 'error');
+        }
+      });
+    });
+  }
+
   // ─── Orders View ───
   async function renderOrdersView() {
     const content = document.getElementById('aapContent');
@@ -2167,11 +2269,8 @@
 
     let shippingSettings = null;
     try {
-      const settingsRes = await fetch('/api/settings');
-      const settingsJson = await settingsRes.json();
-      if (settingsJson.success && settingsJson.data) {
-        shippingSettings = settingsJson.data;
-      }
+      const settingsJson = await window.AuraApi.apiFetch('/api/settings');
+      if (settingsJson.data) shippingSettings = settingsJson.data;
     } catch (_) { }
 
   const shippingBar = `
@@ -2179,7 +2278,7 @@
         <div class="aap-block-head">
           <div>
             <h3 style="margin:0;"><i class="fas fa-truck"></i> Shipping (2 tiers)</h3>
-            <p class="aap-hint" style="margin:4px 0 0;">Under large threshold → small-cart rate. At/above large threshold → large-cart rate.</p>
+            <p class="aap-hint" style="margin:4px 0 0;">Carts under the cutoff pay the first charge. Carts at or above it pay the second (0 = free).</p>
           </div>
         </div>
         <div id="aapOrdersShipEditor">${shippingEditorHtml('aapOrdersShip', shippingSettings)}</div>
@@ -2212,6 +2311,7 @@
             if (shippingStatus) {
               shippingStatus.textContent = `Saved — ${formatShippingStatus(saveRes.data)}`;
             }
+            fillShippingInputs(content, 'aapOrdersShip', saveRes.data);
             toast('Shipping updated', 'success');
           } catch (err) {
             toast(err.message, 'error');
@@ -2351,6 +2451,7 @@
           if (shippingStatus) {
             shippingStatus.textContent = `Saved — ${formatShippingStatus(saveRes.data)}`;
           }
+          fillShippingInputs(content, 'aapOrdersShip', saveRes.data);
           toast('Shipping updated', 'success');
         } catch (saveErr) {
           toast(saveErr.message, 'error');
