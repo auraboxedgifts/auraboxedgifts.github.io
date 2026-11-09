@@ -486,10 +486,12 @@ async function sendEmailNotification(message, customerContact = '', inquiryType 
     if (!to) {
         return { success: false, error: 'No recipient email configured. Set RECIPIENT_EMAIL in .env.', to };
     }
+    const replyTo = process.env.REPLY_TO_EMAIL || 'm.deepa99@gmail.com';
     try {
         const info = await emailTransporter.sendMail({
             from: `"Aura Boxed Gifts" <${process.env.EMAIL_USER}>`,
             to,
+            replyTo,
             subject: `Aura Inquiry - ${inquiryType}`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
@@ -511,9 +513,11 @@ async function sendEmailNotification(message, customerContact = '', inquiryType 
 async function sendCustomerOrderEmail(customer, order) {
     if (!customer?.email || !process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) return;
     const lines = order.cart.lines.map((l) => `<li>${l.name} x${l.qty} - ₹${l.lineTotal}</li>`).join('');
+    const replyTo = process.env.REPLY_TO_EMAIL || 'm.deepa99@gmail.com';
     await emailTransporter.sendMail({
         from: `"Aura Boxed Gifts" <${process.env.EMAIL_USER}>`,
         to: customer.email,
+        replyTo,
         subject: `Your Aura Boxed Gifts order ${order.id} is confirmed`,
         html: `
             <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
@@ -572,10 +576,12 @@ async function sendCustomerStatusUpdateEmail(order, newStatus, previousStatus) {
         cancelled: 'Your order has been cancelled. If you have questions, please reply to this email.'
     };
     const message = statusMessages[newStatus] || `Your order status is now: ${statusLabel}.`;
+    const replyTo = process.env.REPLY_TO_EMAIL || 'm.deepa99@gmail.com';
     try {
         await emailTransporter.sendMail({
             from: `"Aura Boxed Gifts" <${process.env.EMAIL_USER}>`,
             to: customer.email,
+            replyTo,
             subject: `Aura Boxed Gifts — your order ${order.id} is ${statusLabel.toLowerCase()}`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
@@ -628,9 +634,11 @@ async function sendOtpEmail(email, otp, subjectPrefix = '') {
         throw new Error('Email is not configured on the server.');
     }
     const subject = `${otp} is your ${subjectPrefix}code`;
+    const replyTo = process.env.REPLY_TO_EMAIL || 'm.deepa99@gmail.com';
     return emailTransporter.sendMail({
         from: `"Aura Boxed Gifts" <${process.env.EMAIL_USER}>`,
         to: email,
+        replyTo,
         subject,
         html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; text-align: center;">
@@ -1253,10 +1261,12 @@ app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
         return jsonErr(res, 400, 'Email is not configured. Set EMAIL_USER and EMAIL_APP_PASSWORD on the server.');
     }
     if (!to) return jsonErr(res, 400, 'No recipient. Provide an address or set RECIPIENT_EMAIL on the server.');
+    const replyTo = process.env.REPLY_TO_EMAIL || 'm.deepa99@gmail.com';
     try {
         const info = await emailTransporter.sendMail({
             from: `"Aura Boxed Gifts" <${process.env.EMAIL_USER}>`,
             to,
+            replyTo,
             subject: 'Aura test email ✅',
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
